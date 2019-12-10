@@ -14,9 +14,7 @@
 
 package interfaces
 
-import (
-	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/config"
-)
+import "github.com/edgexfoundry/go-mod-bootstrap/config"
 
 // BootstrapConfiguration defines the configuration elements required by the bootstrap.
 type BootstrapConfiguration struct {

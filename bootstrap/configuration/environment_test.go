@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/stretchr/testify/assert"
 )
