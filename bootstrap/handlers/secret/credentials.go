@@ -14,9 +14,7 @@
 
 package secret
 
-import (
-	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/config"
-)
+import "github.com/edgexfoundry/go-mod-bootstrap/config"
 
 const RedisDB = "redisdb"
 

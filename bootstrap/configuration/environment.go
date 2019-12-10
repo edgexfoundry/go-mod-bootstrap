@@ -19,7 +19,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 )
 
 const (

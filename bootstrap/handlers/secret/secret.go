@@ -22,8 +22,8 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/security/authtokenloader"
 	"github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/security/fileioperformer"
 
