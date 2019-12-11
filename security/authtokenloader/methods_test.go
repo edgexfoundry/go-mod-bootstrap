@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/edgexfoundry/go-mod-bootstrap/internal/pkg/security/fileioperformer/mocks"
+	. "github.com/edgexfoundry/go-mod-bootstrap/security/fileioperformer/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
