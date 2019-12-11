@@ -16,6 +16,8 @@ package config
 import (
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
 
@@ -43,6 +45,20 @@ type ServiceInfo struct {
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int
+}
+
+// HealthCheck is a URL specifying a healthcheck REST endpoint used by the Registry to determine if the
+// service is available.
+func (s ServiceInfo) HealthCheck() string {
+	hc := fmt.Sprintf("%s://%s:%v%s", s.Protocol, s.Host, s.Port, clients.ApiPingRoute)
+	return hc
+}
+
+// Url provides a way to obtain the full url of the host service for use in initialization or, in some cases,
+// responses to a caller.
+func (s ServiceInfo) Url() string {
+	url := fmt.Sprintf("%s://%s:%v", s.Protocol, s.Host, s.Port)
+	return url
 }
 
 // RegistryInfo defines the type and location (via host/port) of the desired service registry (e.g. Consul, Eureka)
