@@ -14,8 +14,6 @@
 // limitations under the License.
 //
 
-@Library(['edgex-global-pipelines@1.0.6']) _
-
 edgeXBuildGoMod (
     project: 'go-mod-bootstrap',
     goVersion: '1.11'
