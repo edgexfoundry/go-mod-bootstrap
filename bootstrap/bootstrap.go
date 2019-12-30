@@ -40,8 +40,8 @@ const (
 
 // fatalError logs an error and exits the application.  It's intended to be used only within the bootstrap prior to
 // any go routines being spawned.
-func fatalError(err error, loggingClient logger.LoggingClient) {
-	loggingClient.Error(err.Error())
+func fatalError(err error, lc logger.LoggingClient) {
+	lc.Error(err.Error())
 	os.Exit(1)
 }
 
@@ -81,7 +81,7 @@ func Run(
 	dic *di.Container,
 	handlers []interfaces.BootstrapHandler) {
 
-	loggingClient := logging.FactoryToStdout(serviceKey)
+	lc := logging.FactoryToStdout(serviceKey)
 	var err error
 	var registryClient registry.Client
 	var wg sync.WaitGroup
@@ -90,7 +90,7 @@ func Run(
 
 	// load configuration from file.
 	if err = configuration.LoadFromFile(configDir, profileDir, configFileName, config); err != nil {
-		fatalError(err, loggingClient)
+		fatalError(err, lc)
 	}
 
 	// override file-based configuration with environment variables.
@@ -104,14 +104,14 @@ func Run(
 	// set up registryClient and loggingClient; update configuration from registry if we're using a registry.
 	switch useRegistry {
 	case true:
-		registryClient, err = configuration.UpdateFromRegistry(ctx, startupTimer, config, loggingClient, serviceKey)
+		registryClient, err = configuration.UpdateFromRegistry(ctx, startupTimer, config, lc, serviceKey)
 		if err != nil {
-			fatalError(err, loggingClient)
+			fatalError(err, lc)
 		}
-		loggingClient = logging.FactoryFromConfiguration(serviceKey, config)
-		configuration.ListenForChanges(ctx, &wg, config, loggingClient, registryClient)
+		lc = logging.FactoryFromConfiguration(serviceKey, config)
+		configuration.ListenForChanges(ctx, &wg, config, lc, registryClient)
 	case false:
-		loggingClient = logging.FactoryFromConfiguration(serviceKey, config)
+		lc = logging.FactoryFromConfiguration(serviceKey, config)
 	}
 
 	dic.Update(di.ServiceConstructorMap{
@@ -119,7 +119,7 @@ func Run(
 			return config
 		},
 		container.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return loggingClient
+			return lc
 		},
 		container.RegistryClientInterfaceName: func(get di.Get) interface{} {
 			return registryClient

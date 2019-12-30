@@ -60,7 +60,7 @@ func UpdateFromRegistry(
 	ctx context.Context,
 	startupTimer startup.Timer,
 	config interfaces.Configuration,
-	loggingClient logger.LoggingClient,
+	lc logger.LoggingClient,
 	serviceKey string) (registry.Client, error) {
 
 	var updateFromRegistry = func(registryClient registry.Client) error {
@@ -91,7 +91,7 @@ func UpdateFromRegistry(
 
 	for startupTimer.HasNotElapsed() {
 		if err := updateFromRegistry(registryClient); err != nil {
-			loggingClient.Warn(err.Error())
+			lc.Warn(err.Error())
 			select {
 			case <-ctx.Done():
 				return nil, errors.New("aborted UpdateFromRegistry()")
@@ -113,7 +113,7 @@ func ListenForChanges(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	config interfaces.Configuration,
-	loggingClient logger.LoggingClient,
+	lc logger.LoggingClient,
 	registryClient registry.Client) {
 
 	wg.Add(1)
@@ -134,7 +134,7 @@ func ListenForChanges(
 				return
 
 			case ex := <-errorStream:
-				loggingClient.Error(ex.Error())
+				lc.Error(ex.Error())
 
 			case raw, ok := <-updateStream:
 				if !ok {
@@ -142,12 +142,12 @@ func ListenForChanges(
 				}
 
 				if !config.UpdateWritableFromRaw(raw) {
-					loggingClient.Error("ListenForChanges() type check failed")
+					lc.Error("ListenForChanges() type check failed")
 					return
 				}
 
-				loggingClient.Info("Writeable configuration has been updated from the Registry")
-				loggingClient.SetLogLevel(config.GetLogLevel())
+				lc.Info("Writeable configuration has been updated from the Registry")
+				lc.SetLogLevel(config.GetLogLevel())
 			}
 		}
 	}()
