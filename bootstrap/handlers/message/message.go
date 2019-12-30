@@ -46,16 +46,16 @@ func (h StartMessage) BootstrapHandler(
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
 
-	loggingClient := container.LoggingClientFrom(dic.Get)
-	loggingClient.Info("Service dependencies resolved...")
-	loggingClient.Info(fmt.Sprintf("Starting %s %s ", h.serviceKey, h.version))
+	lc := container.LoggingClientFrom(dic.Get)
+	lc.Info("Service dependencies resolved...")
+	lc.Info(fmt.Sprintf("Starting %s %s ", h.serviceKey, h.version))
 
 	bootstrapConfig := container.ConfigurationFrom(dic.Get).GetBootstrap()
 	if len(bootstrapConfig.Service.StartupMsg) > 0 {
-		loggingClient.Info(bootstrapConfig.Service.StartupMsg)
+		lc.Info(bootstrapConfig.Service.StartupMsg)
 	}
 
-	loggingClient.Info("Service started in: " + startupTimer.SinceAsString())
+	lc.Info("Service started in: " + startupTimer.SinceAsString())
 
 	return true
 }

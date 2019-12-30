@@ -50,12 +50,12 @@ func (s *SecretProvider) BootstrapHandler(
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
 
-	loggingClient := container.LoggingClientFrom(dic.Get)
+	lc := container.LoggingClientFrom(dic.Get)
 
 	configuration := container.ConfigurationFrom(dic.Get)
 	secretConfig, err := s.getSecretConfig(configuration.GetBootstrap().SecretStore)
 	if err != nil {
-		loggingClient.Error(fmt.Sprintf("unable to parse secret store configuration: %s", err.Error()))
+		lc.Error(fmt.Sprintf("unable to parse secret store configuration: %s", err.Error()))
 		return false
 	}
 
@@ -63,7 +63,7 @@ func (s *SecretProvider) BootstrapHandler(
 	if s.isSecurityEnabled() {
 		s.secretClient, err = vault.NewSecretClient(secretConfig)
 		if err != nil {
-			loggingClient.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
+			lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
 			return false
 		}
 	}

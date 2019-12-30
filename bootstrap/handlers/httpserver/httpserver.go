@@ -68,8 +68,8 @@ func (b *HttpServer) BootstrapHandler(
 		ReadTimeout:  timeout,
 	}
 
-	loggingClient := container.LoggingClientFrom(dic.Get)
-	loggingClient.Info("Web server starting (" + addr + ")")
+	lc := container.LoggingClientFrom(dic.Get)
+	lc.Info("Web server starting (" + addr + ")")
 
 	wg.Add(1)
 	go func() {
@@ -77,7 +77,7 @@ func (b *HttpServer) BootstrapHandler(
 
 		b.isRunning = true
 		server.ListenAndServe()
-		loggingClient.Info("Web server stopped")
+		lc.Info("Web server stopped")
 		b.isRunning = false
 	}()
 
@@ -86,9 +86,9 @@ func (b *HttpServer) BootstrapHandler(
 		defer wg.Done()
 
 		<-ctx.Done()
-		loggingClient.Info("Web server shutting down")
+		lc.Info("Web server shutting down")
 		server.Shutdown(context.Background())
-		loggingClient.Info("Web server shut down")
+		lc.Info("Web server shut down")
 	}()
 
 	return true
