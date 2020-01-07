@@ -35,8 +35,8 @@ type HttpServer struct {
 }
 
 // NewBootstrap is a factory method that returns an initialized HttpServer receiver struct.
-func NewBootstrap(router *mux.Router) HttpServer {
-	return HttpServer{
+func NewBootstrap(router *mux.Router) *HttpServer {
+	return &HttpServer{
 		router:    router,
 		isRunning: false,
 	}
