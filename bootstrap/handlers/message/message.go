@@ -41,8 +41,8 @@ func NewBootstrap(serviceKey, version string) StartMessage {
 // BootstrapHandler fulfills the BootstrapHandler contract.  It creates no go routines.  It logs a "standard" set of
 // messages when the service first starts up successfully.
 func (h StartMessage) BootstrapHandler(
-	ctx context.Context,
-	wg *sync.WaitGroup,
+	_ context.Context,
+	_ *sync.WaitGroup,
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
 
