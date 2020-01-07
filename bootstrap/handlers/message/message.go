@@ -31,8 +31,8 @@ type StartMessage struct {
 }
 
 // NewBootstrap is a factory method that returns an initialized StartMessage receiver struct.
-func NewBootstrap(serviceKey, version string) StartMessage {
-	return StartMessage{
+func NewBootstrap(serviceKey, version string) *StartMessage {
+	return &StartMessage{
 		serviceKey: serviceKey,
 		version:    version,
 	}
