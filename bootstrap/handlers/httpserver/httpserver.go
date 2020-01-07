@@ -55,7 +55,7 @@ func (b *HttpServer) IsRunning() bool {
 func (b *HttpServer) BootstrapHandler(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	startupTimer startup.Timer,
+	_ startup.Timer,
 	dic *di.Container) bool {
 
 	bootstrapConfig := container.ConfigurationFrom(dic.Get).GetBootstrap()
@@ -76,7 +76,7 @@ func (b *HttpServer) BootstrapHandler(
 		defer wg.Done()
 
 		b.isRunning = true
-		server.ListenAndServe()
+		_ = server.ListenAndServe()
 		lc.Info("Web server stopped")
 		b.isRunning = false
 	}()
@@ -87,7 +87,7 @@ func (b *HttpServer) BootstrapHandler(
 
 		<-ctx.Done()
 		lc.Info("Web server shutting down")
-		server.Shutdown(context.Background())
+		_ = server.Shutdown(context.Background())
 		lc.Info("Web server shut down")
 	}()
 

@@ -47,7 +47,7 @@ type ServiceInfo struct {
 	Timeout int
 }
 
-// HealthCheck is a URL specifying a healthcheck REST endpoint used by the Registry to determine if the
+// HealthCheck is a URL specifying a health check REST endpoint used by the Registry to determine if the
 // service is available.
 func (s ServiceInfo) HealthCheck() string {
 	hc := fmt.Sprintf("%s://%s:%v%s", s.Protocol, s.Host, s.Port, clients.ApiPingRoute)
