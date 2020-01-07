@@ -18,12 +18,12 @@ import "github.com/edgexfoundry/go-mod-bootstrap/config"
 
 const RedisDB = "redisdb"
 
-func (s *SecretProvider) GetDatabaseCredentials(database config.Database) (*config.Credentials, error) {
+func (s *SecretProvider) GetDatabaseCredentials(database config.Database) (config.Credentials, error) {
 	// If security is disabled or the database is Redis then we are to use the credentials supplied by the
 	// configuration. The reason we do this for Redis is because Redis does not have an authentication nor an
 	// authorization mechanism.
 	if !s.isSecurityEnabled() || database.Type == RedisDB {
-		return &config.Credentials{
+		return config.Credentials{
 			Username: database.Username,
 			Password: database.Password,
 		}, nil
@@ -31,10 +31,10 @@ func (s *SecretProvider) GetDatabaseCredentials(database config.Database) (*conf
 
 	secrets, err := s.secretClient.GetSecrets(database.Type, "username", "password")
 	if err != nil {
-		return &config.Credentials{}, err
+		return config.Credentials{}, err
 	}
 
-	return &config.Credentials{
+	return config.Credentials{
 		Username: secrets["username"],
 		Password: secrets["password"],
 	}, nil
