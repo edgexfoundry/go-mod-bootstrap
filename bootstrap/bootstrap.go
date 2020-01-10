@@ -73,6 +73,8 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 // the handlers are called this function will wait for any go routines spawned inside the handlers to exit before
 // returning to the caller.  It is intended that the caller stop executing on the return of this function.
 func Run(
+	ctx context.Context,
+	cancel context.CancelFunc,
 	configDir, profileDir, configFileName string,
 	useRegistry bool,
 	serviceKey string,
@@ -85,7 +87,6 @@ func Run(
 	var err error
 	var registryClient registry.Client
 	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	// load configuration from file.
