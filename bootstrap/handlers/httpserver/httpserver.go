@@ -30,15 +30,17 @@ import (
 
 // HttpServer contains references to dependencies required by the http server implementation.
 type HttpServer struct {
-	router    *mux.Router
-	isRunning bool
+	router           *mux.Router
+	isRunning        bool
+	doListenAndServe bool
 }
 
 // NewBootstrap is a factory method that returns an initialized HttpServer receiver struct.
-func NewBootstrap(router *mux.Router) *HttpServer {
+func NewBootstrap(router *mux.Router, doListenAndServe bool) *HttpServer {
 	return &HttpServer{
-		router:    router,
-		isRunning: false,
+		router:           router,
+		isRunning:        false,
+		doListenAndServe: doListenAndServe,
 	}
 }
 
@@ -58,6 +60,22 @@ func (b *HttpServer) BootstrapHandler(
 	_ startup.Timer,
 	dic *di.Container) bool {
 
+	lc := container.LoggingClientFrom(dic.Get)
+
+	if !b.doListenAndServe {
+		lc.Info("Web server intentionally NOT started.")
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			b.isRunning = true
+			<-ctx.Done()
+			b.isRunning = false
+		}()
+		return true
+
+	}
+
 	bootstrapConfig := container.ConfigurationFrom(dic.Get).GetBootstrap()
 	addr := bootstrapConfig.Service.Host + ":" + strconv.Itoa(bootstrapConfig.Service.Port)
 	timeout := time.Millisecond * time.Duration(bootstrapConfig.Service.Timeout)
@@ -68,7 +86,6 @@ func (b *HttpServer) BootstrapHandler(
 		ReadTimeout:  timeout,
 	}
 
-	lc := container.LoggingClientFrom(dic.Get)
 	lc.Info("Web server starting (" + addr + ")")
 
 	wg.Add(1)
