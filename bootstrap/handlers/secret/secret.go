@@ -24,10 +24,10 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-bootstrap/security/authtokenloader"
-	"github.com/edgexfoundry/go-mod-bootstrap/security/fileioperformer"
 
 	"github.com/edgexfoundry/go-mod-secrets/pkg"
+	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/pkg/token/fileioperformer"
 
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
