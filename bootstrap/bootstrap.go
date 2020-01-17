@@ -16,26 +16,24 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/configuration"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/commandline"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
+	"github.com/edgexfoundry/go-mod-configuration/configuration"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
 	"github.com/edgexfoundry/go-mod-registry/registry"
-)
-
-const (
-	EmptyProfileDir  = ""
-	DoNotUseRegistry = false
 )
 
 // fatalError logs an error and exits the application.  It's intended to be used only within the bootstrap prior to
@@ -75,49 +73,76 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 func Run(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	configDir, profileDir, configFileName string,
-	useRegistry bool,
+	commonFlags commandline.CommonFlags,
 	serviceKey string,
-	config interfaces.Configuration,
+	configStem string,
+	serviceConfig interfaces.Configuration,
 	startupTimer startup.Timer,
 	dic *di.Container,
 	handlers []interfaces.BootstrapHandler) {
 
 	lc := logging.FactoryToStdout(serviceKey)
 	var err error
+	var configClient configuration.Client
 	var registryClient registry.Client
 	var wg sync.WaitGroup
 	translateInterruptToCancel(ctx, &wg, cancel)
 
-	// load configuration from file.
-	if err = configuration.LoadFromFile(configDir, profileDir, configFileName, config); err != nil {
+	configFileName := commonFlags.ConfigFileName()
+
+	// Create new ProviderInfo and initialize it from command-line flag or Environment variable
+	configProviderInfo, err := config.NewProviderInfo(lc, commonFlags.ConfigProviderUrl())
+	if err != nil {
 		fatalError(err, lc)
 	}
 
 	// override file-based configuration with environment variables.
-	bootstrapConfig := config.GetBootstrap()
-	registryInfo, startupInfo := configuration.OverrideFromEnvironment(bootstrapConfig.Registry, bootstrapConfig.Startup)
-	config.SetRegistryInfo(registryInfo)
+	bootstrapConfig := serviceConfig.GetBootstrap()
+	startupInfo := config.OverrideStartupInfoFromEnvironment(lc, bootstrapConfig.Startup)
 
 	//	Update the startup timer to reflect whatever configuration read, if anything available.
 	startupTimer.UpdateTimer(startupInfo.Duration, startupInfo.Interval)
 
-	// set up registryClient and loggingClient; update configuration from registry if we're using a registry.
-	switch useRegistry {
+	// set up configClient and loggingClient; update configuration from configuration provider if we're using a provider.
+	switch configProviderInfo.UseProvider() {
 	case true:
-		registryClient, err = configuration.UpdateFromRegistry(ctx, startupTimer, config, lc, serviceKey)
+		configClient, err = config.UpdateFromProvider(ctx, startupTimer, configProviderInfo.ServiceConfig(),
+			serviceConfig, configStem, lc, serviceKey)
 		if err != nil {
 			fatalError(err, lc)
 		}
-		lc = logging.FactoryFromConfiguration(serviceKey, config)
-		configuration.ListenForChanges(ctx, &wg, config, lc, registryClient)
+		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
+		config.ListenForChanges(ctx, &wg, serviceConfig, lc, configClient)
+		lc.Info(fmt.Sprintf("Loaded configuration from %s", configProviderInfo.ServiceConfig().GetUrl()))
+
 	case false:
-		lc = logging.FactoryFromConfiguration(serviceKey, config)
+		// load configuration from file.
+		if err = config.LoadFromFile(lc, commonFlags.ConfigDirectory(), commonFlags.Profile(), configFileName, serviceConfig); err != nil {
+			fatalError(err, lc)
+		}
+		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
+	}
+
+	// setup registryClient if it is enabled
+	//registryInfo := serviceConfig.GetRegistryInfo()
+	if commonFlags.UseRegistry() {
+		registryClient, err = registration.RegisterWithRegistry(ctx, startupTimer, serviceConfig, lc, serviceKey)
+		if err != nil {
+			fatalError(err, lc)
+		}
+
+		defer func() {
+			lc.Info("Un-Registering service from the Registry")
+			err := registryClient.Unregister()
+			if err != nil {
+				lc.Error("Unable to Un-Register service from the Registry", "error", err.Error())
+			}
+		}()
 	}
 
 	dic.Update(di.ServiceConstructorMap{
 		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
-			return config
+			return serviceConfig
 		},
 		container.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc

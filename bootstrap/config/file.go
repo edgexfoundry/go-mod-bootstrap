@@ -12,10 +12,11 @@
  * the License.
  *******************************************************************************/
 
-package configuration
+package config
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"io/ioutil"
 	"os"
 
@@ -25,7 +26,7 @@ import (
 )
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
-func LoadFromFile(configDir, profileDir, configFileName string, config interfaces.Configuration) error {
+func LoadFromFile(lc logger.LoggingClient, configDir, profileDir, configFileName string, config interfaces.Configuration) error {
 	// ported from determinePath() in internal/pkg/config/loader.go
 	if len(configDir) == 0 {
 		configDir = os.Getenv("EDGEX_CONF_DIR")
@@ -48,5 +49,8 @@ func LoadFromFile(configDir, profileDir, configFileName string, config interface
 	if err = toml.Unmarshal(contents, config); err != nil {
 		return fmt.Errorf("could not load configuration file (%s): %s", fileName, err.Error())
 	}
+
+	lc.Info(fmt.Sprintf("Loaded configuration from %s", fileName))
+
 	return nil
 }

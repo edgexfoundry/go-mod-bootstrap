@@ -12,7 +12,7 @@
  * the License.
  *******************************************************************************/
 
-package configuration
+package config
 
 import (
 	"context"
@@ -23,86 +23,68 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-configuration/configuration"
+	configTypes "github.com/edgexfoundry/go-mod-configuration/pkg/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
-	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
-	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 const (
-	ConfigRegistryStemCore = "edgex/core/"
-	ConfigMajorVersion     = "1.0/"
-	WritableKey            = "/Writable"
+	WritableKey = "/Writable"
 )
 
-// createRegistryClient creates and returns a registry.Client instance.
-func createRegistryClient(serviceKey string, config interfaces.Configuration) (registry.Client, error) {
-	bootstrapConfig := config.GetBootstrap()
-	return registry.NewRegistryClient(
-		registryTypes.Config{
-			Host:            bootstrapConfig.Registry.Host,
-			Port:            bootstrapConfig.Registry.Port,
-			Type:            bootstrapConfig.Registry.Type,
-			ServiceKey:      serviceKey,
-			ServiceHost:     bootstrapConfig.Service.Host,
-			ServicePort:     bootstrapConfig.Service.Port,
-			ServiceProtocol: bootstrapConfig.Service.Protocol,
-			CheckInterval:   bootstrapConfig.Service.CheckInterval,
-			CheckRoute:      clients.ApiPingRoute,
-			Stem:            ConfigRegistryStemCore + ConfigMajorVersion,
-		})
+// createClient creates and returns a configuration.Client instance.
+func createClient(serviceKey string, providerConfig configTypes.ServiceConfig, configStem string) (configuration.Client, error) {
+	providerConfig.BasePath = configStem + serviceKey
+	return configuration.NewConfigurationClient(providerConfig)
 }
 
-// UpdateFromRegistry connects to the registry, registers the service, gets configuration, and updates the service's
+// UpdateFromProvider connects to the config provider, gets configuration, and updates the service's
 // configuration struct.
-func UpdateFromRegistry(
+func UpdateFromProvider(
 	ctx context.Context,
 	startupTimer startup.Timer,
-	config interfaces.Configuration,
+	providerConfig configTypes.ServiceConfig,
+	serviceConfig interfaces.Configuration,
+	configStem string,
 	lc logger.LoggingClient,
-	serviceKey string) (registry.Client, error) {
+	serviceKey string) (configuration.Client, error) {
 
-	var updateFromRegistry = func(registryClient registry.Client) error {
-		if !registryClient.IsAlive() {
-			return errors.New("registry is not available")
+	var updateFromConfigProvider = func(configClient configuration.Client) error {
+		if !configClient.IsAlive() {
+			return errors.New("configuration provider is not available")
 		}
 
-		if err := registryClient.Register(); err != nil {
-			return fmt.Errorf("could not register service with Registry: %v", err.Error())
-		}
-
-		rawConfig, err := registryClient.GetConfiguration(config)
+		rawConfig, err := configClient.GetConfiguration(serviceConfig)
 		if err != nil {
 			return fmt.Errorf("could not get configuration from Registry: %v", err.Error())
 		}
 
-		if !config.UpdateFromRaw(rawConfig) {
+		if !serviceConfig.UpdateFromRaw(rawConfig) {
 			return errors.New("configuration from Registry failed type check")
 		}
 
 		return nil
 	}
 
-	registryClient, err := createRegistryClient(serviceKey, config)
+	configClient, err := createClient(serviceKey, providerConfig, configStem)
 	if err != nil {
-		return nil, fmt.Errorf("createRegistryClient failed: %v", err.Error())
+		return nil, fmt.Errorf("createClient failed: %v", err.Error())
 	}
 
 	for startupTimer.HasNotElapsed() {
-		if err := updateFromRegistry(registryClient); err != nil {
+		if err := updateFromConfigProvider(configClient); err != nil {
 			lc.Warn(err.Error())
 			select {
 			case <-ctx.Done():
-				return nil, errors.New("aborted UpdateFromRegistry()")
+				return nil, errors.New("aborted UpdateFromProvider()")
 			default:
 				startupTimer.SleepForInterval()
 				continue
 			}
 		}
-		return registryClient, nil
+		return configClient, nil
 	}
-	return nil, errors.New("unable to update configuration from registry in allotted time")
+	return nil, errors.New("unable to update configuration from provider in allotted time")
 }
 
 // ListenForChanges leverages the registry client's WatchForChanges() method to receive changes to and update the
@@ -114,7 +96,7 @@ func ListenForChanges(
 	wg *sync.WaitGroup,
 	config interfaces.Configuration,
 	lc logger.LoggingClient,
-	registryClient registry.Client) {
+	configClient configuration.Client) {
 
 	wg.Add(1)
 	go func() {
@@ -126,7 +108,7 @@ func ListenForChanges(
 		updateStream := make(chan interface{})
 		defer close(updateStream)
 
-		registryClient.WatchForChanges(updateStream, errorStream, config.EmptyWritablePtr(), WritableKey)
+		configClient.WatchForChanges(updateStream, errorStream, config.EmptyWritablePtr(), WritableKey)
 
 		for {
 			select {
@@ -146,7 +128,7 @@ func ListenForChanges(
 					return
 				}
 
-				lc.Info("Writeable configuration has been updated from the Registry")
+				lc.Info("Writeable configuration has been updated from the Configuration Provider")
 				lc.SetLogLevel(config.GetLogLevel())
 			}
 		}
