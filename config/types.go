@@ -61,6 +61,13 @@ func (s ServiceInfo) Url() string {
 	return url
 }
 
+// ConfigProviderInfo defines the type and location (via host/port) of the desired configuration provider (e.g. Consul, Eureka)
+type ConfigProviderInfo struct {
+	Host string
+	Port int
+	Type string
+}
+
 // RegistryInfo defines the type and location (via host/port) of the desired service registry (e.g. Consul, Eureka)
 type RegistryInfo struct {
 	Host string

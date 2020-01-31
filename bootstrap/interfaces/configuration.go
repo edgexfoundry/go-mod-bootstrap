@@ -20,6 +20,7 @@ import "github.com/edgexfoundry/go-mod-bootstrap/config"
 type BootstrapConfiguration struct {
 	Clients     map[string]config.ClientInfo
 	Service     config.ServiceInfo
+	Config      config.ConfigProviderInfo
 	Registry    config.RegistryInfo
 	Logging     config.LoggingInfo
 	SecretStore config.SecretStoreInfo
@@ -46,6 +47,6 @@ type Configuration interface {
 	// GetLogLevel returns the current ConfigurationStruct's log level.
 	GetLogLevel() string
 
-	// SetRegistryInfo updates the config.RegistryInfo field in the ConfigurationStruct.
-	SetRegistryInfo(registryInfo config.RegistryInfo)
+	// GetRegistryInfo gets the config.RegistryInfo field from the ConfigurationStruct.
+	GetRegistryInfo() config.RegistryInfo
 }
