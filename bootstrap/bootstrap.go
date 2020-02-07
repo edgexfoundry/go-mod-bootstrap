@@ -81,7 +81,7 @@ func RunAndReturnWaitGroup(
 	serviceConfig interfaces.Configuration,
 	startupTimer startup.Timer,
 	dic *di.Container,
-	handlers []interfaces.BootstrapHandler) *sync.WaitGroup {
+	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, bool) {
 
 	lc := logging.FactoryToStdout(serviceKey)
 	var err error
@@ -169,14 +169,16 @@ func RunAndReturnWaitGroup(
 	})
 
 	// call individual bootstrap handlers.
+	startedSuccessfully := true
 	for i := range handlers {
 		if handlers[i](ctx, &wg, startupTimer, dic) == false {
 			cancel()
+			startedSuccessfully = false
 			break
 		}
 	}
 
-	return &wg
+	return &wg, startedSuccessfully
 }
 
 // Run bootstraps an application.  It loads configuration and calls the provided list of handlers.  Any long-running
@@ -194,7 +196,7 @@ func Run(
 	dic *di.Container,
 	handlers []interfaces.BootstrapHandler) {
 
-	wg := RunAndReturnWaitGroup(
+	wg, _ := RunAndReturnWaitGroup(
 		ctx,
 		cancel,
 		commonFlags,
