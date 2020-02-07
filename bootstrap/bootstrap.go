@@ -66,11 +66,13 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 	}()
 }
 
-// Run bootstraps an application.  It loads configuration and calls the provided list of handlers.  Any long-running
-// process should be spawned as a go routine in a handler.  Handlers are expected to return immediately.  Once all of
-// the handlers are called this function will wait for any go routines spawned inside the handlers to exit before
-// returning to the caller.  It is intended that the caller stop executing on the return of this function.
-func Run(
+// RunAndReturnWaitGroup bootstraps an application.  It loads configuration and calls the provided list of handlers.
+// Any long-running process should be spawned as a go routine in a handler.  Handlers are expected to return
+// immediately.  Once all of the handlers are called this function will return a sync.WaitGroup reference to the caller.
+// It is intended that the caller take whatever additional action makes sense before calling Wait() on the returned
+// reference to wait for the application to be signaled to stop (and the corresponding goroutines spawned in the
+// various handlers to be stopped cleanly).
+func RunAndReturnWaitGroup(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	commonFlags commandline.CommonFlags,
@@ -79,7 +81,7 @@ func Run(
 	serviceConfig interfaces.Configuration,
 	startupTimer startup.Timer,
 	dic *di.Container,
-	handlers []interfaces.BootstrapHandler) {
+	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, bool) {
 
 	lc := logging.FactoryToStdout(serviceKey)
 	var err error
@@ -103,11 +105,18 @@ func Run(
 	//	Update the startup timer to reflect whatever configuration read, if anything available.
 	startupTimer.UpdateTimer(startupInfo.Duration, startupInfo.Interval)
 
-	// set up configClient and loggingClient; update configuration from configuration provider if we're using a provider.
 	switch configProviderInfo.UseProvider() {
 	case true:
-		configClient, err = config.UpdateFromProvider(ctx, startupTimer, configProviderInfo.ServiceConfig(),
-			serviceConfig, configStem, lc, serviceKey)
+		// set up configClient; use it to load configuration from provider.
+		configClient, err = config.UpdateFromProvider(
+			ctx,
+			startupTimer,
+			configProviderInfo.ServiceConfig(),
+			serviceConfig,
+			configStem,
+			lc,
+			serviceKey,
+		)
 		if err != nil {
 			fatalError(err, lc)
 		}
@@ -117,7 +126,14 @@ func Run(
 
 	case false:
 		// load configuration from file.
-		if err = config.LoadFromFile(lc, commonFlags.ConfigDirectory(), commonFlags.Profile(), configFileName, serviceConfig); err != nil {
+		err = config.LoadFromFile(
+			lc,
+			commonFlags.ConfigDirectory(),
+			commonFlags.Profile(),
+			configFileName,
+			serviceConfig,
+		)
+		if err != nil {
 			fatalError(err, lc)
 		}
 		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
@@ -153,12 +169,44 @@ func Run(
 	})
 
 	// call individual bootstrap handlers.
+	startedSuccessfully := true
 	for i := range handlers {
 		if handlers[i](ctx, &wg, startupTimer, dic) == false {
 			cancel()
+			startedSuccessfully = false
 			break
 		}
 	}
+
+	return &wg, startedSuccessfully
+}
+
+// Run bootstraps an application.  It loads configuration and calls the provided list of handlers.  Any long-running
+// process should be spawned as a go routine in a handler.  Handlers are expected to return immediately.  Once all of
+// the handlers are called this function will wait for any go routines spawned inside the handlers to exit before
+// returning to the caller.  It is intended that the caller stop executing on the return of this function.
+func Run(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	commonFlags commandline.CommonFlags,
+	serviceKey string,
+	configStem string,
+	serviceConfig interfaces.Configuration,
+	startupTimer startup.Timer,
+	dic *di.Container,
+	handlers []interfaces.BootstrapHandler) {
+
+	wg, _ := RunAndReturnWaitGroup(
+		ctx,
+		cancel,
+		commonFlags,
+		serviceKey,
+		configStem,
+		serviceConfig,
+		startupTimer,
+		dic,
+		handlers,
+	)
 
 	// wait for go routines to stop executing.
 	wg.Wait()
