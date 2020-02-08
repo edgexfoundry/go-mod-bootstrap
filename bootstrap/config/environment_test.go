@@ -15,13 +15,15 @@
 package config
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
-	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"os"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
+
+	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -48,7 +50,7 @@ const (
 	expectedStartupInterval = 111
 )
 
-func initializeTest(t *testing.T) (types.ServiceConfig, config.StartupInfo, logger.LoggingClient) {
+func initializeTest() (types.ServiceConfig, config.StartupInfo, logger.LoggingClient) {
 	os.Clearenv()
 	providerConfig := types.ServiceConfig{
 		Host:     defaultHostValue,
@@ -65,7 +67,7 @@ func initializeTest(t *testing.T) (types.ServiceConfig, config.StartupInfo, logg
 }
 
 func TestEnvVariableUpdatesConfigProviderInfo(t *testing.T) {
-	providerConfig, _, lc := initializeTest(t)
+	providerConfig, _, lc := initializeTest()
 
 	if err := os.Setenv(envKeyUrl, goodUrlValue); err != nil {
 		t.Fail()
@@ -81,7 +83,7 @@ func TestEnvVariableUpdatesConfigProviderInfo(t *testing.T) {
 }
 
 func TestNoEnvVariableDoesNotUpdateConfigProviderInfo(t *testing.T) {
-	providerConfig, _, lc := initializeTest(t)
+	providerConfig, _, lc := initializeTest()
 
 	providerConfig, err := OverrideConfigProviderInfoFromEnvironment(lc, providerConfig)
 
@@ -93,7 +95,7 @@ func TestNoEnvVariableDoesNotUpdateConfigProviderInfo(t *testing.T) {
 }
 
 func TestEnvVariableUpdateConfigProviderInfoError(t *testing.T) {
-	providerConfig, _, lc := initializeTest(t)
+	providerConfig, _, lc := initializeTest()
 
 	if err := os.Setenv(envKeyUrl, badUrlValue); err != nil {
 		t.Fail()
@@ -105,7 +107,7 @@ func TestEnvVariableUpdateConfigProviderInfoError(t *testing.T) {
 }
 
 func TestEnvVariableUpdatesStartupInfo(t *testing.T) {
-	_, startupInfo, lc := initializeTest(t)
+	_, startupInfo, lc := initializeTest()
 
 	if err := os.Setenv(envKeyStartupDuration, envStartupDuration); err != nil {
 		t.Fail()
@@ -121,7 +123,7 @@ func TestEnvVariableUpdatesStartupInfo(t *testing.T) {
 }
 
 func TestNoEnvVariableDoesNotUpdateSetupInfo(t *testing.T) {
-	_, startupInfo, lc := initializeTest(t)
+	_, startupInfo, lc := initializeTest()
 
 	startupInfo = OverrideStartupInfoFromEnvironment(lc, startupInfo)
 

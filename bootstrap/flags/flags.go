@@ -11,7 +11,8 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  *******************************************************************************/
-package commandline
+
+package flags
 
 import (
 	"flag"
@@ -25,8 +26,8 @@ const (
 	DefaultConfigFile     = "configuration.toml"
 )
 
-// CommonFlags is an interface that defines AP for the common command-line flags used by most EdgeX services
-type CommonFlags interface {
+// Common is an interface that defines AP for the common command-line flags used by most EdgeX services
+type Common interface {
 	UseRegistry() bool
 	ConfigProviderUrl() string
 	Profile() string
@@ -36,8 +37,8 @@ type CommonFlags interface {
 	Help()
 }
 
-// DefaultCommonFlags is the Default implementation of CommonFlags used by most EdgeX services
-type DefaultCommonFlags struct {
+// Default is the Default implementation of Common used by most EdgeX services
+type Default struct {
 	FlagSet           *flag.FlagSet
 	additionalUsage   string
 	useRegistry       bool
@@ -47,17 +48,21 @@ type DefaultCommonFlags struct {
 	configFileName    string
 }
 
-// NewDefaultCommonFlags creates and initializes a DefaultCommonFlags
-func NewDefaultCommonFlags(additionalUsage string) *DefaultCommonFlags {
-	commonFlags := DefaultCommonFlags{}
+// NewWithUsage returns a Default struct.
+func NewWithUsage(additionalUsage string) *Default {
+	return &Default{
+		FlagSet:         flag.NewFlagSet("", flag.ExitOnError),
+		additionalUsage: additionalUsage,
+	}
+}
 
-	commonFlags.FlagSet = flag.NewFlagSet("", flag.ExitOnError)
-	commonFlags.additionalUsage = additionalUsage
-	return &commonFlags
+// New returns a Default struct with an empty additional usage string.
+func New() *Default {
+	return NewWithUsage("")
 }
 
 // Parse parses the passed in command-lie arguments looking to the default set of common flags
-func (f *DefaultCommonFlags) Parse(arguments []string) {
+func (d *Default) Parse(arguments []string) {
 	// The flags package doesn't allow for String flags to be specified without a value, so to support
 	// -cp/-configProvider without value to indicate using default host value we must detect use of this option with
 	// out value and insert the default value before parsing the command line options.
@@ -70,19 +75,19 @@ func (f *DefaultCommonFlags) Parse(arguments []string) {
 	}
 
 	// Usage is provided by caller, so leaving individual usage blank here so not confusing where if comes from.
-	f.FlagSet.StringVar(&f.configProviderUrl, "configProvider", "", "")
-	f.FlagSet.StringVar(&f.configProviderUrl, "cp", "", "")
-	f.FlagSet.StringVar(&f.configFileName, "f", DefaultConfigFile, "")
-	f.FlagSet.StringVar(&f.configFileName, "file", DefaultConfigFile, "")
-	f.FlagSet.StringVar(&f.profile, "profile", "", "")
-	f.FlagSet.StringVar(&f.profile, "p", "", ".")
-	f.FlagSet.StringVar(&f.configDir, "confdir", "", "")
-	f.FlagSet.BoolVar(&f.useRegistry, "registry", false, "")
-	f.FlagSet.BoolVar(&f.useRegistry, "r", false, "")
+	d.FlagSet.StringVar(&d.configProviderUrl, "configProvider", "", "")
+	d.FlagSet.StringVar(&d.configProviderUrl, "cp", "", "")
+	d.FlagSet.StringVar(&d.configFileName, "f", DefaultConfigFile, "")
+	d.FlagSet.StringVar(&d.configFileName, "file", DefaultConfigFile, "")
+	d.FlagSet.StringVar(&d.profile, "profile", "", "")
+	d.FlagSet.StringVar(&d.profile, "p", "", ".")
+	d.FlagSet.StringVar(&d.configDir, "confdir", "", "")
+	d.FlagSet.BoolVar(&d.useRegistry, "registry", false, "")
+	d.FlagSet.BoolVar(&d.useRegistry, "r", false, "")
 
-	f.FlagSet.Usage = f.helpCallback
+	d.FlagSet.Usage = d.helpCallback
 
-	err := f.FlagSet.Parse(arguments)
+	err := d.FlagSet.Parse(arguments)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
@@ -90,51 +95,50 @@ func (f *DefaultCommonFlags) Parse(arguments []string) {
 }
 
 // UseRegistry returns whether the Registry should be used or not
-func (f *DefaultCommonFlags) UseRegistry() bool {
-	return f.useRegistry
+func (d *Default) UseRegistry() bool {
+	return d.useRegistry
 }
 
 // ConfigProviderUrl returns the url for the Configuration Provider, if one was specified.
-func (f *DefaultCommonFlags) ConfigProviderUrl() string {
-	return f.configProviderUrl
+func (d *Default) ConfigProviderUrl() string {
+	return d.configProviderUrl
 }
 
 // Profile returns the profile name to use, if one was specified
-func (f *DefaultCommonFlags) Profile() string {
-	return f.profile
+func (d *Default) Profile() string {
+	return d.profile
 }
 
 // ConfigDirectory returns the directory where the config file(s) are located, if it was specified.
-func (f *DefaultCommonFlags) ConfigDirectory() string {
-	return f.configDir
+func (d *Default) ConfigDirectory() string {
+	return d.configDir
 }
 
 // ConfigFileName returns the name of the local configuration file
-func (f *DefaultCommonFlags) ConfigFileName() string {
-	return f.configFileName
+func (d *Default) ConfigFileName() string {
+	return d.configFileName
 }
 
 // Help displays the usage help message and exit.
-func (f *DefaultCommonFlags) Help() {
-	f.helpCallback()
+func (d *Default) Help() {
+	d.helpCallback()
 }
 
 // commonHelpCallback displays the help usage message and exits
-func (f *DefaultCommonFlags) helpCallback() {
-	fmt.Printf(`
-Usage: %s [options]
-Server Options:
-    -cp, --configProvider           Indicates to use Configuration Provider service at specified URL.
-                                    URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500
-    -f, --file <name>               Indicates name of the local configuration file. Defaults to configuration.toml
-    -p, --profile <name>            Indicate configuration profile other than default
-    --confdir                       Specify local configuration directory
-    -r, --registry                  Indicates service should use Registry
-%s
-Common Options:
-	-h, --help                      Show this message
-	`,
-		os.Args[0], f.additionalUsage)
-
+func (d *Default) helpCallback() {
+	fmt.Printf(
+		"Usage: %s [options]\n"+
+			"Server Options:\n"+
+			"    -cp, --configProvider           Indicates to use Configuration Provider service at specified URL.\n"+
+			"                                    URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500\n"+
+			"    -f, --file <name>               Indicates name of the local configuration file. Defaults to configuration.toml\n"+
+			"    -p, --profile <name>            Indicate configuration profile other than default\n"+
+			"    --confdir                       Specify local configuration directory\n"+
+			"    -r, --registry                  Indicates service should use Registry\n"+
+			"%s\n"+
+			"Common Options:\n"+
+			"	-h, --help                      Show this message\n",
+		os.Args[0], d.additionalUsage,
+	)
 	os.Exit(0)
 }

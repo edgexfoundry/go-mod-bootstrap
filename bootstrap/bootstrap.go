@@ -22,9 +22,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/commandline"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/registration"
@@ -32,7 +32,9 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
 	"github.com/edgexfoundry/go-mod-configuration/configuration"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
 	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
@@ -75,7 +77,7 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 func RunAndReturnWaitGroup(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	commonFlags commandline.CommonFlags,
+	commonFlags flags.Common,
 	serviceKey string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
@@ -188,7 +190,7 @@ func RunAndReturnWaitGroup(
 func Run(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	commonFlags commandline.CommonFlags,
+	commonFlags flags.Common,
 	serviceKey string,
 	configStem string,
 	serviceConfig interfaces.Configuration,

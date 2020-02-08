@@ -25,12 +25,11 @@ import (
 
 	"github.com/edgexfoundry/go-mod-configuration/configuration"
 	configTypes "github.com/edgexfoundry/go-mod-configuration/pkg/types"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
-const (
-	WritableKey = "/Writable"
-)
+const writableKey = "/Writable"
 
 // createClient creates and returns a configuration.Client instance.
 func createClient(serviceKey string, providerConfig configTypes.ServiceConfig, configStem string) (configuration.Client, error) {
@@ -88,7 +87,7 @@ func UpdateFromProvider(
 }
 
 // ListenForChanges leverages the registry client's WatchForChanges() method to receive changes to and update the
-// service's configuration struct's writable substruct.  It's assumed the log level is universally part of the
+// service's configuration struct's writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
 func ListenForChanges(
@@ -108,7 +107,7 @@ func ListenForChanges(
 		updateStream := make(chan interface{})
 		defer close(updateStream)
 
-		configClient.WatchForChanges(updateStream, errorStream, config.EmptyWritablePtr(), WritableKey)
+		configClient.WatchForChanges(updateStream, errorStream, config.EmptyWritablePtr(), writableKey)
 
 		for {
 			select {
@@ -129,7 +128,7 @@ func ListenForChanges(
 				}
 
 				lc.Info("Writeable configuration has been updated from the Configuration Provider")
-				lc.SetLogLevel(config.GetLogLevel())
+				_ = lc.SetLogLevel(config.GetLogLevel())
 			}
 		}
 	}()

@@ -15,6 +15,7 @@ package config
 
 import (
 	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
@@ -25,7 +26,6 @@ type ProviderInfo struct {
 
 // NewProviderInfo creates a new ProviderInfo and initializes it
 func NewProviderInfo(lc logger.LoggingClient, providerUrl string) (*ProviderInfo, error) {
-
 	var err error
 	configProviderInfo := ProviderInfo{}
 

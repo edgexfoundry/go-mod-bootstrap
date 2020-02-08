@@ -16,13 +16,14 @@ package config
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"os"
 	"strconv"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 const (
