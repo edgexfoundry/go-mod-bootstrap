@@ -19,11 +19,16 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-
+	"github.com/BurntSushi/toml"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
-	"github.com/BurntSushi/toml"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+)
+
+const (
+	envConfDir = "EDGEX_CONF_DIR"
+	envProfile = "edgex_profile" // TODO: change to EDGEX_PROFILE for release v2.0.0
+	envFile    = "EDGEX_CONFIG_FILE"
 )
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
@@ -35,16 +40,31 @@ func LoadFromFile(
 	config interfaces.Configuration) error {
 
 	// ported from determinePath() in internal/pkg/config/loader.go
-	if len(configDir) == 0 {
-		configDir = os.Getenv("EDGEX_CONF_DIR")
+	envValue := os.Getenv(envConfDir)
+	if len(envValue) > 0 {
+		configDir = envValue
+		lc.Info(fmt.Sprintf("Environment varable override of -confdir value by Environment varable: %s=%s", envConfDir, envValue))
 	}
+
 	if len(configDir) == 0 {
 		configDir = "./res"
+	}
+
+	envValue = os.Getenv(envProfile)
+	if len(envValue) > 0 {
+		profileDir = envValue
+		lc.Info(fmt.Sprintf("Environment varable override of -profile value by Environment varable: %s=%s", envProfile, envValue))
 	}
 
 	// remainder is simplification of LoadFromFile() in internal/pkg/config/loader.go
 	if len(profileDir) > 0 {
 		profileDir += "/"
+	}
+
+	envValue = os.Getenv(envFile)
+	if len(envValue) > 0 {
+		configFileName = envValue
+		lc.Info(fmt.Sprintf("Environment varable override of -file value overridden by Environment varable: %s=%s", envFile, envValue))
 	}
 
 	fileName := configDir + "/" + profileDir + configFileName

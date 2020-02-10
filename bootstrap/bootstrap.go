@@ -19,8 +19,13 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"sync"
 	"syscall"
+
+	"github.com/edgexfoundry/go-mod-configuration/configuration"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
@@ -30,12 +35,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
-
-	"github.com/edgexfoundry/go-mod-configuration/configuration"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
-	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 // Deferred defines the signature of a function returned by RunAndReturnWaitGroup that should be executed via defer.
@@ -93,26 +92,78 @@ func RunAndReturnWaitGroup(
 	var wg sync.WaitGroup
 	deferred := func() {}
 
+	lc := logging.FactoryToStdout(serviceKey)
+
+	// Enforce serviceConfig (which is an interface) is a pointer so we can dereference it later with confidence when required.
+	if reflect.TypeOf(serviceConfig).Kind() != reflect.Ptr {
+		fatalError(fmt.Errorf("serviceConfig parameter must be a pointer to the service's configuration struct"), lc)
+	}
+
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	configFileName := commonFlags.ConfigFileName()
-	lc := logging.FactoryToStdout(serviceKey)
 
-	// Create new ProviderInfo and initialize it from command-line flag or Environment variable
-	configProviderInfo, err := config.NewProviderInfo(lc, commonFlags.ConfigProviderUrl())
-	if err != nil {
-		fatalError(err, lc)
+	// TODO: remove this check once -r/-registry is back to a bool in release v2.0.0
+	if len(commonFlags.ConfigProviderUrl()) > 0 && len(commonFlags.RegistryUrl()) > 0 {
+		fatalError(fmt.Errorf("use of -cp/-configProvider with -r/-registry=<url> not premitted"), lc)
 	}
 
 	// override file-based configuration with environment variables.
 	bootstrapConfig := serviceConfig.GetBootstrap()
-	startupInfo := config.OverrideStartupInfoFromEnvironment(lc, bootstrapConfig.Startup)
+	environment := config.NewEnvironment()
+	startupInfo := environment.OverrideStartupInfo(lc, bootstrapConfig.Startup)
 
 	//	Update the startup timer to reflect whatever configuration read, if anything available.
 	startupTimer.UpdateTimer(startupInfo.Duration, startupInfo.Interval)
 
+	// Local configuration must be loaded first in case need registry config info and/or
+	// need to push it to the Configuration Provider.
+	err = config.LoadFromFile(
+		lc,
+		commonFlags.ConfigDirectory(),
+		commonFlags.Profile(),
+		configFileName,
+		serviceConfig,
+	)
+	if err != nil {
+		fatalError(err, lc)
+	}
+
+	// Environment variable overrides have precedence over all others,
+	// so make sure they are applied before config is used for anything.
+	overrideCount, err := environment.OverrideConfiguration(lc, serviceConfig)
+	if err != nil {
+		fatalError(err, lc)
+	}
+
+	configProviderUrl := commonFlags.ConfigProviderUrl()
+	// TODO: remove this check once -r/-registry is back to a bool and only enable registry usage in release v2.0.0
+	// For backwards compatibility with Fuji device and app services that use just -r/-registry for both registry and config
+	if len(configProviderUrl) == 0 && commonFlags.UseRegistry() {
+		if len(commonFlags.RegistryUrl()) > 0 {
+			configProviderUrl = commonFlags.RegistryUrl()
+			lc.Info("Config Provider URL created from -r/-registry=<url> flag")
+		} else {
+			// Have to use the Registry config for Configuration provider
+			registryConfig := serviceConfig.GetBootstrap().Registry
+			configProviderUrl = fmt.Sprintf("%s.http://%s:%d", registryConfig.Type, registryConfig.Host, registryConfig.Port)
+			lc.Info("Config Provider URL created from Registry configuration")
+		}
+	}
+
+	// Create new ProviderInfo and initialize it from command-line flag or Environment variables
+	configProviderInfo, err := config.NewProviderInfo(lc, environment, configProviderUrl)
+	if err != nil {
+		fatalError(err, lc)
+	}
+
 	switch configProviderInfo.UseProvider() {
 	case true:
+		lc.Info(fmt.Sprintf(
+			"Using Configuration provider (%s) from: %s",
+			configProviderInfo.ServiceConfig().Type,
+			configProviderInfo.ServiceConfig().GetUrl()))
+
 		var configClient configuration.Client
 
 		// set up configClient; use it to load configuration from provider.
@@ -122,36 +173,38 @@ func RunAndReturnWaitGroup(
 			configProviderInfo.ServiceConfig(),
 			serviceConfig,
 			configStem,
+			commonFlags.OverwriteConfig(),
 			lc,
 			serviceKey,
+			environment,
+			overrideCount,
 		)
 		if err != nil {
 			fatalError(err, lc)
 		}
+
 		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
 		config.ListenForChanges(ctx, &wg, serviceConfig, lc, configClient, configUpdatedStream)
-		lc.Info(fmt.Sprintf("Loaded configuration from %s", configProviderInfo.ServiceConfig().GetUrl()))
 
 	case false:
-		// load configuration from file.
-		err = config.LoadFromFile(
-			lc,
-			commonFlags.ConfigDirectory(),
-			commonFlags.Profile(),
-			configFileName,
-			serviceConfig,
-		)
-		if err != nil {
-			fatalError(err, lc)
-		}
 		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
+		config.LogConfigInfo(lc, "Using local configuration from file", overrideCount, serviceKey)
 	}
 
 	var registryClient registry.Client
 
-	// setup registryClient if it is enabled
-	if commonFlags.UseRegistry() {
-		registryClient, err = registration.RegisterWithRegistry(ctx, startupTimer, serviceConfig, lc, serviceKey)
+	// TODO: Remove `|| config.UseRegistry()` for release V2.0.0
+	if commonFlags.UseRegistry() || environment.UseRegistry() {
+		// For backwards compatibility with Fuji Device Service, registry is a string that can contain a provider URL.
+		// TODO: Remove registryUrl in call below for release V2.0.0
+		registryClient, err = registration.RegisterWithRegistry(
+			ctx,
+			startupTimer,
+			serviceConfig,
+			commonFlags.RegistryUrl(),
+			environment,
+			lc,
+			serviceKey)
 		if err != nil {
 			fatalError(err, lc)
 		}

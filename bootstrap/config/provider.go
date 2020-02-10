@@ -15,7 +15,6 @@ package config
 
 import (
 	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
@@ -25,7 +24,7 @@ type ProviderInfo struct {
 }
 
 // NewProviderInfo creates a new ProviderInfo and initializes it
-func NewProviderInfo(lc logger.LoggingClient, providerUrl string) (*ProviderInfo, error) {
+func NewProviderInfo(lc logger.LoggingClient, environment *Environment, providerUrl string) (*ProviderInfo, error) {
 	var err error
 	configProviderInfo := ProviderInfo{}
 
@@ -36,8 +35,8 @@ func NewProviderInfo(lc logger.LoggingClient, providerUrl string) (*ProviderInfo
 		}
 	}
 
-	// override file-based configuration with environment variables.
-	configProviderInfo.serviceConfig, err = OverrideConfigProviderInfoFromEnvironment(lc, configProviderInfo.serviceConfig)
+	// override file-based configuration with Environment variables.
+	configProviderInfo.serviceConfig, err = environment.OverrideConfigProviderInfo(lc, configProviderInfo.serviceConfig)
 	if err != nil {
 		return nil, err
 	}

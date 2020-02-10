@@ -34,14 +34,16 @@ func TestNewAllFlags(t *testing.T) {
 
 	actual := newSUT(
 		[]string{
+			"-o",
 			"-r",
 			"-p=" + expectedProfile,
-			"-confdir=" + expectedConfigDirectory,
+			"-c=" + expectedConfigDirectory,
 			"-f=" + expectedFileName,
 		},
 	)
 
-	assert.Equal(t, true, actual.UseRegistry())
+	assert.Equal(t, true, actual.OverwriteConfig())
+	assert.True(t, actual.UseRegistry())
 	assert.Equal(t, expectedProfile, actual.Profile())
 	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
 	assert.Equal(t, expectedFileName, actual.ConfigFileName())
@@ -50,7 +52,8 @@ func TestNewAllFlags(t *testing.T) {
 func TestNewDefaultsNoFlags(t *testing.T) {
 	actual := newSUT([]string{})
 
-	assert.Equal(t, false, actual.UseRegistry())
+	assert.Equal(t, false, actual.OverwriteConfig())
+	assert.False(t, actual.UseRegistry())
 	assert.Equal(t, "", actual.ConfigProviderUrl())
 	assert.Equal(t, "", actual.Profile())
 	assert.Equal(t, "", actual.ConfigDirectory())
@@ -83,4 +86,13 @@ func TestNewOverrideConfigProvider(t *testing.T) {
 	actual := newSUT([]string{"-configProvider=" + expectedConfigProviderUrl})
 
 	assert.Equal(t, expectedConfigProviderUrl, actual.ConfigProviderUrl())
+}
+
+// TODO: Remove for release v2.0.0 when -registry is a bool
+func TestNewOverrideRegistry(t *testing.T) {
+	expectedRegistryUrl := "consul://docker-core-consul:8500"
+
+	actual := newSUT([]string{"-registry=" + expectedRegistryUrl})
+
+	assert.Equal(t, expectedRegistryUrl, actual.RegistryUrl())
 }

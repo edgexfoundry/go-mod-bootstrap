@@ -18,22 +18,33 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
-
+	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
 	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 )
 
-const ()
-
 // createRegistryClient creates and returns a registry.Client instance.
-func createRegistryClient(serviceKey string, config interfaces.Configuration, lc logger.LoggingClient) (registry.Client, error) {
-	bootstrapConfig := config.GetBootstrap()
+// For backwards compatibility with Fuji Device Service, -registry is a string that can contain a provider URL.
+// TODO: Remove registryUrl parameter for release v2.0.0
+func createRegistryClient(
+	serviceKey string,
+	serviceConfig interfaces.Configuration,
+	registryUrl string,
+	environment *config.Environment,
+	lc logger.LoggingClient) (registry.Client, error) {
+	var err error
+	bootstrapConfig := serviceConfig.GetBootstrap()
+
 	registryConfig := registryTypes.Config{
 		Host:            bootstrapConfig.Registry.Host,
 		Port:            bootstrapConfig.Registry.Port,
@@ -46,16 +57,63 @@ func createRegistryClient(serviceKey string, config interfaces.Configuration, lc
 		CheckRoute:      clients.ApiPingRoute,
 	}
 
-	lc.Info(fmt.Sprintf("Using Registry from %s", registryConfig.GetRegistryUrl()))
+	// TODO: Remove this block for release v2.0.0
+	// For backwards compatibility with Fuji Device Service, -registry is a string that can contain a provider URL.
+	if len(registryUrl) > 0 && registryUrl != flags.UseRegistryNoUrlValue {
+		registryConfig, err = OverrideRegistryConfigWithUrl(registryConfig, registryUrl)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO: Remove this block for release v2.0.0
+	// For backwards compatibility, registry information can be override with environment variable.
+	registryUrl = environment.GetRegistryProviderInfoOverride(lc)
+	if len(registryUrl) > 0 {
+		registryConfig, err = OverrideRegistryConfigWithUrl(registryConfig, registryUrl)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	lc.Info(fmt.Sprintf("Using Registry (%s) from %s", registryConfig.Type, registryConfig.GetRegistryUrl()))
 
 	return registry.NewRegistryClient(registryConfig)
 }
 
+// TODO: Remove this func for release v2.0.0
+// For backwards compatibility with Fuji Device Service, -registry is a string that can contain a provider URL.
+func OverrideRegistryConfigWithUrl(registryConfig registryTypes.Config, registryUrl string) (registryTypes.Config, error) {
+	if len(registryUrl) == 0 {
+		return registryConfig, nil
+	}
+
+	urlDetails, err := url.Parse(registryUrl)
+	if err != nil {
+		return registryConfig, fmt.Errorf("failed to parse Registry Provider URL (%s): %s", registryUrl, err.Error())
+	}
+
+	port, err := strconv.Atoi(urlDetails.Port())
+	if err != nil {
+		return registryConfig, fmt.Errorf("failed to parse Registry Provider URL (%s): %s", registryUrl, err.Error())
+	}
+
+	registryConfig.Port = port
+	registryConfig.Host = urlDetails.Hostname()
+	registryConfig.Protocol = types.DefaultProtocol
+	registryConfig.Type = urlDetails.Scheme
+
+	return registryConfig, nil
+}
+
+// TODO: Remove registryUrl parameter for release v2.0.0
 // RegisterWithRegistry connects to the registry and registers the service with the Registry
 func RegisterWithRegistry(
 	ctx context.Context,
 	startupTimer startup.Timer,
 	config interfaces.Configuration,
+	registryUrl string,
+	environment *config.Environment,
 	lc logger.LoggingClient,
 	serviceKey string) (registry.Client, error) {
 
@@ -71,7 +129,7 @@ func RegisterWithRegistry(
 		return nil
 	}
 
-	registryClient, err := createRegistryClient(serviceKey, config, lc)
+	registryClient, err := createRegistryClient(serviceKey, config, registryUrl, environment, lc)
 	if err != nil {
 		return nil, fmt.Errorf("createRegistryClient failed: %v", err.Error())
 	}

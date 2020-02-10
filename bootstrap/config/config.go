@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/edgexfoundry/go-mod-configuration/configuration"
 	configTypes "github.com/edgexfoundry/go-mod-configuration/pkg/types"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
@@ -44,7 +44,7 @@ func createClient(
 	return configuration.NewConfigurationClient(providerConfig)
 }
 
-// UpdateFromProvider connects to the config provider, gets configuration, and updates the service's
+// UpdateFromProvider connects to the configuration provider, puts or gets configuration, and updates the service's
 // configuration struct.
 func UpdateFromProvider(
 	ctx context.Context,
@@ -52,21 +52,47 @@ func UpdateFromProvider(
 	providerConfig configTypes.ServiceConfig,
 	serviceConfig interfaces.Configuration,
 	configStem string,
+	overwriteConfig bool,
 	lc logger.LoggingClient,
-	serviceKey string) (configuration.Client, error) {
+	serviceKey string,
+	environment *Environment,
+	overrideCount int) (configuration.Client, error) {
 
 	var updateFromConfigProvider = func(configClient configuration.Client) error {
 		if !configClient.IsAlive() {
 			return errors.New("configuration provider is not available")
 		}
 
-		rawConfig, err := configClient.GetConfiguration(serviceConfig)
+		hasConfig, err := configClient.HasConfiguration()
 		if err != nil {
-			return fmt.Errorf("could not get configuration from Registry: %v", err.Error())
+			return fmt.Errorf("could not determine if Configuration provider has configuration: %s", err.Error())
 		}
 
-		if !serviceConfig.UpdateFromRaw(rawConfig) {
-			return errors.New("configuration from Registry failed type check")
+		if !hasConfig || overwriteConfig {
+			// Environment overrides already applied previously so just push to Configuration Provider
+			// Note that serviceConfig is a pointer, so we have to use reflection to dereference it.
+			err = configClient.PutConfiguration(reflect.ValueOf(serviceConfig).Elem().Interface(), true)
+			if err != nil {
+				return fmt.Errorf("could not push configuration into Configuration Provider: %s", err.Error())
+			}
+
+			LogConfigInfo(lc, "Configuration has been pushed to into Configuration Provider", overrideCount, serviceKey)
+		} else {
+			rawConfig, err := configClient.GetConfiguration(serviceConfig)
+			if err != nil {
+				return fmt.Errorf("could not get configuration from Configuration provider: %s", err.Error())
+			}
+
+			if !serviceConfig.UpdateFromRaw(rawConfig) {
+				return errors.New("configuration from Configuration provider failed type check")
+			}
+
+			overrideCount, err := environment.OverrideConfiguration(lc, serviceConfig)
+			if err != nil {
+				return err
+			}
+
+			LogConfigInfo(lc, "Configuration has been pulled from Configuration provider", overrideCount, serviceKey)
 		}
 
 		return nil
@@ -93,7 +119,12 @@ func UpdateFromProvider(
 	return nil, errors.New("unable to update configuration from provider in allotted time")
 }
 
-// ListenForChanges leverages the registry client's WatchForChanges() method to receive changes to and update the
+// LogConfigInfo logs the config info message with number over overrides that occurred and the service key that was used.
+func LogConfigInfo(lc logger.LoggingClient, message string, overrideCount int, serviceKey string) {
+	lc.Info(fmt.Sprintf("%s (%d environment overrides applied)", message, overrideCount), "service key", serviceKey)
+}
+
+// ListenForChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
 // service's configuration struct's writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.

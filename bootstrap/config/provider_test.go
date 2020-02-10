@@ -17,15 +17,16 @@ import (
 	"os"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 )
 
 func TestNewConfigProviderInfoUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	target, err := NewProviderInfo(lc, goodUrlValue)
+	env := NewEnvironment()
+	target, err := NewProviderInfo(lc, env, goodUrlValue)
 	if !assert.NoError(t, err, "unexpected error") {
 		t.Fatal()
 	}
@@ -41,11 +42,12 @@ func TestNewConfigProviderInfoUrl(t *testing.T) {
 func TestNewConfigProviderInfoEnv(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	if err := os.Setenv(envKeyUrl, goodUrlValue); err != nil {
+	if err := os.Setenv(envKeyConfigUrl, goodUrlValue); err != nil {
 		t.Fail()
 	}
 
-	target, err := NewProviderInfo(lc, goodUrlValue)
+	env := NewEnvironment()
+	target, err := NewProviderInfo(lc, env, goodUrlValue)
 	if !assert.NoError(t, err, "unexpected error") {
 		t.Fatal()
 	}
@@ -61,7 +63,8 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 func TestNewConfigProviderInfoBadUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	_, err := NewProviderInfo(lc, badUrlValue)
+	env := NewEnvironment()
+	_, err := NewProviderInfo(lc, env, badUrlValue)
 	if !assert.Error(t, err, "Expected an error") {
 		t.Fatal()
 	}
@@ -70,11 +73,12 @@ func TestNewConfigProviderInfoBadUrl(t *testing.T) {
 func TestNewConfigProviderInfoBadEnvUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	if err := os.Setenv(envKeyUrl, badUrlValue); err != nil {
+	if err := os.Setenv(envKeyConfigUrl, badUrlValue); err != nil {
 		t.Fail()
 	}
 
-	_, err := NewProviderInfo(lc, goodUrlValue)
+	env := NewEnvironment()
+	_, err := NewProviderInfo(lc, env, goodUrlValue)
 	if !assert.Error(t, err, "Expected an error") {
 		t.Fatal()
 	}
