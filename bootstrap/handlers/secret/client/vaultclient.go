@@ -20,9 +20,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/edgexfoundry/go-mod-secrets/pkg"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
@@ -30,44 +30,40 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/fileioperformer"
 )
 
-type SecretVaultClient struct {
-	ctx    *context.Context
-	config *vault.SecretConfig
-	dic    *di.Container
+// Vault is the structure to get the secret client from go-mod-secrets vault package
+type Vault struct {
+	ctx    context.Context
+	config vault.SecretConfig
+	lc     logger.LoggingClient
 }
 
-func NewSecretVaultClient(
-	ctx context.Context,
-	config vault.SecretConfig,
-	dic *di.Container) SecretVaultClient {
-	return SecretVaultClient{
-		ctx:    &ctx,
-		config: &config,
-		dic:    dic,
+// NewVault is the constructor for Vault in order to get the Vault secret client
+func NewVault(ctx context.Context, config vault.SecretConfig, lc logger.LoggingClient) Vault {
+	return Vault{
+		ctx:    ctx,
+		config: config,
+		lc:     lc,
 	}
 }
 
-func (c SecretVaultClient) GetClient() (pkg.SecretClient, error) {
-
-	lc := container.LoggingClientFrom(c.dic.Get)
-	configuration := container.ConfigurationFrom(c.dic.Get)
-	secretStoreInfo := configuration.GetBootstrap().SecretStore
-
+// Get is the getter for Vault secret client from go-mod-secrets
+func (c Vault) Get(secretStoreInfo config.SecretStoreInfo) (pkg.SecretClient, error) {
 	return vault.NewSecretClientFactory().NewSecretClient(
-		*c.ctx,
-		*c.config,
-		lc,
+		c.ctx,
+		c.config,
+		c.lc,
 		c.getDefaultTokenExpiredCallback(secretStoreInfo))
 }
 
-func (c SecretVaultClient) getDefaultTokenExpiredCallback(
+// getDefaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
+// It utilizes the tokenFile to re-read the token and enable retry if any update from the expired token
+func (c Vault) getDefaultTokenExpiredCallback(
 	secretStoreInfo config.SecretStoreInfo) func(expiredToken string) (replacementToken string, retry bool) {
 	// if there is no tokenFile, then no replacement token can be used and hence no callback
 	if secretStoreInfo.TokenFile == "" {
 		return nil
 	}
 
-	lc := container.LoggingClientFrom(c.dic.Get)
 	tokenFile := secretStoreInfo.TokenFile
 	return func(expiredToken string) (replacementToken string, retry bool) {
 		// during the callback, we want to re-read the token from the disk
@@ -77,12 +73,12 @@ func (c SecretVaultClient) getDefaultTokenExpiredCallback(
 		authTokenLoader := authtokenloader.NewAuthTokenLoader(fileIoPerformer)
 		reReadToken, err := authTokenLoader.Load(tokenFile)
 		if err != nil {
-			lc.Error(fmt.Sprintf("fail to load auth token from tokenFile %s: %v", tokenFile, err))
+			c.lc.Error(fmt.Sprintf("fail to load auth token from tokenFile %s: %v", tokenFile, err))
 			return "", false
 		}
 
 		if reReadToken == expiredToken {
-			lc.Error("No new replacement token found for the expired token")
+			c.lc.Error("No new replacement token found for the expired token")
 			return reReadToken, false
 		}
 

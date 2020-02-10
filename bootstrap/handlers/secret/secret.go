@@ -61,9 +61,7 @@ func (s *SecretProvider) BootstrapHandler(
 
 	// attempt to create a new SecretProvider client only if security is enabled.
 	if s.isSecurityEnabled() {
-		s.secretClient, err = client.NewSecretVaultClient(ctx,
-			secretConfig,
-			dic).GetClient()
+		s.secretClient, err = client.NewVault(ctx, secretConfig, lc).Get(configuration.GetBootstrap().SecretStore)
 
 		if err != nil {
 			lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
