@@ -31,8 +31,15 @@ import (
 
 const writableKey = "/Writable"
 
+// UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
+type UpdatedStream chan<- struct{}
+
 // createClient creates and returns a configuration.Client instance.
-func createClient(serviceKey string, providerConfig configTypes.ServiceConfig, configStem string) (configuration.Client, error) {
+func createClient(
+	serviceKey string,
+	providerConfig configTypes.ServiceConfig,
+	configStem string) (configuration.Client, error) {
+
 	providerConfig.BasePath = configStem + serviceKey
 	return configuration.NewConfigurationClient(providerConfig)
 }
@@ -95,7 +102,8 @@ func ListenForChanges(
 	wg *sync.WaitGroup,
 	config interfaces.Configuration,
 	lc logger.LoggingClient,
-	configClient configuration.Client) {
+	configClient configuration.Client,
+	stream UpdatedStream) {
 
 	wg.Add(1)
 	go func() {
@@ -129,6 +137,10 @@ func ListenForChanges(
 
 				lc.Info("Writeable configuration has been updated from the Configuration Provider")
 				_ = lc.SetLogLevel(config.GetLogLevel())
+
+				if stream != nil {
+					stream <- struct{}{}
+				}
 			}
 		}
 	}()
