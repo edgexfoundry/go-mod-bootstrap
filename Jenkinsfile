@@ -16,5 +16,5 @@
 
 edgeXBuildGoMod (
     project: 'go-mod-bootstrap',
-    goVersion: '1.12'
+    goVersion: '1.13'
 )
