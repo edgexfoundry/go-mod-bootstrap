@@ -26,10 +26,9 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
 	"github.com/edgexfoundry/go-mod-secrets/pkg"
+	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/fileioperformer"
-
-	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
 
 type SecretProvider struct {

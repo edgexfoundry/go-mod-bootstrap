@@ -15,9 +15,9 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-secrets/pkg"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
+	"github.com/edgexfoundry/go-mod-secrets/pkg"
 )
 
 // SecretClientName contains the name of the registry.Client implementation in the DIC.

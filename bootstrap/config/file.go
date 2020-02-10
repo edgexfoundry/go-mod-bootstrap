@@ -16,17 +16,24 @@ package config
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"io/ioutil"
 	"os"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
 	"github.com/BurntSushi/toml"
 )
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
-func LoadFromFile(lc logger.LoggingClient, configDir, profileDir, configFileName string, config interfaces.Configuration) error {
+func LoadFromFile(
+	lc logger.LoggingClient,
+	configDir,
+	profileDir,
+	configFileName string,
+	config interfaces.Configuration) error {
+
 	// ported from determinePath() in internal/pkg/config/loader.go
 	if len(configDir) == 0 {
 		configDir = os.Getenv("EDGEX_CONF_DIR")

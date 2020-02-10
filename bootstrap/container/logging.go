@@ -16,6 +16,7 @@ package container
 
 import (
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
