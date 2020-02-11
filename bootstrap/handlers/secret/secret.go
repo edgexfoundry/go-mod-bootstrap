@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers/secret/client"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -44,7 +45,7 @@ func NewSecret() *SecretProvider {
 // BootstrapHandlers to obtain sensitive data, such as database credentials. This BootstrapHandler should be processed
 // before other BootstrapHandlers, possibly even first since it has not other dependencies.
 func (s *SecretProvider) BootstrapHandler(
-	_ context.Context,
+	ctx context.Context,
 	_ *sync.WaitGroup,
 	_ startup.Timer,
 	dic *di.Container) bool {
@@ -60,7 +61,8 @@ func (s *SecretProvider) BootstrapHandler(
 
 	// attempt to create a new SecretProvider client only if security is enabled.
 	if s.isSecurityEnabled() {
-		s.secretClient, err = vault.NewSecretClient(secretConfig)
+		s.secretClient, err = client.NewVault(ctx, secretConfig, lc).Get(configuration.GetBootstrap().SecretStore)
+
 		if err != nil {
 			lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
 			return false
