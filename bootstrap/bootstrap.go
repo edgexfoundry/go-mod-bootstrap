@@ -81,18 +81,18 @@ func RunAndReturnWaitGroup(
 	serviceKey string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
+	configUpdatedStream config.UpdatedStream,
 	startupTimer startup.Timer,
 	dic *di.Container,
 	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, bool) {
 
-	lc := logging.FactoryToStdout(serviceKey)
 	var err error
-	var configClient configuration.Client
-	var registryClient registry.Client
 	var wg sync.WaitGroup
+
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	configFileName := commonFlags.ConfigFileName()
+	lc := logging.FactoryToStdout(serviceKey)
 
 	// Create new ProviderInfo and initialize it from command-line flag or Environment variable
 	configProviderInfo, err := config.NewProviderInfo(lc, commonFlags.ConfigProviderUrl())
@@ -109,6 +109,8 @@ func RunAndReturnWaitGroup(
 
 	switch configProviderInfo.UseProvider() {
 	case true:
+		var configClient configuration.Client
+
 		// set up configClient; use it to load configuration from provider.
 		configClient, err = config.UpdateFromProvider(
 			ctx,
@@ -123,7 +125,7 @@ func RunAndReturnWaitGroup(
 			fatalError(err, lc)
 		}
 		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
-		config.ListenForChanges(ctx, &wg, serviceConfig, lc, configClient)
+		config.ListenForChanges(ctx, &wg, serviceConfig, lc, configClient, configUpdatedStream)
 		lc.Info(fmt.Sprintf("Loaded configuration from %s", configProviderInfo.ServiceConfig().GetUrl()))
 
 	case false:
@@ -141,8 +143,9 @@ func RunAndReturnWaitGroup(
 		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
 	}
 
+	var registryClient registry.Client
+
 	// setup registryClient if it is enabled
-	//registryInfo := serviceConfig.GetRegistryInfo()
 	if commonFlags.UseRegistry() {
 		registryClient, err = registration.RegisterWithRegistry(ctx, startupTimer, serviceConfig, lc, serviceKey)
 		if err != nil {
@@ -205,6 +208,7 @@ func Run(
 		serviceKey,
 		configStem,
 		serviceConfig,
+		nil,
 		startupTimer,
 		dic,
 		handlers,
