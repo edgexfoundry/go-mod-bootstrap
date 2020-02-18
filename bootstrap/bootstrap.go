@@ -38,6 +38,9 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
+// Deferred defines the signature of a function returned by RunAndReturnWaitGroup that should be executed via defer.
+type Deferred func()
+
 // fatalError logs an error and exits the application.  It's intended to be used only within the bootstrap prior to
 // any go routines being spawned.
 func fatalError(err error, lc logger.LoggingClient) {
@@ -84,10 +87,11 @@ func RunAndReturnWaitGroup(
 	configUpdatedStream config.UpdatedStream,
 	startupTimer startup.Timer,
 	dic *di.Container,
-	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, bool) {
+	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, Deferred, bool) {
 
 	var err error
 	var wg sync.WaitGroup
+	deferred := func() {}
 
 	translateInterruptToCancel(ctx, &wg, cancel)
 
@@ -152,13 +156,13 @@ func RunAndReturnWaitGroup(
 			fatalError(err, lc)
 		}
 
-		defer func() {
+		deferred = func() {
 			lc.Info("Un-Registering service from the Registry")
 			err := registryClient.Unregister()
 			if err != nil {
 				lc.Error("Unable to Un-Register service from the Registry", "error", err.Error())
 			}
-		}()
+		}
 	}
 
 	dic.Update(di.ServiceConstructorMap{
@@ -183,7 +187,7 @@ func RunAndReturnWaitGroup(
 		}
 	}
 
-	return &wg, startedSuccessfully
+	return &wg, deferred, startedSuccessfully
 }
 
 // Run bootstraps an application.  It loads configuration and calls the provided list of handlers.  Any long-running
@@ -201,7 +205,7 @@ func Run(
 	dic *di.Container,
 	handlers []interfaces.BootstrapHandler) {
 
-	wg, _ := RunAndReturnWaitGroup(
+	wg, deferred, _ := RunAndReturnWaitGroup(
 		ctx,
 		cancel,
 		commonFlags,
@@ -213,6 +217,8 @@ func Run(
 		dic,
 		handlers,
 	)
+
+	defer deferred()
 
 	// wait for go routines to stop executing.
 	wg.Wait()
