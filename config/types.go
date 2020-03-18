@@ -121,12 +121,13 @@ type SecretStoreInfo struct {
 }
 
 type Database struct {
-	Credentials
-	Type    string
-	Timeout int
-	Host    string
-	Port    int
-	Name    string
+	Username string
+	Password string
+	Type     string
+	Timeout  int
+	Host     string
+	Port     int
+	Name     string
 }
 
 // Credentials encapsulates username-password attributes.
