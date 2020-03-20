@@ -40,28 +40,48 @@ func NewSecret() *SecretProvider {
 	return &SecretProvider{}
 }
 
-// SecretClientBootstrapHandler creates a secretClient to be used for obtaining secrets from a SecretProvider store manager.
+// BootstrapHandler creates a secretClient to be used for obtaining secrets from a SecretProvider store manager.
 // NOTE: This BootstrapHandler is responsible for creating a utility that will most likely be used by other
 // BootstrapHandlers to obtain sensitive data, such as database credentials. This BootstrapHandler should be processed
 // before other BootstrapHandlers, possibly even first since it has not other dependencies.
 func (s *SecretProvider) BootstrapHandler(
 	ctx context.Context,
 	_ *sync.WaitGroup,
-	_ startup.Timer,
+	startupTimer startup.Timer,
 	dic *di.Container) bool {
 
 	lc := container.LoggingClientFrom(dic.Get)
 
-	configuration := container.ConfigurationFrom(dic.Get)
-	secretConfig, err := s.getSecretConfig(configuration.GetBootstrap().SecretStore)
-	if err != nil {
-		lc.Error(fmt.Sprintf("unable to parse secret store configuration: %s", err.Error()))
-		return false
-	}
-
 	// attempt to create a new SecretProvider client only if security is enabled.
 	if s.isSecurityEnabled() {
-		s.secretClient, err = client.NewVault(ctx, secretConfig, lc).Get(configuration.GetBootstrap().SecretStore)
+		var err error
+
+		lc.Info("Creating SecretClient")
+
+		configuration := container.ConfigurationFrom(dic.Get)
+		secretStoreConfig := configuration.GetBootstrap().SecretStore
+
+		for startupTimer.HasNotElapsed() {
+			var secretConfig vault.SecretConfig
+
+			lc.Info("Reading secret store configuration and authentication token")
+
+			secretConfig, err = s.getSecretConfig(secretStoreConfig)
+			if err == nil {
+				var secretClient pkg.SecretClient
+
+				lc.Info("Attempting to create secretclient")
+				secretClient, err = client.NewVault(ctx, secretConfig, lc).Get(configuration.GetBootstrap().SecretStore)
+				if err == nil {
+					s.secretClient = secretClient
+					lc.Info("Created SecretClient")
+					break
+				}
+			}
+
+			lc.Warn(fmt.Sprintf("Retryable failure while creating SecretClient: %s", err.Error()))
+			startupTimer.SleepForInterval()
+		}
 
 		if err != nil {
 			lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
