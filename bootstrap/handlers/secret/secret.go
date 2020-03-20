@@ -71,6 +71,9 @@ func (s *SecretProvider) BootstrapHandler(
 		container.CredentialsProviderName: func(get di.Get) interface{} {
 			return s
 		},
+		container.CertificateProviderName: func(get di.Get) interface{} {
+			return s
+		},
 	})
 
 	return true
