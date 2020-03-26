@@ -157,6 +157,22 @@ func TestOverrideStartupInfo(t *testing.T) {
 	assert.Equal(t, startupInfo.Interval, expectedStartupInterval)
 }
 
+func TestOverrideStartupInfoV1(t *testing.T) {
+	_, startupInfo, lc := initializeTest()
+
+	err := os.Setenv(envV1KeyStartupDuration, envStartupDuration)
+	require.NoError(t, err)
+
+	err = os.Setenv(envV1KeyStartupInterval, envStartupInterval)
+	require.NoError(t, err)
+
+	env := NewEnvironment()
+	startupInfo = env.OverrideStartupInfo(lc, startupInfo)
+
+	assert.Equal(t, startupInfo.Duration, expectedStartupDuration)
+	assert.Equal(t, startupInfo.Interval, expectedStartupInterval)
+}
+
 func TestOverrideStartupInfo_NoEnvVariables(t *testing.T) {
 	_, startupInfo, lc := initializeTest()
 

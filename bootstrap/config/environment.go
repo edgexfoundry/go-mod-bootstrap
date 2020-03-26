@@ -29,10 +29,16 @@ import (
 )
 
 const (
-	envKeyConfigUrl       = "EDGEX_CONFIGURATION_PROVIDER"
-	envKeyRegistryUrl     = "edgex_registry"   // TODO: Remove for v2.0.0
-	envKeyStartupDuration = "startup_duration" // TODO: Change to EDGEX_STARTUP_DURATION for v2.0.0
-	envKeyStartupInterval = "startup_interval" // TODO: Change to EDGEX_STARTUP_INTERVAL for v2.0.0
+	envKeyConfigUrl         = "EDGEX_CONFIGURATION_PROVIDER"
+	envKeyRegistryUrl       = "edgex_registry"   // TODO: Remove for release v2.0.0
+	envV1KeyStartupDuration = "startup_duration" // TODO: Remove for release v2.0.0
+	envKeyStartupDuration   = "EDGEX_STARTUP_DURATION"
+	envV1KeyStartupInterval = "startup_interval" // TODO: Remove for release v2.0.0
+	envKeyStartupInterval   = "EDGEX_STARTUP_INTERVAL"
+	envConfDir              = "EDGEX_CONF_DIR"
+	envV1Profile            = "edgex_profile" // TODO: Remove for release v2.0.0
+	envProfile              = "EDGEX_PROFILE"
+	envFile                 = "EDGEX_CONFIG_FILE"
 )
 
 // Environment is receiver that holds Environment variables and encapsulates toml.Tree-based configuration field
@@ -97,7 +103,7 @@ func (e *Environment) OverrideConfiguration(lc logger.LoggingClient, serviceConf
 
 			configTree.Set(key, newValue)
 			overrideCount++
-			lc.Info(fmt.Sprintf("Environment varable override of %s by: %s=%s", key, envVar, envValue))
+			logEnvironmentOverride(lc, key, envVar, envValue)
 		}
 	}
 
@@ -116,22 +122,15 @@ func (_ *Environment) OverrideConfigProviderInfo(
 	lc logger.LoggingClient,
 	configProviderInfo types.ServiceConfig) (types.ServiceConfig, error) {
 
-	if url := os.Getenv(envKeyConfigUrl); len(url) > 0 {
-		lc.Info(fmt.Sprintf("Confiuragtion Provider information overridden by Environment variable: %s=%s", envKeyConfigUrl, url))
+	// This is for backwards compatibility with Fuji Device Services.
+	// If --registry=<url> is used then we must use the <url> for the configuration provider.
+	// TODO: for release v2.0.0 just use envKeyConfigUrl
+	key, url := getEnvironmentValue(envKeyConfigUrl, envKeyRegistryUrl)
+	if len(url) > 0 {
+		logEnvironmentOverride(lc, "Configuration Provider Information", key, url)
 
 		if err := configProviderInfo.PopulateFromUrl(url); err != nil {
 			return types.ServiceConfig{}, err
-		}
-	} else {
-		// TODO: Remove this for release V2.0.0
-		// This is for backwards compatibility with Fuji Device Services.
-		// If --registry=<url> is used then we must use the <url> for the configuration provider.
-		if url := os.Getenv(envKeyRegistryUrl); len(url) > 0 {
-			lc.Info(fmt.Sprintf("Confiuragtion Provider information overridden by Environment variable: %s=%s", envKeyRegistryUrl, url))
-
-			if err := configProviderInfo.PopulateFromUrl(url); err != nil {
-				return types.ServiceConfig{}, err
-			}
 		}
 	}
 
@@ -146,7 +145,7 @@ func (_ *Environment) OverrideConfigProviderInfo(
 func (_ *Environment) GetRegistryProviderInfoOverride(lc logger.LoggingClient) string {
 	url := os.Getenv(envKeyRegistryUrl)
 	if len(url) > 0 {
-		lc.Info(fmt.Sprintf("Registry Provider information overridden by Environment variable: %s=%s", envKeyRegistryUrl, url))
+		logEnvironmentOverride(lc, "Registry Provider Information", envKeyRegistryUrl, url)
 	}
 
 	return url
@@ -158,8 +157,10 @@ func (_ *Environment) OverrideStartupInfo(
 	startup config.StartupInfo) config.StartupInfo {
 
 	//	OverrideConfiguration the startup timer configuration, if provided.
-	if value := os.Getenv(envKeyStartupDuration); len(value) > 0 {
-		lc.Info(fmt.Sprintf("Startup duration value overridden by Environment variable: %s=%s", envKeyStartupDuration, value))
+	// Have to support old V1 lowercase version of key and new uppercase version of the key until release v2.0.0
+	key, value := getEnvironmentValue(envKeyStartupDuration, envV1KeyStartupDuration)
+	if len(value) > 0 {
+		logEnvironmentOverride(lc, "Startup Duration", key, value)
 
 		if n, err := strconv.ParseInt(value, 10, 0); err == nil && n > 0 {
 			startup.Duration = int(n)
@@ -167,8 +168,10 @@ func (_ *Environment) OverrideStartupInfo(
 	}
 
 	//	OverrideConfiguration the startup timer interval, if provided.
-	if value := os.Getenv(envKeyStartupInterval); len(value) > 0 {
-		lc.Info(fmt.Sprintf("Startup interval value overridden by Environment variable: %s=%s", envKeyStartupInterval, value))
+	// Have to support old V1 lowercase version of key and new uppercase version of the key unitl release v2.0.0
+	key, value = getEnvironmentValue(envKeyStartupInterval, envV1KeyStartupInterval)
+	if len(value) > 0 {
+		logEnvironmentOverride(lc, "Startup Interval", key, value)
 
 		if n, err := strconv.ParseInt(value, 10, 0); err == nil && n > 0 {
 			startup.Interval = int(n)
@@ -241,4 +244,22 @@ func parseCommaSeparatedSlice(value string) (values []interface{}) {
 	}
 
 	return values
+}
+
+// TODO: Remove for release v2.0.0
+// getEnvironmentValue attempt to get value for new upper case key and if not found attempts
+// to get value for old lower case key. Returns the key last attempted and value from last attempt
+func getEnvironmentValue(newKey string, v1Key string) (string, string) {
+	key := newKey
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		key = v1Key
+		value = os.Getenv(key)
+	}
+	return key, value
+}
+
+// logEnvironmentOverride logs that an option or configuration has been override by an environment variable.
+func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, value string) {
+	lc.Info(fmt.Sprintf("Environment override of '%s' by environment variable: %s=%s", name, key, value))
 }
