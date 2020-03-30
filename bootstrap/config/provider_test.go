@@ -17,18 +17,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 )
 
 func TestNewConfigProviderInfoUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	target, err := NewProviderInfo(lc, goodUrlValue)
-	if !assert.NoError(t, err, "unexpected error") {
-		t.Fatal()
-	}
+	env := NewEnvironment()
+	target, err := NewProviderInfo(lc, env, goodUrlValue)
+	require.NoError(t, err)
 
 	actual := target.ServiceConfig()
 
@@ -41,14 +41,12 @@ func TestNewConfigProviderInfoUrl(t *testing.T) {
 func TestNewConfigProviderInfoEnv(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	if err := os.Setenv(envKeyUrl, goodUrlValue); err != nil {
-		t.Fail()
-	}
+	err := os.Setenv(envKeyConfigUrl, goodUrlValue)
+	require.NoError(t, err)
 
-	target, err := NewProviderInfo(lc, goodUrlValue)
-	if !assert.NoError(t, err, "unexpected error") {
-		t.Fatal()
-	}
+	env := NewEnvironment()
+	target, err := NewProviderInfo(lc, env, goodUrlValue)
+	require.NoError(t, err)
 
 	actual := target.ServiceConfig()
 
@@ -61,21 +59,19 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 func TestNewConfigProviderInfoBadUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	_, err := NewProviderInfo(lc, badUrlValue)
-	if !assert.Error(t, err, "Expected an error") {
-		t.Fatal()
-	}
+	env := NewEnvironment()
+	_, err := NewProviderInfo(lc, env, badUrlValue)
+	assert.Error(t, err)
 }
 
 func TestNewConfigProviderInfoBadEnvUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	if err := os.Setenv(envKeyUrl, badUrlValue); err != nil {
-		t.Fail()
-	}
+	// This should override the goodUrlValue below
+	err := os.Setenv(envKeyConfigUrl, badUrlValue)
+	require.NoError(t, err)
 
-	_, err := NewProviderInfo(lc, goodUrlValue)
-	if !assert.Error(t, err, "Expected an error") {
-		t.Fatal()
-	}
+	env := NewEnvironment()
+	_, err = NewProviderInfo(lc, env, goodUrlValue)
+	assert.Error(t, err)
 }

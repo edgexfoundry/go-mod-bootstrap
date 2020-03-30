@@ -16,11 +16,13 @@ package bootstrap
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
@@ -30,12 +32,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
-
-	"github.com/edgexfoundry/go-mod-configuration/configuration"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
-	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 // Deferred defines the signature of a function returned by RunAndReturnWaitGroup that should be executed via defer.
@@ -84,7 +80,7 @@ func RunAndReturnWaitGroup(
 	serviceKey string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
-	configUpdatedStream config.UpdatedStream,
+	configUpdated config.UpdatedStream,
 	startupTimer startup.Timer,
 	dic *di.Container,
 	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, Deferred, bool) {
@@ -93,65 +89,39 @@ func RunAndReturnWaitGroup(
 	var wg sync.WaitGroup
 	deferred := func() {}
 
-	translateInterruptToCancel(ctx, &wg, cancel)
-
-	configFileName := commonFlags.ConfigFileName()
 	lc := logging.FactoryToStdout(serviceKey)
 
-	// Create new ProviderInfo and initialize it from command-line flag or Environment variable
-	configProviderInfo, err := config.NewProviderInfo(lc, commonFlags.ConfigProviderUrl())
-	if err != nil {
-		fatalError(err, lc)
-	}
+	translateInterruptToCancel(ctx, &wg, cancel)
 
-	// override file-based configuration with environment variables.
 	bootstrapConfig := serviceConfig.GetBootstrap()
-	startupInfo := config.OverrideStartupInfoFromEnvironment(lc, bootstrapConfig.Startup)
+	environment := config.NewEnvironment()
+	startupInfo := environment.OverrideStartupInfo(lc, bootstrapConfig.Startup)
 
 	//	Update the startup timer to reflect whatever configuration read, if anything available.
 	startupTimer.UpdateTimer(startupInfo.Duration, startupInfo.Interval)
 
-	switch configProviderInfo.UseProvider() {
-	case true:
-		var configClient configuration.Client
-
-		// set up configClient; use it to load configuration from provider.
-		configClient, err = config.UpdateFromProvider(
-			ctx,
-			startupTimer,
-			configProviderInfo.ServiceConfig(),
-			serviceConfig,
-			configStem,
-			lc,
-			serviceKey,
-		)
-		if err != nil {
-			fatalError(err, lc)
-		}
-		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
-		config.ListenForChanges(ctx, &wg, serviceConfig, lc, configClient, configUpdatedStream)
-		lc.Info(fmt.Sprintf("Loaded configuration from %s", configProviderInfo.ServiceConfig().GetUrl()))
-
-	case false:
-		// load configuration from file.
-		err = config.LoadFromFile(
-			lc,
-			commonFlags.ConfigDirectory(),
-			commonFlags.Profile(),
-			configFileName,
-			serviceConfig,
-		)
-		if err != nil {
-			fatalError(err, lc)
-		}
-		lc = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
+	configProcessor := config.NewProcessor(lc, commonFlags, environment, startupTimer, ctx, &wg, configUpdated)
+	if err := configProcessor.Process(serviceKey, configStem, serviceConfig); err != nil {
+		fatalError(err, lc)
 	}
+
+	// Now the the configuration has been processed the logger has been created based on configuration.
+	lc = configProcessor.Logger
 
 	var registryClient registry.Client
 
-	// setup registryClient if it is enabled
-	if commonFlags.UseRegistry() {
-		registryClient, err = registration.RegisterWithRegistry(ctx, startupTimer, serviceConfig, lc, serviceKey)
+	// TODO: Remove `|| config.UseRegistry()` for release V2.0.0
+	if commonFlags.UseRegistry() || environment.UseRegistry() {
+		// For backwards compatibility with Fuji Device Service, registry is a string that can contain a provider URL.
+		// TODO: Remove registryUrl in call below for release V2.0.0
+		registryClient, err = registration.RegisterWithRegistry(
+			ctx,
+			startupTimer,
+			serviceConfig,
+			commonFlags.RegistryUrl(),
+			environment,
+			lc,
+			serviceKey)
 		if err != nil {
 			fatalError(err, lc)
 		}
