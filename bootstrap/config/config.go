@@ -59,8 +59,8 @@ func NewProcessor(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	configUpdated UpdatedStream,
-) Processor {
-	return Processor{
+) *Processor {
+	return &Processor{
 		Logger:        lc,
 		flags:         flags,
 		environment:   environment,
@@ -71,7 +71,7 @@ func NewProcessor(
 	}
 }
 
-func (cp Processor) Process(serviceKey string, configStem string, serviceConfig interfaces.Configuration) error {
+func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig interfaces.Configuration) error {
 	// Create some shorthand for frequently used items
 	environment := cp.environment
 	lc := cp.Logger
@@ -157,7 +157,7 @@ func (cp Processor) Process(serviceKey string, configStem string, serviceConfig 
 }
 
 // createProviderClient creates and returns a configuration.Client instance and logs Client connection information
-func (cp Processor) createProviderClient(
+func (cp *Processor) createProviderClient(
 	serviceKey string,
 	configStem string,
 	providerConfig configTypes.ServiceConfig) (configuration.Client, error) {
@@ -174,7 +174,7 @@ func (cp Processor) createProviderClient(
 }
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
-func (cp Processor) loadFromFile(config interfaces.Configuration) error {
+func (cp *Processor) loadFromFile(config interfaces.Configuration) error {
 	configDir := cp.flags.ConfigDirectory()
 	envValue := os.Getenv(envConfDir)
 	if len(envValue) > 0 {
@@ -224,7 +224,7 @@ func (cp Processor) loadFromFile(config interfaces.Configuration) error {
 // ProcessWithProvider puts configuration if doesnt exist in provider (i.e. self-seed) or
 // gets configuration from provider and updates the service's configuration with environment overrides after receiving
 // them from the provider so that environment override supersede any changes made in the provider.
-func (cp Processor) processWithProvider(
+func (cp *Processor) processWithProvider(
 	configClient configuration.Client,
 	serviceConfig interfaces.Configuration,
 	overrideCount int) error {
@@ -272,7 +272,7 @@ func (cp Processor) processWithProvider(
 // service's configuration struct's writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
-func (cp Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client) {
+func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client) {
 	lc := cp.Logger
 
 	cp.wg.Add(1)
@@ -317,6 +317,6 @@ func (cp Processor) listenForChanges(serviceConfig interfaces.Configuration, con
 }
 
 // logConfigInfo logs the config info message with number over overrides that occurred.
-func (cp Processor) logConfigInfo(message string, overrideCount int) {
+func (cp *Processor) logConfigInfo(message string, overrideCount int) {
 	cp.Logger.Info(fmt.Sprintf("%s (%d environment overrides applied)", message, overrideCount))
 }
