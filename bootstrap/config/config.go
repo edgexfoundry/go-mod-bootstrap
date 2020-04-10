@@ -37,7 +37,7 @@ import (
 const writableKey = "/Writable"
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
-type UpdatedStream chan<- struct{}
+type UpdatedStream chan struct{}
 
 type Processor struct {
 	Logger          logger.LoggingClient
