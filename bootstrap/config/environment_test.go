@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
@@ -239,13 +240,14 @@ func TestConvertToType(t *testing.T) {
 	}
 }
 
-func TestOverrideConfiguration(t *testing.T) {
+func TestOverrideConfigurationExactCase(t *testing.T) {
 	_, _, lc := initializeTest()
 
 	serviceConfig := struct {
-		Registry config.RegistryInfo
-		List     []string
-		FloatVal float32
+		Registry    config.RegistryInfo
+		List        []string
+		FloatVal    float32
+		SecretStore config.SecretStoreInfo
 	}{
 		Registry: config.RegistryInfo{
 			Host: "localhost",
@@ -254,18 +256,26 @@ func TestOverrideConfiguration(t *testing.T) {
 		},
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),
+		SecretStore: config.SecretStoreInfo{
+			Authentication: vault.AuthenticationInfo{
+				AuthType: "none",
+			},
+		},
 	}
 
-	expectedOverrideCount := 4
+	expectedOverrideCount := 5
 	expectedHost := "edgex-core-consul"
 	expectedPort := 98500
 	expectedList := []string{"joe", "mary", "bob"}
 	expectedFloatVal := float32(24.234)
+	expectedAuthType := "secure"
+
 	_ = os.Setenv("Registry_Host", expectedHost)
 	_ = os.Setenv("Registry_Port", strconv.Itoa(expectedPort))
 	_ = os.Setenv("List", " joe,mary  ,  bob  ")
-	strval := fmt.Sprintf("%v", expectedFloatVal)
-	_ = os.Setenv("FloatVal", strval)
+	strVal := fmt.Sprintf("%v", expectedFloatVal)
+	_ = os.Setenv("FloatVal", strVal)
+	_ = os.Setenv("SecretStore_Authentication_AuthType", expectedAuthType)
 
 	env := NewEnvironment()
 	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
@@ -276,4 +286,56 @@ func TestOverrideConfiguration(t *testing.T) {
 	assert.Equal(t, expectedPort, serviceConfig.Registry.Port)
 	assert.Equal(t, expectedList, serviceConfig.List)
 	assert.Equal(t, expectedFloatVal, serviceConfig.FloatVal)
+	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
+}
+
+func TestOverrideConfigurationUppercase(t *testing.T) {
+	_, _, lc := initializeTest()
+
+	expectedOverrideCount := 4
+	expectedHost := "edgex-core-consul"
+	expectedList := []string{"joe", "mary", "bob"}
+	expectedFloatVal := float32(24.234)
+	expectedAuthType := "secure"
+	expectedAuthToken := "token"
+
+	serviceConfig := struct {
+		Registry    config.RegistryInfo
+		List        []string
+		FloatVal    float32
+		SecretStore config.SecretStoreInfo
+	}{
+		Registry: config.RegistryInfo{
+			Host: "localhost",
+			Port: 8500,
+			Type: "consul",
+		},
+		List:     []string{"val1"},
+		FloatVal: float32(11.11),
+		SecretStore: config.SecretStoreInfo{
+			Authentication: vault.AuthenticationInfo{
+				AuthType:  "none",
+				AuthToken: expectedAuthToken,
+			},
+		},
+	}
+
+	_ = os.Setenv("REGISTRY_HOST", expectedHost)
+	_ = os.Setenv("LIST", " joe,mary  ,  bob  ")
+	strVal := fmt.Sprintf("%v", expectedFloatVal)
+	_ = os.Setenv("FLOATVAL", strVal)
+	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTYPE", expectedAuthType)
+	// Lowercase will not match, so value will not change
+	_ = os.Setenv("secretstore_authentication_authtoken", "NoToken")
+
+	env := NewEnvironment()
+	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedOverrideCount, actualCount)
+	assert.Equal(t, expectedHost, serviceConfig.Registry.Host)
+	assert.Equal(t, expectedList, serviceConfig.List)
+	assert.Equal(t, expectedFloatVal, serviceConfig.FloatVal)
+	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
+	assert.Equal(t, expectedAuthToken, serviceConfig.SecretStore.Authentication.AuthToken)
 }

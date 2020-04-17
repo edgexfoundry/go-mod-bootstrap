@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -90,21 +91,31 @@ func (e *Environment) OverrideConfiguration(lc logger.LoggingClient, serviceConf
 		return 0, err
 	}
 
+	// The toml.Tree API keys() only return to top level keys, rather that paths.
+	// It is also missing a GetPaths so have to spin our own
+	paths := e.buildPaths(configTree.ToMap())
+	// Now that we have all the paths in the config tree, we need to create a map that has the uppercase versions as
+	// the map keys and the original versions as the map values so we can match against uppercase names but use the
+	// originals to set values.
+	pathMap := e.buildUppercasePathMap(paths)
+
 	for envVar, envValue := range e.env {
-		key := strings.Replace(envVar, "_", ".", -1)
-		switch {
-		case configTree.Has(key):
-			oldValue := configTree.Get(key)
-
-			newValue, err := e.convertToType(oldValue, envValue)
-			if err != nil {
-				return 0, fmt.Errorf("environment value override failed for %s=%s: %s", envVar, envValue, err.Error())
-			}
-
-			configTree.Set(key, newValue)
-			overrideCount++
-			logEnvironmentOverride(lc, key, envVar, envValue)
+		envKey := strings.Replace(envVar, "_", ".", -1)
+		key, found := e.getKeyForMatchedPath(pathMap, envKey)
+		if !found {
+			continue
 		}
+
+		oldValue := configTree.Get(key)
+
+		newValue, err := e.convertToType(oldValue, envValue)
+		if err != nil {
+			return 0, fmt.Errorf("environment value override failed for %s=%s: %s", envVar, envValue, err.Error())
+		}
+
+		configTree.Set(key, newValue)
+		overrideCount++
+		logEnvironmentOverride(lc, key, envVar, envValue)
 	}
 
 	// Put the configuration back into the services configuration struct with the overridden values
@@ -114,6 +125,58 @@ func (e *Environment) OverrideConfiguration(lc logger.LoggingClient, serviceConf
 	}
 
 	return overrideCount, nil
+}
+
+// buildPaths create the path strings for all settings in the Config tree's key map
+func (e *Environment) buildPaths(keyMap map[string]interface{}) []string {
+	var paths []string
+
+	for key, item := range keyMap {
+		if reflect.TypeOf(item).Kind() != reflect.Map {
+			paths = append(paths, key)
+			continue
+		}
+
+		subMap := item.(map[string]interface{})
+
+		subPaths := e.buildPaths(subMap)
+		for _, path := range subPaths {
+			paths = append(paths, fmt.Sprintf("%s.%s", key, path))
+		}
+	}
+
+	return paths
+}
+
+// buildUppercasePathMap builds a map where the key is the uppercase version of the path
+// and the value is original version of the path
+func (e *Environment) buildUppercasePathMap(paths []string) map[string]string {
+	ucMap := make(map[string]string)
+	for _, path := range paths {
+		ucMap[strings.ToUpper(path)] = path
+	}
+
+	return ucMap
+}
+
+// getKeyForMatchedPath searches for match of the environment variable name with the uppercase path (pathMap keys)
+// If matched found to original path (pathMap values) is returned as the "key"
+// For backward compatibility a case insensitive comparision is currently used.
+// TODO: For release v2.0.0 Change this to NOT check that `envVarName` is uppercase and only compare against uppercase
+//  so only uppercase environment variable names will match.
+func (e *Environment) getKeyForMatchedPath(pathMap map[string]string, envVarName string) (string, bool) {
+	for ucKey, lcKey := range pathMap {
+		compareKey := lcKey
+		if isAllUpperCase(envVarName) {
+			compareKey = ucKey
+		}
+
+		if compareKey == envVarName {
+			return lcKey, true
+		}
+	}
+
+	return "", false
 }
 
 // OverrideConfigProviderInfo overrides the Configuration Provider ServiceConfig values
@@ -262,4 +325,15 @@ func getEnvironmentValue(newKey string, v1Key string) (string, string) {
 // logEnvironmentOverride logs that an option or configuration has been override by an environment variable.
 func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, value string) {
 	lc.Info(fmt.Sprintf("Environment override of '%s' by environment variable: %s=%s", name, key, value))
+}
+
+// isAllUpperCase checks the key to determine if it is all uppercase letters
+func isAllUpperCase(key string) bool {
+	for _, ch := range key {
+		if unicode.IsLetter(ch) && !unicode.IsUpper(ch) {
+			return false
+		}
+	}
+
+	return true
 }
