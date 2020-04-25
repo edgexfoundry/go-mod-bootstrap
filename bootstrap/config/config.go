@@ -274,6 +274,7 @@ func (cp *Processor) processWithProvider(
 // are received.
 func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client) {
 	lc := cp.Logger
+	isFirstUpdate := true
 
 	cp.wg.Add(1)
 	go func() {
@@ -298,6 +299,14 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 			case raw, ok := <-updateStream:
 				if !ok {
 					return
+				}
+
+				// Config Provider sends an update as soon as the watcher is connected even though there are not
+				// any changes to the configuration. This causes an issue during start-up if there is an
+				// environment override of one of the Writable fields, so we must ignore the first update.
+				if isFirstUpdate {
+					isFirstUpdate = false
+					continue
 				}
 
 				if !serviceConfig.UpdateWritableFromRaw(raw) {
