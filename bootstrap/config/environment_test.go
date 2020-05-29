@@ -339,3 +339,46 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
 	assert.Equal(t, expectedAuthToken, serviceConfig.SecretStore.Authentication.AuthToken)
 }
+
+func TestOverrideConfigurationWithBlankValue(t *testing.T) {
+	_, _, lc := initializeTest()
+
+	expectedOverrideCount := 3
+	expectedHost := ""
+	expectedAuthType := ""
+	expectedAuthToken := ""
+
+	serviceConfig := struct {
+		Registry    config.RegistryInfo
+		List        []string
+		FloatVal    float32
+		SecretStore config.SecretStoreInfo
+	}{
+		Registry: config.RegistryInfo{
+			Host: "localhost",
+			Port: 8500,
+			Type: "consul",
+		},
+		List:     []string{"val1"},
+		FloatVal: float32(11.11),
+		SecretStore: config.SecretStoreInfo{
+			Authentication: vault.AuthenticationInfo{
+				AuthType:  "none",
+				AuthToken: expectedAuthToken,
+			},
+		},
+	}
+
+	_ = os.Setenv("REGISTRY_HOST", expectedHost)
+	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTYPE", expectedAuthType)
+	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTOKEN", expectedAuthToken)
+
+	env := NewEnvironment()
+	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedOverrideCount, actualCount)
+	assert.Equal(t, expectedHost, serviceConfig.Registry.Host)
+	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
+	assert.Equal(t, expectedAuthToken, serviceConfig.SecretStore.Authentication.AuthToken)
+}
