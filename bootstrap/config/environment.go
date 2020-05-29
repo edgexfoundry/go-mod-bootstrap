@@ -62,8 +62,12 @@ func NewEnvironment() *Environment {
 	}
 	for _, env := range osEnv {
 		kv := strings.Split(env, "=")
-		if len(kv) == 2 && len(kv[0]) > 0 && len(kv[1]) > 0 {
-			e.env[kv[0]] = kv[1]
+		if len(kv) > 0 && len(kv[0]) > 0 {
+			if len(kv) > 1 && len(kv[1]) > 0 {
+				e.env[kv[0]] = kv[1]
+			} else {
+				e.env[kv[0]] = "" // Handle case when value is blank, i.e. Service_Host=""
+			}
 		}
 	}
 	return e
