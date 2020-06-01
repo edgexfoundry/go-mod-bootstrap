@@ -81,7 +81,7 @@ func (b *HttpServer) BootstrapHandler(
 	// Do not use Service.Host in the address.
 	// Using hostname it is not recommended because it will create a listener for at most one of the host's IP addresses
 	// which becomes an issue when using distributed orchestration.
-	addr := ":" + strconv.Itoa(bootstrapConfig.Service.Port)
+	addr := "0.0.0.0:" + strconv.Itoa(bootstrapConfig.Service.Port)
 
 	timeout := time.Millisecond * time.Duration(bootstrapConfig.Service.Timeout)
 	server := &http.Server{
