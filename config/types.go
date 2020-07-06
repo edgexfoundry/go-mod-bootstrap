@@ -29,8 +29,6 @@ type ServiceInfo struct {
 	BootTimeout int
 	// Health check interval
 	CheckInterval string
-	// Indicates the interval in milliseconds at which service clients should check for any configuration updates
-	ClientMonitor int
 	// Host is the hostname or IP address of the service.
 	Host string
 	// Port is the HTTP port of the service.
