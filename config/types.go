@@ -33,6 +33,9 @@ type ServiceInfo struct {
 	Host string
 	// Port is the HTTP port of the service.
 	Port int
+	// ServerBindAddr specifies an IP address or hostname
+	// for ListenAndServe to bind to, such as 0.0.0.0
+	ServerBindAddr string
 	// The protocol that should be used to call this service
 	Protocol string
 	// StartupMsg specifies a string to log once service
