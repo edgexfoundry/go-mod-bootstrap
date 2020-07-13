@@ -78,10 +78,15 @@ func (b *HttpServer) BootstrapHandler(
 
 	bootstrapConfig := container.ConfigurationFrom(dic.Get).GetBootstrap()
 
-	// Do not use Service.Host in the address.
-	// Using hostname it is not recommended because it will create a listener for at most one of the host's IP addresses
-	// which becomes an issue when using distributed orchestration.
-	addr := "0.0.0.0:" + strconv.Itoa(bootstrapConfig.Service.Port)
+	// this allows env override to explicitly set the value used
+	// for ListenAndServe as needed for different deployments
+	port := strconv.Itoa(bootstrapConfig.Service.Port)
+	addr := bootstrapConfig.Service.ServerBindAddr + ":" + port
+	// for backwards compatibility, the Host value is the default value if
+	// the ServerBindAddr value is not specified
+	if bootstrapConfig.Service.ServerBindAddr == "" {
+		addr = bootstrapConfig.Service.Host + ":" + port
+	}
 
 	timeout := time.Millisecond * time.Duration(bootstrapConfig.Service.Timeout)
 	server := &http.Server{
