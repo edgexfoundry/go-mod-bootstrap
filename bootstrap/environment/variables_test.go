@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -12,7 +13,7 @@
  * the License.
  *******************************************************************************/
 
-package config
+package environment
 
 import (
 	"fmt"
@@ -23,14 +24,13 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
-	"github.com/edgexfoundry/go-mod-bootstrap/config"
-
 	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 )
 
 const (
@@ -48,16 +48,9 @@ const (
 	defaultPortValue     = 987654321
 	defaultTypeValue     = "defaultType"
 	defaultProtocolValue = "defaultProtocol"
-
-	defaultStartupDuration  = 30
-	defaultStartupInterval  = 1
-	envStartupDuration      = "333"
-	envStartupInterval      = "111"
-	expectedStartupDuration = 333
-	expectedStartupInterval = 111
 )
 
-func initializeTest() (types.ServiceConfig, config.StartupInfo, logger.LoggingClient) {
+func initializeTest() (types.ServiceConfig, logger.LoggingClient) {
 	os.Clearenv()
 	providerConfig := types.ServiceConfig{
 		Host:     defaultHostValue,
@@ -65,21 +58,17 @@ func initializeTest() (types.ServiceConfig, config.StartupInfo, logger.LoggingCl
 		Type:     defaultTypeValue,
 		Protocol: defaultProtocolValue,
 	}
-	startupInfo := config.StartupInfo{
-		Duration: defaultStartupDuration,
-		Interval: defaultStartupInterval,
-	}
 
-	return providerConfig, startupInfo, logging.FactoryToStdout("unit-test")
+	return providerConfig, logger.NewMockClient()
 }
 
 func TestOverrideConfigProviderInfo(t *testing.T) {
-	providerConfig, _, lc := initializeTest()
+	providerConfig, lc := initializeTest()
 
 	err := os.Setenv(envKeyConfigUrl, goodUrlValue)
 	require.NoError(t, err)
 
-	env := NewEnvironment()
+	env := NewVariables()
 	providerConfig, err = env.OverrideConfigProviderInfo(lc, providerConfig)
 
 	assert.NoError(t, err, "Unexpected error")
@@ -91,12 +80,12 @@ func TestOverrideConfigProviderInfo(t *testing.T) {
 
 // TODO: Remove once -registry is back to a bool in release V2.0.0
 func TestOverrideConfigProviderInfo_RegistryUrl(t *testing.T) {
-	providerConfig, _, lc := initializeTest()
+	providerConfig, lc := initializeTest()
 
 	err := os.Setenv(envKeyRegistryUrl, goodRegistryUrlValue)
 	require.NoError(t, err)
 
-	env := NewEnvironment()
+	env := NewVariables()
 	providerConfig, err = env.OverrideConfigProviderInfo(lc, providerConfig)
 
 	require.NoError(t, err, "Unexpected error")
@@ -107,9 +96,9 @@ func TestOverrideConfigProviderInfo_RegistryUrl(t *testing.T) {
 }
 
 func TestOverrideConfigProviderInfo_NoEnvVariables(t *testing.T) {
-	providerConfig, _, lc := initializeTest()
+	providerConfig, lc := initializeTest()
 
-	env := NewEnvironment()
+	env := NewVariables()
 	providerConfig, err := env.OverrideConfigProviderInfo(lc, providerConfig)
 
 	assert.NoError(t, err, "Unexpected error")
@@ -120,12 +109,12 @@ func TestOverrideConfigProviderInfo_NoEnvVariables(t *testing.T) {
 }
 
 func TestOverrideConfigProviderInfo_ConfigProviderInfoError(t *testing.T) {
-	providerConfig, _, lc := initializeTest()
+	providerConfig, lc := initializeTest()
 
 	err := os.Setenv(envKeyConfigUrl, badUrlValue)
 	require.NoError(t, err)
 
-	env := NewEnvironment()
+	env := NewVariables()
 	_, err = env.OverrideConfigProviderInfo(lc, providerConfig)
 
 	assert.Error(t, err, "Expected an error")
@@ -133,55 +122,136 @@ func TestOverrideConfigProviderInfo_ConfigProviderInfoError(t *testing.T) {
 
 // TODO: Remove once -registry is back to a bool in release V2.0.0
 func TestGetRegistryProviderInfoOverride(t *testing.T) {
-	_, _, lc := initializeTest()
+	_, lc := initializeTest()
 
 	err := os.Setenv(envKeyRegistryUrl, goodRegistryUrlValue)
 	require.NoError(t, err)
-	env := NewEnvironment()
+	env := NewVariables()
 	actual := env.GetRegistryProviderInfoOverride(lc)
 	assert.Equal(t, goodRegistryUrlValue, actual)
 }
 
-func TestOverrideStartupInfo(t *testing.T) {
-	_, startupInfo, lc := initializeTest()
+func TestGetStartupInfo(t *testing.T) {
+	testCases := []struct {
+		TestName         string
+		DurationEnvName  string
+		ExpectedDuration int
+		IntervalEnvName  string
+		ExpectedInterval int
+	}{
+		{"V1 Envs", envV1KeyStartupDuration, 60, envV1KeyStartupInterval, 10},
+		{"V2 Envs", envKeyStartupDuration, 120, envKeyStartupInterval, 30},
+		{"No Envs", "", bootTimeoutSecondsDefault, "", bootRetrySecondsDefault},
+	}
 
-	err := os.Setenv(envKeyStartupDuration, envStartupDuration)
-	require.NoError(t, err)
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
 
-	err = os.Setenv(envKeyStartupInterval, envStartupInterval)
-	require.NoError(t, err)
+			if len(test.DurationEnvName) > 0 {
+				err := os.Setenv(test.DurationEnvName, strconv.Itoa(test.ExpectedDuration))
+				require.NoError(t, err)
+			}
 
-	env := NewEnvironment()
-	startupInfo = env.OverrideStartupInfo(lc, startupInfo)
+			if len(test.IntervalEnvName) > 0 {
+				err := os.Setenv(test.IntervalEnvName, strconv.Itoa(test.ExpectedInterval))
+				require.NoError(t, err)
+			}
 
-	assert.Equal(t, startupInfo.Duration, expectedStartupDuration)
-	assert.Equal(t, startupInfo.Interval, expectedStartupInterval)
+			actual := GetStartupInfo("unit-test")
+			assert.Equal(t, test.ExpectedDuration, actual.Duration)
+			assert.Equal(t, test.ExpectedInterval, actual.Interval)
+		})
+	}
 }
 
-func TestOverrideStartupInfoV1(t *testing.T) {
-	_, startupInfo, lc := initializeTest()
+func TestGetConfDir(t *testing.T) {
+	_, lc := initializeTest()
 
-	err := os.Setenv(envV1KeyStartupDuration, envStartupDuration)
-	require.NoError(t, err)
+	testCases := []struct {
+		TestName     string
+		EnvName      string
+		PassedInName string
+		ExpectedName string
+	}{
+		{"With Env Var", envConfDir, "res", "myres"},
+		{"With No Env Var", "", "res", "res"},
+		{"With No Env Var and no passed in", "", "", defaultConfDirValue},
+	}
 
-	err = os.Setenv(envV1KeyStartupInterval, envStartupInterval)
-	require.NoError(t, err)
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
 
-	env := NewEnvironment()
-	startupInfo = env.OverrideStartupInfo(lc, startupInfo)
+			if len(test.EnvName) > 0 {
+				err := os.Setenv(test.EnvName, test.ExpectedName)
+				require.NoError(t, err)
+			}
 
-	assert.Equal(t, startupInfo.Duration, expectedStartupDuration)
-	assert.Equal(t, startupInfo.Interval, expectedStartupInterval)
+			actual := GetConfDir(lc, test.PassedInName)
+			assert.Equal(t, test.ExpectedName, actual)
+		})
+	}
 }
 
-func TestOverrideStartupInfo_NoEnvVariables(t *testing.T) {
-	_, startupInfo, lc := initializeTest()
+func TestGetProfileDir(t *testing.T) {
+	_, lc := initializeTest()
 
-	env := NewEnvironment()
-	startupInfo = env.OverrideStartupInfo(lc, startupInfo)
+	testCases := []struct {
+		TestName     string
+		EnvName      string
+		EnvValue     string
+		PassedInName string
+		ExpectedName string
+	}{
+		{"With V1 Env Var", envV1Profile, "myProfileV1", "sample", "myProfileV1/"},
+		{"With V2 Env Var", envProfile, "myProfileV2", "sample", "myProfileV2/"},
+		{"With No Env Var", "", "", "sample", "sample/"},
+		{"With No Env Var and no passed in", "", "", "", ""},
+	}
 
-	assert.Equal(t, startupInfo.Duration, defaultStartupDuration)
-	assert.Equal(t, startupInfo.Interval, defaultStartupInterval)
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
+
+			if len(test.EnvName) > 0 {
+				err := os.Setenv(test.EnvName, test.EnvValue)
+				require.NoError(t, err)
+			}
+
+			actual := GetProfileDir(lc, test.PassedInName)
+			assert.Equal(t, test.ExpectedName, actual)
+		})
+	}
+}
+
+func TestGetConfigFileName(t *testing.T) {
+	_, lc := initializeTest()
+
+	testCases := []struct {
+		TestName     string
+		EnvName      string
+		PassedInName string
+		ExpectedName string
+	}{
+		{"With Env Var", envFile, "configuration.toml", "config.toml"},
+		{"With No Env Var", "", "configuration.toml", "configuration.toml"},
+		{"With No Env Var and no passed in", "", "", ""},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
+
+			if len(test.EnvName) > 0 {
+				err := os.Setenv(test.EnvName, test.ExpectedName)
+				require.NoError(t, err)
+			}
+
+			actual := GetConfigFileName(lc, test.PassedInName)
+			assert.Equal(t, test.ExpectedName, actual)
+		})
+	}
 }
 
 func TestConvertToType(t *testing.T) {
@@ -224,7 +294,7 @@ func TestConvertToType(t *testing.T) {
 		{Name: "Invalid Value Type", Value: "anything", OldValue: make(chan int), ExpectedError: "type of 'chan int' is not supported"},
 	}
 
-	env := Environment{}
+	env := Variables{}
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			actual, err := env.convertToType(test.OldValue, test.Value)
@@ -241,7 +311,7 @@ func TestConvertToType(t *testing.T) {
 }
 
 func TestOverrideConfigurationExactCase(t *testing.T) {
-	_, _, lc := initializeTest()
+	_, lc := initializeTest()
 
 	serviceConfig := struct {
 		Registry    config.RegistryInfo
@@ -277,7 +347,7 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 	_ = os.Setenv("FloatVal", strVal)
 	_ = os.Setenv("SecretStore_Authentication_AuthType", expectedAuthType)
 
-	env := NewEnvironment()
+	env := NewVariables()
 	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
 
 	require.NoError(t, err)
@@ -290,7 +360,7 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 }
 
 func TestOverrideConfigurationUppercase(t *testing.T) {
-	_, _, lc := initializeTest()
+	_, lc := initializeTest()
 
 	expectedOverrideCount := 4
 	expectedHost := "edgex-core-consul"
@@ -328,7 +398,7 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 	// Lowercase will not match, so value will not change
 	_ = os.Setenv("secretstore_authentication_authtoken", "NoToken")
 
-	env := NewEnvironment()
+	env := NewVariables()
 	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
 
 	require.NoError(t, err)
@@ -341,7 +411,7 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 }
 
 func TestOverrideConfigurationWithBlankValue(t *testing.T) {
-	_, _, lc := initializeTest()
+	_, lc := initializeTest()
 
 	expectedOverrideCount := 3
 	expectedHost := ""
@@ -373,7 +443,7 @@ func TestOverrideConfigurationWithBlankValue(t *testing.T) {
 	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTYPE", expectedAuthType)
 	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTOKEN", expectedAuthToken)
 
-	env := NewEnvironment()
+	env := NewVariables()
 	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
 
 	require.NoError(t, err)

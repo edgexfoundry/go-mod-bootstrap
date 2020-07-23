@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -27,7 +28,7 @@ import (
 	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
@@ -40,7 +41,7 @@ func createRegistryClient(
 	serviceKey string,
 	serviceConfig interfaces.Configuration,
 	registryUrl string,
-	environment *config.Environment,
+	envVars *environment.Variables,
 	lc logger.LoggingClient) (registry.Client, error) {
 	var err error
 	bootstrapConfig := serviceConfig.GetBootstrap()
@@ -67,8 +68,8 @@ func createRegistryClient(
 	}
 
 	// TODO: Remove this block for release v2.0.0
-	// For backwards compatibility, registry information can be override with environment variable.
-	registryUrl = environment.GetRegistryProviderInfoOverride(lc)
+	// For backwards compatibility, registry information can be override with envVars variable.
+	registryUrl = envVars.GetRegistryProviderInfoOverride(lc)
 	if len(registryUrl) > 0 {
 		registryConfig, err = OverrideRegistryConfigWithUrl(registryConfig, registryUrl)
 		if err != nil {
@@ -113,7 +114,7 @@ func RegisterWithRegistry(
 	startupTimer startup.Timer,
 	config interfaces.Configuration,
 	registryUrl string,
-	environment *config.Environment,
+	envVars *environment.Variables,
 	lc logger.LoggingClient,
 	serviceKey string) (registry.Client, error) {
 
@@ -129,7 +130,7 @@ func RegisterWithRegistry(
 		return nil
 	}
 
-	registryClient, err := createRegistryClient(serviceKey, config, registryUrl, environment, lc)
+	registryClient, err := createRegistryClient(serviceKey, config, registryUrl, envVars, lc)
 	if err != nil {
 		return nil, fmt.Errorf("createRegistryClient failed: %v", err.Error())
 	}

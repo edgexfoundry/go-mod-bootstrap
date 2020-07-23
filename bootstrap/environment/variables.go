@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -12,7 +13,7 @@
  * the License.
  *******************************************************************************/
 
-package config
+package environment
 
 import (
 	"fmt"
@@ -26,10 +27,14 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/pelletier/go-toml"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 )
 
 const (
+	bootTimeoutSecondsDefault = 30
+	bootRetrySecondsDefault   = 1
+	defaultConfDirValue       = "./res"
+
 	envKeyConfigUrl         = "EDGEX_CONFIGURATION_PROVIDER"
 	envKeyRegistryUrl       = "edgex_registry"   // TODO: Remove for release v2.0.0
 	envV1KeyStartupDuration = "startup_duration" // TODO: Remove for release v2.0.0
@@ -42,31 +47,31 @@ const (
 	envFile                 = "EDGEX_CONFIG_FILE"
 )
 
-// Environment is receiver that holds Environment variables and encapsulates toml.Tree-based configuration field
-// overrides.  Assumes "_" embedded in Environment variable key separates substructs; e.g. foo_bar_baz might refer to
+// Variables is receiver that holds Variables variables and encapsulates toml.Tree-based configuration field
+// overrides.  Assumes "_" embedded in Variables variable key separates substructs; e.g. foo_bar_baz might refer to
 //
 // 		type foo struct {
 // 			bar struct {
 //          	baz string
 //  		}
 //		}
-type Environment struct {
-	env map[string]string
+type Variables struct {
+	variables map[string]string
 }
 
-// NewEnvironment constructor reads/stores os.Environ() for use by Environment receiver methods.
-func NewEnvironment() *Environment {
+// NewEnvironment constructor reads/stores os.Environ() for use by Variables receiver methods.
+func NewVariables() *Variables {
 	osEnv := os.Environ()
-	e := &Environment{
-		env: make(map[string]string, len(osEnv)),
+	e := &Variables{
+		variables: make(map[string]string, len(osEnv)),
 	}
 	for _, env := range osEnv {
 		kv := strings.Split(env, "=")
 		if len(kv) > 0 && len(kv[0]) > 0 {
 			if len(kv) > 1 && len(kv[1]) > 0 {
-				e.env[kv[0]] = kv[1]
+				e.variables[kv[0]] = kv[1]
 			} else {
-				e.env[kv[0]] = "" // Handle case when value is blank, i.e. Service_Host=""
+				e.variables[kv[0]] = "" // Handle case when value is blank, i.e. Service_Host=""
 			}
 		}
 	}
@@ -75,14 +80,14 @@ func NewEnvironment() *Environment {
 
 // UseRegistry returns whether the envKeyRegistryUrl key is set
 // TODO: remove this func for release v2.0.0 when envKeyRegistryUrl is removed
-func (e *Environment) UseRegistry() bool {
+func (e *Variables) UseRegistry() bool {
 	_, ok := os.LookupEnv(envKeyRegistryUrl)
 	return ok
 }
 
-// OverrideConfiguration method replaces values in the configuration for matching Environment variable keys.
+// OverrideConfiguration method replaces values in the configuration for matching Variables variable keys.
 // serviceConfig must be pointer to the service configuration.
-func (e *Environment) OverrideConfiguration(lc logger.LoggingClient, serviceConfig interface{}) (int, error) {
+func (e *Variables) OverrideConfiguration(lc logger.LoggingClient, serviceConfig interface{}) (int, error) {
 	var overrideCount = 0
 
 	contents, err := toml.Marshal(reflect.ValueOf(serviceConfig).Elem().Interface())
@@ -103,7 +108,7 @@ func (e *Environment) OverrideConfiguration(lc logger.LoggingClient, serviceConf
 	// originals to set values.
 	pathMap := e.buildUppercasePathMap(paths)
 
-	for envVar, envValue := range e.env {
+	for envVar, envValue := range e.variables {
 		envKey := strings.Replace(envVar, "_", ".", -1)
 		key, found := e.getKeyForMatchedPath(pathMap, envKey)
 		if !found {
@@ -132,7 +137,7 @@ func (e *Environment) OverrideConfiguration(lc logger.LoggingClient, serviceConf
 }
 
 // buildPaths create the path strings for all settings in the Config tree's key map
-func (e *Environment) buildPaths(keyMap map[string]interface{}) []string {
+func (e *Variables) buildPaths(keyMap map[string]interface{}) []string {
 	var paths []string
 
 	for key, item := range keyMap {
@@ -154,7 +159,7 @@ func (e *Environment) buildPaths(keyMap map[string]interface{}) []string {
 
 // buildUppercasePathMap builds a map where the key is the uppercase version of the path
 // and the value is original version of the path
-func (e *Environment) buildUppercasePathMap(paths []string) map[string]string {
+func (e *Variables) buildUppercasePathMap(paths []string) map[string]string {
 	ucMap := make(map[string]string)
 	for _, path := range paths {
 		ucMap[strings.ToUpper(path)] = path
@@ -168,7 +173,7 @@ func (e *Environment) buildUppercasePathMap(paths []string) map[string]string {
 // For backward compatibility a case insensitive comparision is currently used.
 // TODO: For release v2.0.0 Change this to NOT check that `envVarName` is uppercase and only compare against uppercase
 //  so only uppercase environment variable names will match.
-func (e *Environment) getKeyForMatchedPath(pathMap map[string]string, envVarName string) (string, bool) {
+func (e *Variables) getKeyForMatchedPath(pathMap map[string]string, envVarName string) (string, bool) {
 	for ucKey, lcKey := range pathMap {
 		compareKey := lcKey
 		if isAllUpperCase(envVarName) {
@@ -184,8 +189,8 @@ func (e *Environment) getKeyForMatchedPath(pathMap map[string]string, envVarName
 }
 
 // OverrideConfigProviderInfo overrides the Configuration Provider ServiceConfig values
-// from an Environment variable value (if it exists).
-func (_ *Environment) OverrideConfigProviderInfo(
+// from an Variables variable value (if it exists).
+func (_ *Variables) OverrideConfigProviderInfo(
 	lc logger.LoggingClient,
 	configProviderInfo types.ServiceConfig) (types.ServiceConfig, error) {
 
@@ -208,8 +213,8 @@ func (_ *Environment) OverrideConfigProviderInfo(
 // This is for backwards compatibility with Fuji Device Services.
 // If --registry=<url> is used then we must use the <url> for the configuration provider.
 // GetRegistryProviderInfoOverride get the overrides for Registry Provider Config values
-// from an Environment variable value (if it exists).
-func (_ *Environment) GetRegistryProviderInfoOverride(lc logger.LoggingClient) string {
+// from an Variables variable value (if it exists).
+func (_ *Variables) GetRegistryProviderInfoOverride(lc logger.LoggingClient) string {
 	url := os.Getenv(envKeyRegistryUrl)
 	if len(url) > 0 {
 		logEnvironmentOverride(lc, "Registry Provider Information", envKeyRegistryUrl, url)
@@ -218,38 +223,8 @@ func (_ *Environment) GetRegistryProviderInfoOverride(lc logger.LoggingClient) s
 	return url
 }
 
-// OverrideStartupInfo overrides the Service StartupInfo values from an Environment variable value (if it exists).
-func (_ *Environment) OverrideStartupInfo(
-	lc logger.LoggingClient,
-	startup config.StartupInfo) config.StartupInfo {
-
-	//	OverrideConfiguration the startup timer configuration, if provided.
-	// Have to support old V1 lowercase version of key and new uppercase version of the key until release v2.0.0
-	key, value := getEnvironmentValue(envKeyStartupDuration, envV1KeyStartupDuration)
-	if len(value) > 0 {
-		logEnvironmentOverride(lc, "Startup Duration", key, value)
-
-		if n, err := strconv.ParseInt(value, 10, 0); err == nil && n > 0 {
-			startup.Duration = int(n)
-		}
-	}
-
-	//	OverrideConfiguration the startup timer interval, if provided.
-	// Have to support old V1 lowercase version of key and new uppercase version of the key unitl release v2.0.0
-	key, value = getEnvironmentValue(envKeyStartupInterval, envV1KeyStartupInterval)
-	if len(value) > 0 {
-		logEnvironmentOverride(lc, "Startup Interval", key, value)
-
-		if n, err := strconv.ParseInt(value, 10, 0); err == nil && n > 0 {
-			startup.Interval = int(n)
-		}
-	}
-
-	return startup
-}
-
 // convertToType attempts to convert the string value to the specified type of the old value
-func (_ *Environment) convertToType(oldValue interface{}, value string) (newValue interface{}, err error) {
+func (_ *Variables) convertToType(oldValue interface{}, value string) (newValue interface{}, err error) {
 	switch oldValue.(type) {
 	case []string:
 		newValue = parseCommaSeparatedSlice(value)
@@ -301,6 +276,93 @@ func (_ *Environment) convertToType(oldValue interface{}, value string) (newValu
 	return newValue, err
 }
 
+// StartupInfo provides the startup timer values which are applied to the StartupTimer created at boot.
+type StartupInfo struct {
+	Duration int
+	Interval int
+}
+
+// GetStartupInfo gets the Service StartupInfo values from an Variables variable value (if it exists)
+// or uses the default values.
+func GetStartupInfo(serviceKey string) StartupInfo {
+	// Logger hasn't be created at the time this info is needed so have to create local client.
+	lc := logging.FactoryToStdout(serviceKey)
+
+	startup := StartupInfo{
+		Duration: bootTimeoutSecondsDefault,
+		Interval: bootRetrySecondsDefault,
+	}
+
+	// Get the startup timer configuration form environment, if provided.
+	// Have to support old V1 lowercase version of key and new uppercase version of the key until release v2.0.0
+	key, value := getEnvironmentValue(envKeyStartupDuration, envV1KeyStartupDuration)
+	if len(value) > 0 {
+		logEnvironmentOverride(lc, "Startup Duration", key, value)
+
+		if n, err := strconv.ParseInt(value, 10, 0); err == nil && n > 0 {
+			startup.Duration = int(n)
+		}
+	}
+
+	// Get the startup timer interval, if provided.
+	// Have to support old V1 lowercase version of key and new uppercase version of the key unitl release v2.0.0
+	key, value = getEnvironmentValue(envKeyStartupInterval, envV1KeyStartupInterval)
+	if len(value) > 0 {
+		logEnvironmentOverride(lc, "Startup Interval", key, value)
+
+		if n, err := strconv.ParseInt(value, 10, 0); err == nil && n > 0 {
+			startup.Interval = int(n)
+		}
+	}
+
+	return startup
+}
+
+// GetConfDir get the config directory value from an Variables variable value (if it exists)
+// or uses passed in value or default if previous result in blank.
+func GetConfDir(lc logger.LoggingClient, configDir string) string {
+	envValue := os.Getenv(envConfDir)
+	if len(envValue) > 0 {
+		configDir = envValue
+		logEnvironmentOverride(lc, "-c/-confdir", envFile, envValue)
+	}
+
+	if len(configDir) == 0 {
+		configDir = defaultConfDirValue
+	}
+
+	return configDir
+}
+
+// GetProfileDir get the profile directory value from an Variables variable value (if it exists)
+// or uses passed in value or default if previous result in blank.
+func GetProfileDir(lc logger.LoggingClient, profileDir string) string {
+	// TODO: For release v2.0.0 just use envProfile
+	key, envValue := getEnvironmentValue(envProfile, envV1Profile)
+	if len(envValue) > 0 {
+		profileDir = envValue
+		logEnvironmentOverride(lc, "-p/-profile", key, envValue)
+	}
+
+	if len(profileDir) > 0 {
+		profileDir += "/"
+	}
+
+	return profileDir
+}
+
+// GetConfigFileName gets the configuration filename value from an Variables variable value (if it exists)
+// or uses passed in value.
+func GetConfigFileName(lc logger.LoggingClient, configFileName string) string {
+	envValue := os.Getenv(envFile)
+	if len(envValue) > 0 {
+		configFileName = envValue
+		logEnvironmentOverride(lc, "-f/-file", envFile, envValue)
+	}
+
+	return configFileName
+}
+
 // parseCommaSeparatedSlice converts comma separated list to a string slice
 func parseCommaSeparatedSlice(value string) (values []interface{}) {
 	// Assumption is environment variable value is comma separated
@@ -328,7 +390,7 @@ func getEnvironmentValue(newKey string, v1Key string) (string, string) {
 
 // logEnvironmentOverride logs that an option or configuration has been override by an environment variable.
 func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, value string) {
-	lc.Info(fmt.Sprintf("Environment override of '%s' by environment variable: %s=%s", name, key, value))
+	lc.Info(fmt.Sprintf("Variables override of '%s' by environment variable: %s=%s", name, key, value))
 }
 
 // isAllUpperCase checks the key to determine if it is all uppercase letters

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"reflect"
 	"sync"
 
@@ -28,6 +28,7 @@ import (
 	configTypes "github.com/edgexfoundry/go-mod-configuration/pkg/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
@@ -42,7 +43,7 @@ type UpdatedStream chan struct{}
 type Processor struct {
 	Logger          logger.LoggingClient
 	flags           flags.Common
-	environment     *Environment
+	envVars         *environment.Variables
 	startupTimer    startup.Timer
 	ctx             context.Context
 	wg              *sync.WaitGroup
@@ -54,7 +55,7 @@ type Processor struct {
 func NewProcessor(
 	lc logger.LoggingClient,
 	flags flags.Common,
-	environment *Environment,
+	envVars *environment.Variables,
 	startupTimer startup.Timer,
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -63,7 +64,7 @@ func NewProcessor(
 	return &Processor{
 		Logger:        lc,
 		flags:         flags,
-		environment:   environment,
+		envVars:       envVars,
 		startupTimer:  startupTimer,
 		ctx:           ctx,
 		wg:            wg,
@@ -73,7 +74,7 @@ func NewProcessor(
 
 func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig interfaces.Configuration) error {
 	// Create some shorthand for frequently used items
-	environment := cp.environment
+	envVars := cp.envVars
 	lc := cp.Logger
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
@@ -89,10 +90,10 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 		return err
 	}
 
-	// Override file-based configuration with environment variables.
-	// Environment variable overrides have precedence over all others,
+	// Override file-based configuration with envVars variables.
+	// Variables variable overrides have precedence over all others,
 	// so make sure they are applied before config is used for anything.
-	overrideCount, err := environment.OverrideConfiguration(lc, serviceConfig)
+	overrideCount, err := envVars.OverrideConfiguration(lc, serviceConfig)
 	if err != nil {
 		return err
 	}
@@ -112,8 +113,8 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 			lc.Info("Config Provider URL created from Registry configuration")
 		}
 	}
-	// Create new ProviderInfo and initialize it from command-line flag or Environment variables
-	configProviderInfo, err := NewProviderInfo(lc, cp.environment, configProviderUrl)
+	// Create new ProviderInfo and initialize it from command-line flag or Variables variables
+	configProviderInfo, err := NewProviderInfo(lc, cp.envVars, configProviderUrl)
 	if err != nil {
 		return err
 	}
@@ -145,12 +146,12 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 		}
 
 		// Have to create new Logger here so it is used in long running listenForChanges()
-		cp.Logger = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
+		cp.Logger = logging.FactoryFromConfiguration(serviceKey, serviceConfig.GetBootstrap(), serviceConfig.GetLogLevel())
 		cp.listenForChanges(serviceConfig, configClient)
 
 	case false:
 		// Have to create new Logger here so that have one created from local configuration.
-		cp.Logger = logging.FactoryFromConfiguration(serviceKey, serviceConfig)
+		cp.Logger = logging.FactoryFromConfiguration(serviceKey, serviceConfig.GetBootstrap(), serviceConfig.GetLogLevel())
 		cp.logConfigInfo("Using local configuration from file", overrideCount)
 	}
 	return err
@@ -175,55 +176,28 @@ func (cp *Processor) createProviderClient(
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
 func (cp *Processor) loadFromFile(config interfaces.Configuration) error {
-	configDir := cp.flags.ConfigDirectory()
-	envValue := os.Getenv(envConfDir)
-	if len(envValue) > 0 {
-		configDir = envValue
-		logEnvironmentOverride(cp.Logger, "-c/-confdir", envFile, envValue)
-	}
+	configDir := environment.GetConfDir(cp.Logger, cp.flags.ConfigDirectory())
+	profileDir := environment.GetProfileDir(cp.Logger, cp.flags.Profile())
+	configFileName := environment.GetConfigFileName(cp.Logger, cp.flags.ConfigFileName())
 
-	if len(configDir) == 0 {
-		configDir = "./res"
-	}
+	filePath := configDir + "/" + profileDir + configFileName
 
-	profileDir := cp.flags.Profile()
-	// TODO: For release v2.0.0 just use envProfile
-	key, envValue := getEnvironmentValue(envProfile, envV1Profile)
-	if len(envValue) > 0 {
-		profileDir = envValue
-		logEnvironmentOverride(cp.Logger, "-p/-profile", key, envValue)
-	}
-
-	// remainder is simplification of LoadFromFile() in internal/pkg/config/loader.go
-	if len(profileDir) > 0 {
-		profileDir += "/"
-	}
-
-	configFileName := cp.flags.ConfigFileName()
-	envValue = os.Getenv(envFile)
-	if len(envValue) > 0 {
-		configFileName = envValue
-		logEnvironmentOverride(cp.Logger, "-f/-file", envFile, envValue)
-	}
-
-	fileName := configDir + "/" + profileDir + configFileName
-
-	contents, err := ioutil.ReadFile(fileName)
+	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("could not load configuration file (%s): %s", fileName, err.Error())
+		return fmt.Errorf("could not load configuration file (%s): %s", filePath, err.Error())
 	}
 	if err = toml.Unmarshal(contents, config); err != nil {
-		return fmt.Errorf("could not load configuration file (%s): %s", fileName, err.Error())
+		return fmt.Errorf("could not load configuration file (%s): %s", filePath, err.Error())
 	}
 
-	cp.Logger.Info(fmt.Sprintf("Loaded configuration from %s", fileName))
+	cp.Logger.Info(fmt.Sprintf("Loaded configuration from %s", filePath))
 
 	return nil
 }
 
 // ProcessWithProvider puts configuration if doesnt exist in provider (i.e. self-seed) or
-// gets configuration from provider and updates the service's configuration with environment overrides after receiving
-// them from the provider so that environment override supersede any changes made in the provider.
+// gets configuration from provider and updates the service's configuration with envVars overrides after receiving
+// them from the provider so that envVars override supersede any changes made in the provider.
 func (cp *Processor) processWithProvider(
 	configClient configuration.Client,
 	serviceConfig interfaces.Configuration,
@@ -239,7 +213,7 @@ func (cp *Processor) processWithProvider(
 	}
 
 	if !hasConfig || cp.overwriteConfig {
-		// Environment overrides already applied previously so just push to Configuration Provider
+		// Variables overrides already applied previously so just push to Configuration Provider
 		// Note that serviceConfig is a pointer, so we have to use reflection to dereference it.
 		err = configClient.PutConfiguration(reflect.ValueOf(serviceConfig).Elem().Interface(), true)
 		if err != nil {
@@ -257,7 +231,7 @@ func (cp *Processor) processWithProvider(
 			return errors.New("configuration from Configuration provider failed type check")
 		}
 
-		overrideCount, err := cp.environment.OverrideConfiguration(cp.Logger, serviceConfig)
+		overrideCount, err := cp.envVars.OverrideConfiguration(cp.Logger, serviceConfig)
 		if err != nil {
 			return err
 		}
@@ -303,7 +277,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
 				// any changes to the configuration. This causes an issue during start-up if there is an
-				// environment override of one of the Writable fields, so we must ignore the first update.
+				// envVars override of one of the Writable fields, so we must ignore the first update.
 				if isFirstUpdate {
 					isFirstUpdate = false
 					continue
@@ -327,5 +301,5 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 
 // logConfigInfo logs the config info message with number over overrides that occurred.
 func (cp *Processor) logConfigInfo(message string, overrideCount int) {
-	cp.Logger.Info(fmt.Sprintf("%s (%d environment overrides applied)", message, overrideCount))
+	cp.Logger.Info(fmt.Sprintf("%s (%d envVars overrides applied)", message, overrideCount))
 }

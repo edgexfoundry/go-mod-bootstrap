@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,17 +17,6 @@ package interfaces
 
 import "github.com/edgexfoundry/go-mod-bootstrap/config"
 
-// BootstrapConfiguration defines the configuration elements required by the bootstrap.
-type BootstrapConfiguration struct {
-	Clients     map[string]config.ClientInfo
-	Service     config.ServiceInfo
-	Config      config.ConfigProviderInfo
-	Registry    config.RegistryInfo
-	Logging     config.LoggingInfo
-	SecretStore config.SecretStoreInfo
-	Startup     config.StartupInfo
-}
-
 // Configuration interface provides an abstraction around a configuration struct.
 type Configuration interface {
 	// UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is
@@ -42,7 +32,7 @@ type Configuration interface {
 	UpdateWritableFromRaw(rawWritable interface{}) bool
 
 	// GetBootstrap returns the configuration elements required by the bootstrap.
-	GetBootstrap() BootstrapConfiguration
+	GetBootstrap() config.BootstrapConfiguration
 
 	// GetLogLevel returns the current ConfigurationStruct's log level.
 	GetLogLevel() string
