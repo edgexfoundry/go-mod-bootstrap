@@ -20,14 +20,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
+)
+
+const (
+	envKeyConfigUrl = "EDGEX_CONFIGURATION_PROVIDER"
+	goodUrlValue    = "consul.http://localhost:8500"
+	badUrlValue     = "Not a url"
+
+	expectedTypeValue     = "consul"
+	expectedHostValue     = "localhost"
+	expectedPortValue     = 8500
+	expectedProtocolValue = "http"
 )
 
 func TestNewConfigProviderInfoUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	env := NewEnvironment()
-	target, err := NewProviderInfo(lc, env, goodUrlValue)
+	envVars := environment.NewVariables()
+	target, err := NewProviderInfo(lc, envVars, goodUrlValue)
 	require.NoError(t, err)
 
 	actual := target.ServiceConfig()
@@ -44,8 +56,8 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 	err := os.Setenv(envKeyConfigUrl, goodUrlValue)
 	require.NoError(t, err)
 
-	env := NewEnvironment()
-	target, err := NewProviderInfo(lc, env, goodUrlValue)
+	envVars := environment.NewVariables()
+	target, err := NewProviderInfo(lc, envVars, goodUrlValue)
 	require.NoError(t, err)
 
 	actual := target.ServiceConfig()
@@ -59,8 +71,8 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 func TestNewConfigProviderInfoBadUrl(t *testing.T) {
 	lc := logging.FactoryToStdout("unit-test")
 
-	env := NewEnvironment()
-	_, err := NewProviderInfo(lc, env, badUrlValue)
+	envVars := environment.NewVariables()
+	_, err := NewProviderInfo(lc, envVars, badUrlValue)
 	assert.Error(t, err)
 }
 
@@ -71,7 +83,7 @@ func TestNewConfigProviderInfoBadEnvUrl(t *testing.T) {
 	err := os.Setenv(envKeyConfigUrl, badUrlValue)
 	require.NoError(t, err)
 
-	env := NewEnvironment()
-	_, err = NewProviderInfo(lc, env, goodUrlValue)
+	envVars := environment.NewVariables()
+	_, err = NewProviderInfo(lc, envVars, goodUrlValue)
 	assert.Error(t, err)
 }

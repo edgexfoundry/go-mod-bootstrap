@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -83,12 +84,6 @@ type LoggingInfo struct {
 	File         string
 }
 
-// StartupInfo provides the startup timer values which are applied to the StartupTimer created at boot.
-type StartupInfo struct {
-	Duration int
-	Interval int
-}
-
 // ClientInfo provides the host and port of another service in the eco-system.
 type ClientInfo struct {
 	// Host is the hostname or IP address of a service.
@@ -141,4 +136,14 @@ type Credentials struct {
 type CertKeyPair struct {
 	Cert string
 	Key  string
+}
+
+// BootstrapConfiguration defines the configuration elements required by the bootstrap.
+type BootstrapConfiguration struct {
+	Clients     map[string]ClientInfo
+	Service     ServiceInfo
+	Config      ConfigProviderInfo
+	Registry    RegistryInfo
+	Logging     LoggingInfo
+	SecretStore SecretStoreInfo
 }

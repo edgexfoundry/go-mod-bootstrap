@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	envConfig "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 )
 
@@ -74,10 +73,10 @@ func TestCreateRegistryClient(t *testing.T) {
 		},
 	}
 
-	env := envConfig.NewEnvironment()
+	envVars := environment.NewVariables()
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			actual, err := createRegistryClient("unit-test", serviceConfig, test.RegistryUrl, env, lc)
+			actual, err := createRegistryClient("unit-test", serviceConfig, test.RegistryUrl, envVars, lc)
 			if len(test.ExpectedError) > 0 {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), test.ExpectedError)
@@ -153,8 +152,8 @@ func (ut unitTestConfiguration) UpdateWritableFromRaw(rawWritable interface{}) b
 	panic("should not be called")
 }
 
-func (ut unitTestConfiguration) GetBootstrap() interfaces.BootstrapConfiguration {
-	return interfaces.BootstrapConfiguration{
+func (ut unitTestConfiguration) GetBootstrap() config.BootstrapConfiguration {
+	return config.BootstrapConfiguration{
 		Service:  ut.Service,
 		Registry: ut.Registry,
 	}

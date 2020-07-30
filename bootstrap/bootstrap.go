@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -26,6 +27,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
@@ -93,14 +95,9 @@ func RunAndReturnWaitGroup(
 
 	translateInterruptToCancel(ctx, &wg, cancel)
 
-	bootstrapConfig := serviceConfig.GetBootstrap()
-	environment := config.NewEnvironment()
-	startupInfo := environment.OverrideStartupInfo(lc, bootstrapConfig.Startup)
+	envVars := environment.NewVariables()
 
-	//	Update the startup timer to reflect whatever configuration read, if anything available.
-	startupTimer.UpdateTimer(startupInfo.Duration, startupInfo.Interval)
-
-	configProcessor := config.NewProcessor(lc, commonFlags, environment, startupTimer, ctx, &wg, configUpdated)
+	configProcessor := config.NewProcessor(lc, commonFlags, envVars, startupTimer, ctx, &wg, configUpdated)
 	if err := configProcessor.Process(serviceKey, configStem, serviceConfig); err != nil {
 		fatalError(err, lc)
 	}
@@ -111,7 +108,7 @@ func RunAndReturnWaitGroup(
 	var registryClient registry.Client
 
 	// TODO: Remove `|| config.UseRegistry()` for release V2.0.0
-	if commonFlags.UseRegistry() || environment.UseRegistry() {
+	if commonFlags.UseRegistry() || envVars.UseRegistry() {
 		// For backwards compatibility with Fuji Device Service, registry is a string that can contain a provider URL.
 		// TODO: Remove registryUrl in call below for release V2.0.0
 		registryClient, err = registration.RegisterWithRegistry(
@@ -119,7 +116,7 @@ func RunAndReturnWaitGroup(
 			startupTimer,
 			serviceConfig,
 			commonFlags.RegistryUrl(),
-			environment,
+			envVars,
 			lc,
 			serviceKey)
 		if err != nil {

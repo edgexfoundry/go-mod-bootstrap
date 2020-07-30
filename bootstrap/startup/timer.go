@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,7 +15,11 @@
 
 package startup
 
-import "time"
+import (
+	"time"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
+)
 
 // Timer contains references to dependencies required by the startup timer implementation.
 type Timer struct {
@@ -24,11 +29,13 @@ type Timer struct {
 }
 
 // NewStartUpTimer is a factory method that returns an initialized Timer receiver struct.
-func NewStartUpTimer(retryIntervalInSeconds, maxWaitInSeconds int) Timer {
+func NewStartUpTimer(serviceKey string) Timer {
+	startup := environment.GetStartupInfo(serviceKey)
+
 	return Timer{
 		startTime: time.Now(),
-		duration:  time.Second * time.Duration(maxWaitInSeconds),
-		interval:  time.Second * time.Duration(retryIntervalInSeconds),
+		duration:  time.Second * time.Duration(startup.Duration),
+		interval:  time.Second * time.Duration(startup.Interval),
 	}
 }
 
@@ -45,14 +52,4 @@ func (t Timer) HasNotElapsed() bool {
 // SleepForInterval pauses execution for the interval specified during construction.
 func (t Timer) SleepForInterval() {
 	time.Sleep(t.interval)
-}
-
-//	Update the wait/interval for the timer,
-func (t Timer) UpdateTimer(maxWaitInSeconds int, retryIntervalInSeconds int) {
-	if maxWaitInSeconds > 0 {
-		t.duration = time.Second * time.Duration(maxWaitInSeconds)
-	}
-	if retryIntervalInSeconds > 0 {
-		t.interval = time.Second * time.Duration(retryIntervalInSeconds)
-	}
 }
