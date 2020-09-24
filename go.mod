@@ -8,8 +8,7 @@ require (
 	github.com/edgexfoundry/go-mod-secrets v0.0.20
 	github.com/gorilla/mux v1.7.1
 	github.com/pelletier/go-toml v1.2.0
-	github.com/stretchr/testify v1.5.1
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	github.com/stretchr/testify v1.6.1
 )
 
 go 1.15
