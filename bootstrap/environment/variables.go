@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	bootTimeoutSecondsDefault = 30
+	bootTimeoutSecondsDefault = 60
 	bootRetrySecondsDefault   = 1
 	defaultConfDirValue       = "./res"
 
