@@ -2,7 +2,7 @@ module github.com/edgexfoundry/go-mod-bootstrap
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/edgexfoundry/go-mod-configuration v0.0.5
+	github.com/edgexfoundry/go-mod-configuration v0.0.6
 	github.com/edgexfoundry/go-mod-core-contracts v0.1.85
 	github.com/edgexfoundry/go-mod-registry v0.1.22
 	github.com/edgexfoundry/go-mod-secrets v0.0.23
