@@ -452,3 +452,30 @@ func TestOverrideConfigurationWithBlankValue(t *testing.T) {
 	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
 	assert.Equal(t, expectedAuthToken, serviceConfig.SecretStore.Authentication.AuthToken)
 }
+
+func TestOverrideConfigurationWithEqualInValue(t *testing.T) {
+	_, lc := initializeTest()
+
+	expectedOverrideCount := 1
+	expectedAuthToken := "123456=789"
+
+	serviceConfig := struct {
+		SecretStore config.SecretStoreInfo
+	}{
+		SecretStore: config.SecretStoreInfo{
+			Authentication: vault.AuthenticationInfo{
+				AuthType:  "none",
+				AuthToken: expectedAuthToken,
+			},
+		},
+	}
+
+	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTOKEN", expectedAuthToken)
+
+	env := NewVariables()
+	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedOverrideCount, actualCount)
+	assert.Equal(t, expectedAuthToken, serviceConfig.SecretStore.Authentication.AuthToken)
+}

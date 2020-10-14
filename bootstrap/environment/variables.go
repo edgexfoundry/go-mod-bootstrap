@@ -66,15 +66,16 @@ func NewVariables() *Variables {
 		variables: make(map[string]string, len(osEnv)),
 	}
 	for _, env := range osEnv {
-		kv := strings.Split(env, "=")
-		if len(kv) > 0 && len(kv[0]) > 0 {
-			if len(kv) > 1 && len(kv[1]) > 0 {
-				e.variables[kv[0]] = kv[1]
-			} else {
-				e.variables[kv[0]] = "" // Handle case when value is blank, i.e. Service_Host=""
-			}
+		// Can not use Split() on '=' since the value may have an '=' in it, so changed to use Index()
+		index := strings.Index(env, "=")
+		if index == -1 {
+			continue
 		}
+		key := env[:index]
+		value := env[index+1:]
+		e.variables[key] = value
 	}
+
 	return e
 }
 
