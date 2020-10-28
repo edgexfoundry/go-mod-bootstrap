@@ -96,3 +96,30 @@ func TestNewOverrideRegistry(t *testing.T) {
 
 	assert.Equal(t, expectedRegistryUrl, actual.RegistryUrl())
 }
+
+func TestDashR(t *testing.T) {
+	expectedConfigDirectory := "/foo/ba-r/"
+	actual := newSUT([]string{"-confdir", "/foo/ba-r/"})
+
+	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
+}
+
+func TestConfDirEquals(t *testing.T) {
+	expectedConfigDirectory := "/foo/ba-r/"
+	actual := newSUT([]string{"-confdir=/foo/ba-r/"})
+
+	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
+}
+
+func TestConfCommonScenario(t *testing.T) {
+	expectedConfigProviderUrl := "consul.http://edgex-core-consul:8500"
+	expectedConfigDirectory := "/res"
+	expectedRegistryUrl := ""
+
+	actual := newSUT([]string{"-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"})
+
+	assert.Equal(t, expectedConfigProviderUrl, actual.ConfigProviderUrl())
+	assert.True(t, actual.UseRegistry())
+	assert.Equal(t, expectedRegistryUrl, actual.RegistryUrl())
+	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
+}
