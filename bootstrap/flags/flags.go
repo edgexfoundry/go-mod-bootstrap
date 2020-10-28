@@ -18,7 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
 )
 
 const (
@@ -75,18 +75,25 @@ func (d *Default) Parse(arguments []string) {
 	// The flags package doesn't allow for String flags to be specified without a value, so to support
 	// -cp/-configProvider without value to indicate using default host value we must detect use of this option with
 	// out value and insert the default value before parsing the command line options.
-	//
+
+	configProviderRE, _ := regexp.Compile("^--?(cp|configProvider)=?")
+	registryRE, _ := regexp.Compile("^--?r(egistry)?=?")
+
 	for index, option := range arguments {
-		if strings.Contains(option, "-cp") || strings.Contains(option, "-configProvider") {
-			if !strings.Contains(option, "=") {
+		if loc := configProviderRE.FindStringIndex(option); loc != nil {
+			if option[loc[1]-1] != '=' {
 				arguments[index] = "-cp=" + DefaultConfigProvider
 			}
-			// TODO: Remove this for release v2.0.0 when --registry is a bool
-			// For backwards compatibility with Fuji Device Services, -r/-registry can contain a provider URL.
-			// It can also be used as a bool, i.e. not value, but flags doesn't all ow no value so we have to detect this
-			// and give it a value that represent "no value'
-		} else if strings.Contains(option, "-r") || strings.Contains(option, "-registry") {
-			if !strings.Contains(option, "=") {
+
+			continue
+		}
+
+		// TODO: Remove this for release v2.0.0 when --registry is a bool
+		// For backwards compatibility with Fuji Device Services, -r/-registry can contain a provider URL.
+		// It can also be used as a bool, i.e. not value, but flags doesn't all ow no value so we have to detect this
+		// and give it a value that represent "no value'
+		if loc := registryRE.FindStringIndex(option); loc != nil {
+			if option[loc[1]-1] != '=' {
 				arguments[index] = "-r=" + UseRegistryNoUrlValue
 			}
 		}
