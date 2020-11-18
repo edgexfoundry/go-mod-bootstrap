@@ -17,6 +17,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"os"
 	"os/signal"
 	"sync"
@@ -30,7 +31,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -91,7 +91,11 @@ func RunAndReturnWaitGroup(
 	var wg sync.WaitGroup
 	deferred := func() {}
 
-	lc := logging.FactoryToStdout(serviceKey)
+	// Check if service provided an initial Logging Client to use. If not create one.
+	lc := container.LoggingClientFrom(dic.Get)
+	if lc == nil {
+		lc = logging.FactoryToStdout(serviceKey)
+	}
 
 	translateInterruptToCancel(ctx, &wg, cancel)
 
