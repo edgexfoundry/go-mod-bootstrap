@@ -39,4 +39,7 @@ type Configuration interface {
 
 	// GetRegistryInfo gets the config.RegistryInfo field from the ConfigurationStruct.
 	GetRegistryInfo() config.RegistryInfo
+
+	// GetInsecureSecrets gets the config.InsecureSecrets field from the ConfigurationStruct.
+	GetInsecureSecrets() config.InsecureSecrets
 }

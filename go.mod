@@ -8,7 +8,9 @@ require (
 	github.com/edgexfoundry/go-mod-secrets v0.0.27
 	github.com/gorilla/mux v1.7.1
 	github.com/pelletier/go-toml v1.2.0
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 )
+
+replace github.com/edgexfoundry/go-mod-secrets => ../go-mod-secrets
 
 go 1.15

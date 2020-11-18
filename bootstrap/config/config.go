@@ -24,6 +24,8 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-configuration/configuration"
 	configTypes "github.com/edgexfoundry/go-mod-configuration/pkg/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -48,6 +50,7 @@ type Processor struct {
 	ctx             context.Context
 	wg              *sync.WaitGroup
 	configUpdated   UpdatedStream
+	dic             *di.Container
 	overwriteConfig bool
 }
 
@@ -60,6 +63,7 @@ func NewProcessor(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	configUpdated UpdatedStream,
+	dic *di.Container,
 ) *Processor {
 	return &Processor{
 		Logger:        lc,
@@ -69,6 +73,7 @@ func NewProcessor(
 		ctx:           ctx,
 		wg:            wg,
 		configUpdated: configUpdated,
+		dic:           dic,
 	}
 }
 
@@ -283,13 +288,35 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					continue
 				}
 
+				previousInsecureSecrets := serviceConfig.GetInsecureSecrets()
+				previousLogLevel := serviceConfig.GetLogLevel()
+
 				if !serviceConfig.UpdateWritableFromRaw(raw) {
 					lc.Error("ListenForChanges() type check failed")
 					return
 				}
 
+				currentInsecureSecrets := serviceConfig.GetInsecureSecrets()
+				currentLogLevel := serviceConfig.GetLogLevel()
+
 				lc.Info("Writeable configuration has been updated from the Configuration Provider")
-				_ = lc.SetLogLevel(serviceConfig.GetLogLevel())
+
+				// Note: Updates occur one setting at a time so only have to look for single changes
+				switch {
+				case currentLogLevel != previousLogLevel:
+					_ = lc.SetLogLevel(serviceConfig.GetLogLevel())
+					lc.Info(fmt.Sprintf("Logging level changed to %s", currentLogLevel))
+
+				// InsecureSecrets (map) will be nil if not in the original TOML used to seed the Config Provider,
+				// so ignore it if this is the case.
+				case currentInsecureSecrets != nil &&
+					!reflect.DeepEqual(currentInsecureSecrets, previousInsecureSecrets):
+					lc.Info("Insecure Secrets have been updated")
+					secretProvider := container.SecretProviderFrom(cp.dic.Get)
+					if secretProvider != nil {
+						secretProvider.InsecureSecretsUpdated()
+					}
+				}
 
 				if cp.configUpdated != nil {
 					cp.configUpdated <- struct{}{}
