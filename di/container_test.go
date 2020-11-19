@@ -22,10 +22,11 @@ import (
 
 const serviceName = "serviceName"
 
-func TestGetUnknownServicePanics(t *testing.T) {
+func TestGetUnknownService(t *testing.T) {
 	sut := NewContainer(ServiceConstructorMap{})
 
-	assert.Panics(t, func() { sut.Get("unknownService") })
+	result := sut.Get("unknownService")
+	assert.Nil(t, result)
 }
 
 func TestGetKnownServiceReturnsExpectedConstructorResult(t *testing.T) {
