@@ -111,12 +111,13 @@ func (c *Container) Update(serviceConstructors ServiceConstructorMap) {
 }
 
 // get looks up the requested serviceName and, if it exists, returns a constructed instance.  If the requested service
-// does not exist, it panics.  Get wraps instance construction in a singleton; the implementation assumes an instance,
+// does not exist, it returns nil.  Get wraps instance construction in a singleton; the implementation assumes an instance,
 // once constructed, will be reused and returned for all subsequent get(serviceName) calls.
 func (c *Container) get(serviceName string) interface{} {
 	service, ok := c.serviceMap[serviceName]
 	if !ok {
-		panic("attempt to get unknown service \"" + serviceName + "\"")
+		// Returning nil allows the DIC to be queried for a object and not panic if it doesn't exist.
+		return nil
 	}
 	if service.instance == nil {
 		service.instance = service.constructor(c.get)
