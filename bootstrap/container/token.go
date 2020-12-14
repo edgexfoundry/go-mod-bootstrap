@@ -32,10 +32,10 @@ func FileIoPerformerFrom(get di.Get) fileioperformer.FileIoPerformer {
 	return (fileioperformer.FileIoPerformer)(nil)
 }
 
-// FileIoPerformerInterfaceName contains the name of the fileioperformer.FileIoPerformer implementation in the DIC.
+// AuthTokenLoaderInterfaceName contains the name of the authtokenloader.AuthTokenLoader implementation in the DIC.
 var AuthTokenLoaderInterfaceName = di.TypeInstanceToName((*authtokenloader.AuthTokenLoader)(nil))
 
-// FileIoPerformerFrom helper function queries the DIC and returns the fileioperformer.FileIoPerformer implementation.
+// AuthTokenLoaderFrom helper function queries the DIC and returns the authtokenloader.AuthTokenLoader implementation.
 func AuthTokenLoaderFrom(get di.Get) authtokenloader.AuthTokenLoader {
 	loader := get(AuthTokenLoaderInterfaceName)
 	if loader != nil {

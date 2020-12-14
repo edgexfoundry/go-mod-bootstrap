@@ -32,7 +32,7 @@ func SecretClientFrom(get di.Get) secrets.SecretClient {
 // SecretProviderName contains the name of the interfaces.SecretProvider implementation in the DIC.
 var SecretProviderName = di.TypeInstanceToName((*interfaces.SecretProvider)(nil))
 
-// CredentialsProviderFrom helper function queries the DIC and returns the interfaces.CredentialsProviderName
+// SecretProviderFrom helper function queries the DIC and returns the interfaces.SecretProvider
 // implementation.
 func SecretProviderFrom(get di.Get) interfaces.SecretProvider {
 	client := get(SecretProviderName).(interfaces.SecretProvider)

@@ -314,12 +314,14 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					lc.Info("Insecure Secrets have been updated")
 					secretProvider := container.SecretProviderFrom(cp.dic.Get)
 					if secretProvider != nil {
-						secretProvider.InsecureSecretsUpdated()
+						secretProvider.SecretsUpdated()
 					}
-				}
 
-				if cp.configUpdated != nil {
-					cp.configUpdated <- struct{}{}
+				default:
+					// Signal that configuration updates exists that have not already been processed.
+					if cp.configUpdated != nil {
+						cp.configUpdated <- struct{}{}
+					}
 				}
 			}
 		}
