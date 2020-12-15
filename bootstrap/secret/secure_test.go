@@ -89,7 +89,7 @@ func TestSecureProvider_GetSecrets_Cached(t *testing.T) {
 
 	// Now check for error when not all requested keys not in cache.
 	mock.On("GetSecrets", "redis", "username", "password2").Return(nil, errors.New("No Cached"))
-	actual, err = target.GetSecrets("redis", "username", "password2")
+	_, err = target.GetSecrets("redis", "username", "password2")
 	require.Error(t, err)
 }
 
@@ -114,7 +114,7 @@ func TestSecureProvider_GetSecrets_Cached_Invalidated(t *testing.T) {
 
 	// Now have mock return error is it is called which should now happen if the cache was properly invalidated by the above call to StoreSecrets
 	mock.On("GetSecrets", "redis", "username", "password").Return(nil, errors.New("No Cached"))
-	actual, err = target.GetSecrets("redis", "username", "password")
+	_, err = target.GetSecrets("redis", "username", "password")
 	require.Error(t, err)
 }
 

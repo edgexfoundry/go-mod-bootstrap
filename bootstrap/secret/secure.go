@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-// Provider implements the SecretProvider interface
+// SecureProvider implements the SecretProvider interface
 type SecureProvider struct {
 	secretClient  secrets.SecretClient
 	lc            logger.LoggingClient
@@ -67,7 +67,7 @@ func (p *SecureProvider) GetSecrets(path string, keys ...string) (map[string]str
 	}
 
 	if p.secretClient == nil {
-		return nil, errors.New("can't get secret(p), secret client is not properly initialized")
+		return nil, errors.New("can't get secrets. Secure secret provider is not properly initialized")
 	}
 
 	secureSecrets, err := p.secretClient.GetSecrets(path, keys...)
@@ -129,7 +129,7 @@ func (p *SecureProvider) updateSecretsCache(path string, secrets map[string]stri
 // secrets map specifies the "key": "value" pairs of secrets to store
 func (p *SecureProvider) StoreSecrets(path string, secrets map[string]string) error {
 	if p.secretClient == nil {
-		return errors.New("can't store secret(p) 'SecretProvider' is not properly initialized")
+		return errors.New("can't store secrets. Secure secret provider is not properly initialized")
 	}
 
 	err := p.secretClient.StoreSecrets(path, secrets)
