@@ -12,7 +12,7 @@
  * the License.
  *******************************************************************************/
 
-package message
+package handlers
 
 import (
 	"context"
@@ -30,8 +30,8 @@ type StartMessage struct {
 	version    string
 }
 
-// NewBootstrap is a factory method that returns an initialized StartMessage receiver struct.
-func NewBootstrap(serviceKey, version string) *StartMessage {
+// NewStartMessage is a factory method that returns an initialized StartMessage receiver struct.
+func NewStartMessage(serviceKey, version string) *StartMessage {
 	return &StartMessage{
 		serviceKey: serviceKey,
 		version:    version,

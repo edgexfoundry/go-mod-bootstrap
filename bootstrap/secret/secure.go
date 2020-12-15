@@ -22,59 +22,46 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/token/fileioperformer"
 	"github.com/edgexfoundry/go-mod-secrets/secrets"
 
-	"os"
-	"strings"
 	"sync"
 	"time"
 )
 
-const (
-	EnvSecretStore = "EDGEX_SECURITY_SECRET_STORE"
-	UsernameKey    = "username"
-	PasswordKey    = "password"
-)
-
 // Provider implements the SecretProvider interface
-type Provider struct {
+type SecureProvider struct {
 	secretClient  secrets.SecretClient
 	lc            logger.LoggingClient
+	loader        authtokenloader.AuthTokenLoader
 	configuration interfaces.Configuration
 	secretsCache  map[string]map[string]string // secret's path, key, value
 	cacheMutex    *sync.Mutex
 	lastUpdated   time.Time
 }
 
-// NewProvider creates, basic initializes and returns a new Provider instance.
-// The full initialization occurs in the bootstrap handler.
-func NewProvider() *Provider {
-	return &Provider{
-		secretsCache: make(map[string]map[string]string),
-		cacheMutex:   &sync.Mutex{},
-		lastUpdated:  time.Now(),
+// NewSecureProvider creates & initializes Provider instance for secure secrets.
+func NewSecureProvider(config interfaces.Configuration, lc logger.LoggingClient, loader authtokenloader.AuthTokenLoader) *SecureProvider {
+	provider := &SecureProvider{
+		configuration: config,
+		lc:            lc,
+		loader:        loader,
+		secretsCache:  make(map[string]map[string]string),
+		cacheMutex:    &sync.Mutex{},
+		lastUpdated:   time.Now(),
 	}
+	return provider
 }
 
-// NewProviderWithDependents creates, initializes and returns a new full initialized Provider instance.
-func NewProviderWithDependents(client secrets.SecretClient, config interfaces.Configuration, lc logger.LoggingClient) *Provider {
-	provider := NewProvider()
-	provider.secretClient = client
-	provider.configuration = config
-	provider.lc = lc
-	return provider
+// SetClient sets the secret client that is used to access the secure secrets
+func (p *SecureProvider) SetClient(client secrets.SecretClient) {
+	p.secretClient = client
 }
 
 // GetSecrets retrieves secrets from a secret store.
 // path specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
-func (p *Provider) GetSecrets(path string, keys ...string) (map[string]string, error) {
-	if !p.IsSecurityEnabled() {
-		return p.getInsecureSecrets(path, keys...)
-	}
-
+func (p *SecureProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
 	if cachedSecrets := p.getSecretsCache(path, keys...); cachedSecrets != nil {
 		return cachedSecrets, nil
 	}
@@ -83,68 +70,17 @@ func (p *Provider) GetSecrets(path string, keys ...string) (map[string]string, e
 		return nil, errors.New("can't get secret(p), secret client is not properly initialized")
 	}
 
-	secrets, err := p.secretClient.GetSecrets(path, keys...)
+	secureSecrets, err := p.secretClient.GetSecrets(path, keys...)
 	if err != nil {
 		return nil, err
 	}
 
-	p.updateSecretsCache(path, secrets)
-	return secrets, nil
+	p.updateSecretsCache(path, secureSecrets)
+	return secureSecrets, nil
 }
 
-// GetInsecureSecrets retrieves secrets from the Writable.InsecureSecrets section of the configuration
-// path specifies the type or location of the secrets to retrieve.
-// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
-// specified path will be returned.
-func (p *Provider) getInsecureSecrets(path string, keys ...string) (map[string]string, error) {
-	secrets := make(map[string]string)
-	pathExists := false
-	var missingKeys []string
-
-	insecureSecrets := p.configuration.GetInsecureSecrets()
-	if insecureSecrets == nil {
-		err := fmt.Errorf("InsecureSecrets missing from configuration")
-		return nil, err
-	}
-
-	for _, insecureSecret := range insecureSecrets {
-		if insecureSecret.Path == path {
-			if len(keys) == 0 {
-				// If no keys are provided then all the keys associated with the specified path will be returned
-				for k, v := range insecureSecret.Secrets {
-					secrets[k] = v
-				}
-				return secrets, nil
-			}
-
-			pathExists = true
-			for _, key := range keys {
-				value, keyExists := insecureSecret.Secrets[key]
-				if !keyExists {
-					missingKeys = append(missingKeys, key)
-					continue
-				}
-				secrets[key] = value
-			}
-		}
-	}
-
-	if len(missingKeys) > 0 {
-		err := fmt.Errorf("No value for the keys: [%s] exists", strings.Join(missingKeys, ","))
-		return nil, err
-	}
-
-	if !pathExists {
-		// if path is not in secret store
-		err := fmt.Errorf("Error, path (%v) doesn't exist in secret store", path)
-		return nil, err
-	}
-
-	return secrets, nil
-}
-
-func (p *Provider) getSecretsCache(path string, keys ...string) map[string]string {
-	secrets := make(map[string]string)
+func (p *SecureProvider) getSecretsCache(path string, keys ...string) map[string]string {
+	secureSecrets := make(map[string]string)
 
 	// Synchronize cache access
 	p.cacheMutex.Lock()
@@ -161,19 +97,19 @@ func (p *Provider) getSecretsCache(path string, keys ...string) map[string]strin
 			if !allKeysExistInCache {
 				return nil
 			}
-			secrets[key] = value
+			secureSecrets[key] = value
 		}
 
-		// return secrets if the requested keys exist in cache
+		// return secureSecrets if the requested keys exist in cache
 		if allKeysExistInCache {
-			return secrets
+			return secureSecrets
 		}
 	}
 
 	return nil
 }
 
-func (p *Provider) updateSecretsCache(path string, secrets map[string]string) {
+func (p *SecureProvider) updateSecretsCache(path string, secrets map[string]string) {
 	// Synchronize cache access
 	p.cacheMutex.Lock()
 	defer p.cacheMutex.Unlock()
@@ -191,11 +127,7 @@ func (p *Provider) updateSecretsCache(path string, secrets map[string]string) {
 // it sets the values requested at provided keys
 // path specifies the type or location of the secrets to store
 // secrets map specifies the "key": "value" pairs of secrets to store
-func (p *Provider) StoreSecrets(path string, secrets map[string]string) error {
-	if !p.IsSecurityEnabled() {
-		return errors.New("storing secrets is not supported when running in insecure mode")
-	}
-
+func (p *SecureProvider) StoreSecrets(path string, secrets map[string]string) error {
 	if p.secretClient == nil {
 		return errors.New("can't store secret(p) 'SecretProvider' is not properly initialized")
 	}
@@ -215,35 +147,25 @@ func (p *Provider) StoreSecrets(path string, secrets map[string]string) error {
 	return nil
 }
 
-// InsecureSecretsUpdated resets LastUpdate if not running in secure mode. If running in secure mode, changes to
-// InsecureSecrets have no impact and are not used.
-func (p *Provider) InsecureSecretsUpdated() {
-	if !p.IsSecurityEnabled() {
-		p.lastUpdated = time.Now()
-	}
+// SecretsUpdated is not need for secure secrets as this is handled when secrets are stored.
+func (p *SecureProvider) SecretsUpdated() {
+	// Do nothing
 }
 
-func (p *Provider) SecretsLastUpdated() time.Time {
+// SecretsLastUpdated returns the last time secure secrets were updated
+func (p *SecureProvider) SecretsLastUpdated() time.Time {
 	return p.lastUpdated
-}
-
-// isSecurityEnabled determines if security has been enabled.
-func (p *Provider) IsSecurityEnabled() bool {
-	env := os.Getenv(EnvSecretStore)
-	return env != "false" // Any other value is considered secure mode enabled
 }
 
 // defaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
 // It utilizes the tokenFile to re-read the token and enable retry if any update from the expired token
-func (p *Provider) defaultTokenExpiredCallback(expiredToken string) (replacementToken string, retry bool) {
+func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (replacementToken string, retry bool) {
 	tokenFile := p.configuration.GetBootstrap().SecretStore.TokenFile
 
 	// during the callback, we want to re-read the token from the disk
 	// specified by tokenFile and set the retry to true if a new token
 	// is different from the expiredToken
-	fileIoPerformer := fileioperformer.NewDefaultFileIoPerformer()
-	authTokenLoader := authtokenloader.NewAuthTokenLoader(fileIoPerformer)
-	reReadToken, err := authTokenLoader.Load(tokenFile)
+	reReadToken, err := p.loader.Load(tokenFile)
 	if err != nil {
 		p.lc.Error(fmt.Sprintf("fail to load auth token from tokenFile %s: %v", tokenFile, err))
 		return "", false

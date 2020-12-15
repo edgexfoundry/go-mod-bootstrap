@@ -18,16 +18,7 @@ package container
 import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-secrets/secrets"
 )
-
-// SecretClientName contains the name of the registry.Client implementation in the DIC.
-var SecretClientName = di.TypeInstanceToName((*secrets.SecretClient)(nil))
-
-// SecretClientFrom helper function queries the DIC and returns the pkg.SecretClient implementation.
-func SecretClientFrom(get di.Get) secrets.SecretClient {
-	return get(SecretClientName).(secrets.SecretClient)
-}
 
 // SecretProviderName contains the name of the interfaces.SecretProvider implementation in the DIC.
 var SecretProviderName = di.TypeInstanceToName((*interfaces.SecretProvider)(nil))
@@ -35,9 +26,9 @@ var SecretProviderName = di.TypeInstanceToName((*interfaces.SecretProvider)(nil)
 // SecretProviderFrom helper function queries the DIC and returns the interfaces.SecretProvider
 // implementation.
 func SecretProviderFrom(get di.Get) interfaces.SecretProvider {
-	client := get(SecretProviderName).(interfaces.SecretProvider)
-	if client != nil {
-		return client.(interfaces.SecretProvider)
+	provider := get(SecretProviderName).(interfaces.SecretProvider)
+	if provider != nil {
+		return provider.(interfaces.SecretProvider)
 	}
 	return (interfaces.SecretProvider)(nil)
 }

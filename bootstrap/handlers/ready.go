@@ -12,7 +12,7 @@
  * the License.
  *******************************************************************************/
 
-package testing
+package handlers
 
 import (
 	"context"
@@ -33,8 +33,8 @@ type Ready struct {
 	stream     chan<- bool
 }
 
-// NewBootstrap is a factory method that returns an initialized Ready receiver struct.
-func NewBootstrap(httpServer httpServer, stream chan<- bool) *Ready {
+// NewReady is a factory method that returns an initialized Ready receiver struct.
+func NewReady(httpServer httpServer, stream chan<- bool) *Ready {
 	return &Ready{
 		httpServer: httpServer,
 		stream:     stream,

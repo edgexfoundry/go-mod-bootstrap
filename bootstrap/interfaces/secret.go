@@ -16,7 +16,4 @@ type SecretProvider interface {
 
 	// SecretsLastUpdated returns the last time secrets were updated
 	SecretsLastUpdated() time.Time
-
-	// IsSecurityEnabled return boolean indicating if running in secure mode or not
-	IsSecurityEnabled() bool
 }

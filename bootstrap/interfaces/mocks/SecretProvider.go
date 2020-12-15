@@ -43,25 +43,6 @@ func (_m *SecretProvider) GetSecrets(path string, keys ...string) (map[string]st
 	return r0, r1
 }
 
-// InsecureSecretsUpdated provides a mock function with given fields:
-func (_m *SecretProvider) InsecureSecretsUpdated() {
-	_m.Called()
-}
-
-// IsSecurityEnabled provides a mock function with given fields:
-func (_m *SecretProvider) IsSecurityEnabled() bool {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
 // SecretsLastUpdated provides a mock function with given fields:
 func (_m *SecretProvider) SecretsLastUpdated() time.Time {
 	ret := _m.Called()
@@ -74,6 +55,11 @@ func (_m *SecretProvider) SecretsLastUpdated() time.Time {
 	}
 
 	return r0
+}
+
+// SecretsUpdated provides a mock function with given fields:
+func (_m *SecretProvider) SecretsUpdated() {
+	_m.Called()
 }
 
 // StoreSecrets provides a mock function with given fields: path, secrets

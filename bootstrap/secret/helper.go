@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -12,22 +12,18 @@
  * the License.
  *******************************************************************************/
 
-package container
+package secret
 
-import (
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+import "os"
+
+const (
+	EnvSecretStore = "EDGEX_SECURITY_SECRET_STORE"
+	UsernameKey    = "username"
+	PasswordKey    = "password"
 )
 
-// ConfigurationInterfaceName contains the name of the interfaces.Configuration implementation in the DIC.
-var ConfigurationInterfaceName = di.TypeInstanceToName((*interfaces.Configuration)(nil))
-
-// ConfigurationFrom helper function queries the DIC and returns the interfaces.Configuration implementation.
-func ConfigurationFrom(get di.Get) interfaces.Configuration {
-	configuration := get(ConfigurationInterfaceName)
-	if configuration != nil {
-		return configuration.(interfaces.Configuration)
-	}
-
-	return (interfaces.Configuration)(nil)
+// IsSecurityEnabled determines if security has been enabled.
+func IsSecurityEnabled() bool {
+	env := os.Getenv(EnvSecretStore)
+	return env != "false" // Any other value is considered secure mode enabled
 }

@@ -21,16 +21,14 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
-	"github.com/stretchr/testify/require"
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	secretsTypes "github.com/edgexfoundry/go-mod-secrets/pkg/types"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -327,7 +325,7 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),
 		SecretStore: config.SecretStoreInfo{
-			Authentication: vault.AuthenticationInfo{
+			Authentication: secretsTypes.AuthenticationInfo{
 				AuthType: "none",
 			},
 		},
@@ -383,7 +381,7 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),
 		SecretStore: config.SecretStoreInfo{
-			Authentication: vault.AuthenticationInfo{
+			Authentication: secretsTypes.AuthenticationInfo{
 				AuthType:  "none",
 				AuthToken: expectedAuthToken,
 			},
@@ -432,7 +430,7 @@ func TestOverrideConfigurationWithBlankValue(t *testing.T) {
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),
 		SecretStore: config.SecretStoreInfo{
-			Authentication: vault.AuthenticationInfo{
+			Authentication: secretsTypes.AuthenticationInfo{
 				AuthType:  "none",
 				AuthToken: expectedAuthToken,
 			},
@@ -463,7 +461,7 @@ func TestOverrideConfigurationWithEqualInValue(t *testing.T) {
 		SecretStore config.SecretStoreInfo
 	}{
 		SecretStore: config.SecretStoreInfo{
-			Authentication: vault.AuthenticationInfo{
+			Authentication: secretsTypes.AuthenticationInfo{
 				AuthType:  "none",
 				AuthToken: expectedAuthToken,
 			},

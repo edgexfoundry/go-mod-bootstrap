@@ -12,7 +12,7 @@
  * the License.
  *******************************************************************************/
 
-package secret
+package handlers
 
 import (
 	"context"
@@ -20,6 +20,8 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -30,55 +32,67 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/fileioperformer"
 )
 
-// BootstrapHandler full initializes the Provider store manager.
-func (p *Provider) BootstrapHandler(
+// SecureProviderBootstrapHandler full initializes the Secret Provider.
+func SecureProviderBootstrapHandler(
 	ctx context.Context,
 	_ *sync.WaitGroup,
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
+	lc := container.LoggingClientFrom(dic.Get)
+	configuration := container.ConfigurationFrom(dic.Get)
 
-	p.lc = container.LoggingClientFrom(dic.Get)
-	p.configuration = container.ConfigurationFrom(dic.Get)
+	var provider interfaces.SecretProvider
 
-	// attempt to create a new SecretProvider client only if security is enabled.
-	if p.IsSecurityEnabled() {
+	switch secret.IsSecurityEnabled() {
+	case true:
+		// attempt to create a new Secure client only if security is enabled.
 		var err error
 
-		p.lc.Info("Creating SecretClient")
+		lc.Info("Creating SecretClient")
 
-		secretStoreConfig := p.configuration.GetBootstrap().SecretStore
+		secretStoreConfig := configuration.GetBootstrap().SecretStore
 
 		for startupTimer.HasNotElapsed() {
 			var secretConfig types.SecretConfig
 
-			p.lc.Info("Reading secret store configuration and authentication token")
+			lc.Info("Reading secret store configuration and authentication token")
 
-			secretConfig, err = p.getSecretConfig(secretStoreConfig, dic)
+			tokenLoader := container.AuthTokenLoaderFrom(dic.Get)
+			if tokenLoader == nil {
+				tokenLoader = authtokenloader.NewAuthTokenLoader(fileioperformer.NewDefaultFileIoPerformer())
+			}
+
+			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader)
 			if err == nil {
+				secureProvider := secret.NewSecureProvider(configuration, lc, tokenLoader)
 				var secretClient secrets.SecretClient
 
-				p.lc.Info("Attempting to create secret client")
-				secretClient, err = secrets.NewClient(ctx, secretConfig, p.lc, p.defaultTokenExpiredCallback)
+				lc.Info("Attempting to create secret client")
+				secretClient, err = secrets.NewClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
 				if err == nil {
-					p.secretClient = secretClient
-					p.lc.Info("Created SecretClient")
+					secureProvider.SetClient(secretClient)
+					provider = secureProvider
+					lc.Info("Created SecretClient")
 					break
 				}
 			}
 
-			p.lc.Warn(fmt.Sprintf("Retryable failure while creating SecretClient: %s", err.Error()))
+			lc.Warn(fmt.Sprintf("Retryable failure while creating SecretClient: %s", err.Error()))
 			startupTimer.SleepForInterval()
 		}
 
 		if err != nil {
-			p.lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
+			lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
 			return false
 		}
+
+	case false:
+		provider = secret.NewInsecureProvider(configuration, lc)
 	}
 
 	dic.Update(di.ServiceConstructorMap{
 		container.SecretProviderName: func(get di.Get) interface{} {
-			return p
+			return provider
 		},
 	})
 
@@ -87,7 +101,7 @@ func (p *Provider) BootstrapHandler(
 
 // getSecretConfig creates a SecretConfig based on the SecretStoreInfo configuration properties.
 // If a token file is present it will override the Authentication.AuthToken value.
-func (p *Provider) getSecretConfig(secretStoreInfo config.SecretStoreInfo, dic *di.Container) (types.SecretConfig, error) {
+func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtokenloader.AuthTokenLoader) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
 		Host:                    secretStoreInfo.Host,
 		Port:                    secretStoreInfo.Port,
@@ -101,25 +115,15 @@ func (p *Provider) getSecretConfig(secretStoreInfo config.SecretStoreInfo, dic *
 		RetryWaitPeriod:         secretStoreInfo.RetryWaitPeriod,
 	}
 
-	if !p.IsSecurityEnabled() || secretStoreInfo.TokenFile == "" {
+	if !secret.IsSecurityEnabled() || secretStoreInfo.TokenFile == "" {
 		return secretConfig, nil
-	}
-
-	// only bother getting a token if security is enabled and the configuration-provided token file is not empty.
-	fileIoPerformer := container.FileIoPerformerFrom(dic.Get)
-	if fileIoPerformer == nil {
-		fileIoPerformer = fileioperformer.NewDefaultFileIoPerformer()
-	}
-
-	tokenLoader := container.AuthTokenLoaderFrom(dic.Get)
-	if tokenLoader == nil {
-		tokenLoader = authtokenloader.NewAuthTokenLoader(fileIoPerformer)
 	}
 
 	token, err := tokenLoader.Load(secretStoreInfo.TokenFile)
 	if err != nil {
 		return secretConfig, err
 	}
+
 	secretConfig.Authentication.AuthToken = token
 	return secretConfig, nil
 }
