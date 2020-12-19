@@ -26,9 +26,10 @@ var SecretProviderName = di.TypeInstanceToName((*interfaces.SecretProvider)(nil)
 // SecretProviderFrom helper function queries the DIC and returns the interfaces.SecretProvider
 // implementation.
 func SecretProviderFrom(get di.Get) interfaces.SecretProvider {
-	provider := get(SecretProviderName).(interfaces.SecretProvider)
-	if provider != nil {
-		return provider.(interfaces.SecretProvider)
+	provider, ok := get(SecretProviderName).(interfaces.SecretProvider)
+	if !ok {
+		return nil
 	}
-	return (interfaces.SecretProvider)(nil)
+
+	return provider
 }

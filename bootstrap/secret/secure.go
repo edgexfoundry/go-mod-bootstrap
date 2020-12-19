@@ -35,7 +35,7 @@ type SecureProvider struct {
 	loader        authtokenloader.AuthTokenLoader
 	configuration interfaces.Configuration
 	secretsCache  map[string]map[string]string // secret's path, key, value
-	cacheMutex    *sync.Mutex
+	cacheMutex    *sync.RWMutex
 	lastUpdated   time.Time
 }
 
@@ -46,7 +46,7 @@ func NewSecureProvider(config interfaces.Configuration, lc logger.LoggingClient,
 		lc:            lc,
 		loader:        loader,
 		secretsCache:  make(map[string]map[string]string),
-		cacheMutex:    &sync.Mutex{},
+		cacheMutex:    &sync.RWMutex{},
 		lastUpdated:   time.Now(),
 	}
 	return provider
@@ -83,8 +83,8 @@ func (p *SecureProvider) getSecretsCache(path string, keys ...string) map[string
 	secureSecrets := make(map[string]string)
 
 	// Synchronize cache access
-	p.cacheMutex.Lock()
-	defer p.cacheMutex.Unlock()
+	p.cacheMutex.RLock()
+	defer p.cacheMutex.RUnlock()
 
 	// check cache for keys
 	allKeysExistInCache := false

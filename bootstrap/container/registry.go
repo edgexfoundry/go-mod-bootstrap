@@ -25,9 +25,10 @@ var RegistryClientInterfaceName = di.TypeInstanceToName((*registry.Client)(nil))
 
 // RegistryFrom helper function queries the DIC and returns the registry.Client implementation.
 func RegistryFrom(get di.Get) registry.Client {
-	registryClient := get(RegistryClientInterfaceName)
-	if registryClient != nil {
-		return registryClient.(registry.Client)
+	registryClient, ok := get(RegistryClientInterfaceName).(registry.Client)
+	if !ok {
+		return nil
 	}
-	return (registry.Client)(nil)
+
+	return registryClient
 }

@@ -24,10 +24,10 @@ var ConfigurationInterfaceName = di.TypeInstanceToName((*interfaces.Configuratio
 
 // ConfigurationFrom helper function queries the DIC and returns the interfaces.Configuration implementation.
 func ConfigurationFrom(get di.Get) interfaces.Configuration {
-	configuration := get(ConfigurationInterfaceName)
-	if configuration != nil {
-		return configuration.(interfaces.Configuration)
+	configuration, ok := get(ConfigurationInterfaceName).(interfaces.Configuration)
+	if !ok {
+		return nil
 	}
 
-	return (interfaces.Configuration)(nil)
+	return configuration
 }
