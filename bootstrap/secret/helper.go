@@ -1,5 +1,5 @@
-/********************************************************************************
- *  Copyright 2020 Dell Inc.
+/*******************************************************************************
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,17 +14,16 @@
 
 package secret
 
-import "github.com/edgexfoundry/go-mod-bootstrap/config"
+import "os"
 
-func (s *SecretProvider) GetCertificateKeyPair(path string) (config.CertKeyPair, error) {
-	secrets, err := s.secretClient.GetSecrets(path, "cert", "key")
-	if err != nil {
-		return config.CertKeyPair{}, err
-	}
+const (
+	EnvSecretStore = "EDGEX_SECURITY_SECRET_STORE"
+	UsernameKey    = "username"
+	PasswordKey    = "password"
+)
 
-	return config.CertKeyPair{
-		Cert: secrets["cert"],
-		Key:  secrets["key"],
-	}, nil
-
+// IsSecurityEnabled determines if security has been enabled.
+func IsSecurityEnabled() bool {
+	env := os.Getenv(EnvSecretStore)
+	return env != "false" // Any other value is considered secure mode enabled
 }

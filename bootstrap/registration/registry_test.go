@@ -140,6 +140,10 @@ type unitTestConfiguration struct {
 	Registry config.RegistryInfo
 }
 
+func (ut unitTestConfiguration) GetInsecureSecrets() config.InsecureSecrets {
+	return nil
+}
+
 func (ut unitTestConfiguration) UpdateFromRaw(rawConfig interface{}) bool {
 	panic("should not be called")
 }

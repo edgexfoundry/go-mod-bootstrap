@@ -19,8 +19,7 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-
-	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
+	"github.com/edgexfoundry/go-mod-secrets/pkg/types"
 )
 
 // ServiceInfo contains configuration settings necessary for the basic operation of any EdgeX service.
@@ -108,7 +107,7 @@ type SecretStoreInfo struct {
 	Namespace               string
 	RootCaCertPath          string
 	ServerName              string
-	Authentication          vault.AuthenticationInfo
+	Authentication          types.AuthenticationInfo
 	AdditionalRetryAttempts int
 	RetryWaitPeriod         string
 	retryWaitPeriodTime     time.Duration
@@ -117,13 +116,11 @@ type SecretStoreInfo struct {
 }
 
 type Database struct {
-	Username string
-	Password string
-	Type     string
-	Timeout  int
-	Host     string
-	Port     int
-	Name     string
+	Type    string
+	Timeout int
+	Host    string
+	Port    int
+	Name    string
 }
 
 // Credentials encapsulates username-password attributes.
@@ -136,6 +133,15 @@ type Credentials struct {
 type CertKeyPair struct {
 	Cert string
 	Key  string
+}
+
+// InsecureSecrets is used to hold the secrets stored in the configuration
+type InsecureSecrets map[string]InsecureSecretsInfo
+
+// InsecureSecretsInfo encapsulates info used to retrieve insecure secrets
+type InsecureSecretsInfo struct {
+	Path    string
+	Secrets map[string]string
 }
 
 // BootstrapConfiguration defines the configuration elements required by the bootstrap.

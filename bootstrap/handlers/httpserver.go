@@ -12,7 +12,7 @@
  * the License.
  *******************************************************************************/
 
-package httpserver
+package handlers
 
 import (
 	"context"
@@ -35,8 +35,8 @@ type HttpServer struct {
 	doListenAndServe bool
 }
 
-// NewBootstrap is a factory method that returns an initialized HttpServer receiver struct.
-func NewBootstrap(router *mux.Router, doListenAndServe bool) *HttpServer {
+// NewHttpServer is a factory method that returns an initialized HttpServer receiver struct.
+func NewHttpServer(router *mux.Router, doListenAndServe bool) *HttpServer {
 	return &HttpServer{
 		router:           router,
 		isRunning:        false,

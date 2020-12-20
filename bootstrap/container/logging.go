@@ -15,9 +15,9 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 )
 
 // LoggingClientInterfaceName contains the name of the logger.LoggingClient implementation in the DIC.
@@ -25,9 +25,10 @@ var LoggingClientInterfaceName = di.TypeInstanceToName((*logger.LoggingClient)(n
 
 // LoggingClientFrom helper function queries the DIC and returns the logger.loggingClient implementation.
 func LoggingClientFrom(get di.Get) logger.LoggingClient {
-	if loggingClient, ok := get(LoggingClientInterfaceName).(logger.LoggingClient); ok {
-		return loggingClient
-	} else {
+	loggingClient, ok := get(LoggingClientInterfaceName).(logger.LoggingClient)
+	if !ok {
 		return nil
 	}
+
+	return loggingClient
 }

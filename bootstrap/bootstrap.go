@@ -101,7 +101,7 @@ func RunAndReturnWaitGroup(
 
 	envVars := environment.NewVariables()
 
-	configProcessor := config.NewProcessor(lc, commonFlags, envVars, startupTimer, ctx, &wg, configUpdated)
+	configProcessor := config.NewProcessor(lc, commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
 	if err := configProcessor.Process(serviceKey, configStem, serviceConfig); err != nil {
 		fatalError(err, lc)
 	}
