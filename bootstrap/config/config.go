@@ -85,11 +85,6 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
 
-	// TODO: remove this check once -r/-registry is back to a bool in release v2.0.0
-	if len(cp.flags.ConfigProviderUrl()) > 0 && len(cp.flags.RegistryUrl()) > 0 {
-		return fmt.Errorf("use of -cp/-configProvider with -r/-registry=<url> not premitted")
-	}
-
 	// Local configuration must be loaded first in case need registry config info and/or
 	// need to push it to the Configuration Provider.
 	if err := cp.loadFromFile(serviceConfig); err != nil {
@@ -99,28 +94,15 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 	// Override file-based configuration with envVars variables.
 	// Variables variable overrides have precedence over all others,
 	// so make sure they are applied before config is used for anything.
-	overrideCount, err := envVars.OverrideConfiguration(lc, serviceConfig)
+	overrideCount, err := envVars.OverrideConfiguration(serviceConfig)
 	if err != nil {
 		return err
 	}
 
 	configProviderUrl := cp.flags.ConfigProviderUrl()
 
-	// TODO: remove this check once -r/-registry is back to a bool and only enable registry usage in release v2.0.0
-	// For backwards compatibility with Fuji device and app services that use just -r/-registry for both registry and config
-	if len(configProviderUrl) == 0 && cp.flags.UseRegistry() {
-		if len(cp.flags.RegistryUrl()) > 0 {
-			configProviderUrl = cp.flags.RegistryUrl()
-			lc.Info("Config Provider URL created from -r/-registry=<url> flag")
-		} else {
-			// Have to use the Registry config for Configuration provider
-			registryConfig := serviceConfig.GetBootstrap().Registry
-			configProviderUrl = fmt.Sprintf("%s.http://%s:%d", registryConfig.Type, registryConfig.Host, registryConfig.Port)
-			lc.Info("Config Provider URL created from Registry configuration")
-		}
-	}
 	// Create new ProviderInfo and initialize it from command-line flag or Variables variables
-	configProviderInfo, err := NewProviderInfo(lc, cp.envVars, configProviderUrl)
+	configProviderInfo, err := NewProviderInfo(cp.envVars, configProviderUrl)
 	if err != nil {
 		return err
 	}
@@ -233,7 +215,7 @@ func (cp *Processor) processWithProvider(
 			return errors.New("configuration from Configuration provider failed type check")
 		}
 
-		overrideCount, err := cp.envVars.OverrideConfiguration(cp.Logger, serviceConfig)
+		overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
 		if err != nil {
 			return err
 		}

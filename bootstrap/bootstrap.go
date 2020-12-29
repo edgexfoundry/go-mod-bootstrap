@@ -100,7 +100,7 @@ func RunAndReturnWaitGroup(
 
 	translateInterruptToCancel(ctx, &wg, cancel)
 
-	envVars := environment.NewVariables()
+	envVars := environment.NewVariables(lc)
 
 	configProcessor := config.NewProcessor(lc, commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
 	if err := configProcessor.Process(serviceKey, configStem, serviceConfig); err != nil {
@@ -112,16 +112,12 @@ func RunAndReturnWaitGroup(
 
 	var registryClient registry.Client
 
-	// TODO: Remove `|| config.UseRegistry()` for release V2.0.0
-	if commonFlags.UseRegistry() || envVars.UseRegistry() {
-		// For backwards compatibility with Fuji Device Service, registry is a string that can contain a provider URL.
-		// TODO: Remove registryUrl in call below for release V2.0.0
+	envUseRegistry, wasOverridden := envVars.UseRegistry()
+	if envUseRegistry || (commonFlags.UseRegistry() && !wasOverridden) {
 		registryClient, err = registration.RegisterWithRegistry(
 			ctx,
 			startupTimer,
 			serviceConfig,
-			commonFlags.RegistryUrl(),
-			envVars,
 			lc,
 			serviceKey)
 		if err != nil {
@@ -146,6 +142,9 @@ func RunAndReturnWaitGroup(
 		},
 		container.RegistryClientInterfaceName: func(get di.Get) interface{} {
 			return registryClient
+		},
+		container.CancelFuncName: func(get di.Get) interface{} {
+			return cancel
 		},
 	})
 

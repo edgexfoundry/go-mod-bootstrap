@@ -88,15 +88,6 @@ func TestNewOverrideConfigProvider(t *testing.T) {
 	assert.Equal(t, expectedConfigProviderUrl, actual.ConfigProviderUrl())
 }
 
-// TODO: Remove for release v2.0.0 when -registry is a bool
-func TestNewOverrideRegistry(t *testing.T) {
-	expectedRegistryUrl := "consul://docker-core-consul:8500"
-
-	actual := newSUT([]string{"-registry=" + expectedRegistryUrl})
-
-	assert.Equal(t, expectedRegistryUrl, actual.RegistryUrl())
-}
-
 func TestDashR(t *testing.T) {
 	expectedConfigDirectory := "/foo/ba-r/"
 	actual := newSUT([]string{"-confdir", "/foo/ba-r/"})
@@ -114,12 +105,10 @@ func TestConfDirEquals(t *testing.T) {
 func TestConfCommonScenario(t *testing.T) {
 	expectedConfigProviderUrl := "consul.http://edgex-core-consul:8500"
 	expectedConfigDirectory := "/res"
-	expectedRegistryUrl := ""
 
 	actual := newSUT([]string{"-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"})
 
 	assert.Equal(t, expectedConfigProviderUrl, actual.ConfigProviderUrl())
 	assert.True(t, actual.UseRegistry())
-	assert.Equal(t, expectedRegistryUrl, actual.RegistryUrl())
 	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
 }

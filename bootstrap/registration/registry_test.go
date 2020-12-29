@@ -19,10 +19,7 @@ package registration
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
-
-	"github.com/edgexfoundry/go-mod-registry/pkg/types"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
@@ -30,37 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: Remove RegistryUrl parts for release v2.0.0 when -registry is a bool
 func TestCreateRegistryClient(t *testing.T) {
 	lc := logger.NewMockClient()
-	tests := []struct {
-		Name          string
-		RegistryUrl   string
-		ExpectedError string
-	}{
-		{
-			Name:        "Success - blank url",
-			RegistryUrl: "",
-		},
-		{
-			Name:        "Success - with url",
-			RegistryUrl: "consul://localhost:8500",
-		},
-		{
-			Name:        "Success - with dot url",
-			RegistryUrl: ".",
-		},
-		{
-			Name:          "Failure - bad url",
-			RegistryUrl:   "not a url",
-			ExpectedError: "failed to parse Registry Provider URL (not a url):",
-		},
-		{
-			Name:          "Failure - RegistryUrl Missing port",
-			RegistryUrl:   "consul://localhost",
-			ExpectedError: "failed to parse Registry Provider URL (consul://localhost): strconv.Atoi:",
-		},
-	}
 
 	serviceConfig := unitTestConfiguration{
 		Service: config.ServiceInfo{
@@ -75,66 +43,9 @@ func TestCreateRegistryClient(t *testing.T) {
 		},
 	}
 
-	envVars := environment.NewVariables()
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			actual, err := createRegistryClient("unit-test", serviceConfig, test.RegistryUrl, envVars, lc)
-			if len(test.ExpectedError) > 0 {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.ExpectedError)
-				return // test complete
-			}
-
-			require.NoError(t, err)
-			assert.NotNil(t, actual)
-		})
-	}
-}
-
-// TODO: Remove this test for release v2.0.0 when -registry is a bool
-func TestOverrideRegistryConfigWithUrl(t *testing.T) {
-
-	tests := []struct {
-		Name          string
-		RegistryUrl   string
-		Expected      types.Config
-		ExpectedError string
-	}{
-		{
-			Name:        "Success - Good URL",
-			RegistryUrl: "consul://localhost:8500",
-			Expected: types.Config{
-				Type:     "consul",
-				Protocol: "http",
-				Host:     "localhost",
-				Port:     8500,
-			},
-		},
-		{
-			Name:          "Error - Bad URL",
-			RegistryUrl:   "not a url",
-			ExpectedError: "failed to parse Registry Provider URL (not a url):",
-		},
-		{
-			Name:          "Error - RegistryUrl Missing port",
-			RegistryUrl:   "consul://localhost",
-			ExpectedError: "failed to parse Registry Provider URL (consul://localhost): strconv.Atoi:",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			actual, err := OverrideRegistryConfigWithUrl(types.Config{}, test.RegistryUrl)
-			if len(test.ExpectedError) > 0 {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.ExpectedError)
-				return // test complete
-			}
-
-			require.NoError(t, err)
-			assert.Equal(t, test.Expected, actual)
-		})
-	}
+	actual, err := createRegistryClient("unit-test", serviceConfig, lc)
+	require.NoError(t, err)
+	assert.NotNil(t, actual)
 }
 
 type unitTestConfiguration struct {
