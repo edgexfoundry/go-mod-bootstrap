@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 const (
@@ -36,7 +36,7 @@ const (
 )
 
 func TestNewConfigProviderInfoUrl(t *testing.T) {
-	lc := logging.FactoryToStdout("unit-test")
+	lc := logger.NewMockClient()
 
 	envVars := environment.NewVariables()
 	target, err := NewProviderInfo(lc, envVars, goodUrlValue)
@@ -51,7 +51,7 @@ func TestNewConfigProviderInfoUrl(t *testing.T) {
 }
 
 func TestNewConfigProviderInfoEnv(t *testing.T) {
-	lc := logging.FactoryToStdout("unit-test")
+	lc := logger.NewMockClient()
 
 	err := os.Setenv(envKeyConfigUrl, goodUrlValue)
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 }
 
 func TestNewConfigProviderInfoBadUrl(t *testing.T) {
-	lc := logging.FactoryToStdout("unit-test")
+	lc := logger.NewMockClient()
 
 	envVars := environment.NewVariables()
 	_, err := NewProviderInfo(lc, envVars, badUrlValue)
@@ -77,7 +77,7 @@ func TestNewConfigProviderInfoBadUrl(t *testing.T) {
 }
 
 func TestNewConfigProviderInfoBadEnvUrl(t *testing.T) {
-	lc := logging.FactoryToStdout("unit-test")
+	lc := logger.NewMockClient()
 
 	// This should override the goodUrlValue below
 	err := os.Setenv(envKeyConfigUrl, badUrlValue)

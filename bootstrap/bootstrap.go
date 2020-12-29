@@ -17,14 +17,10 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-registry/registry"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
@@ -34,6 +30,11 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
+	"github.com/edgexfoundry/go-mod-registry/registry"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // Deferred defines the signature of a function returned by RunAndReturnWaitGroup that should be executed via defer.
@@ -94,7 +95,7 @@ func RunAndReturnWaitGroup(
 	// Check if service provided an initial Logging Client to use. If not create one.
 	lc := container.LoggingClientFrom(dic.Get)
 	if lc == nil {
-		lc = logging.FactoryToStdout(serviceKey)
+		lc = logger.NewClient(serviceKey, models.InfoLog)
 	}
 
 	translateInterruptToCancel(ctx, &wg, cancel)

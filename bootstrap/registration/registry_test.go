@@ -19,18 +19,20 @@ package registration
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-registry/pkg/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
+
+	"github.com/edgexfoundry/go-mod-registry/pkg/types"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO: Remove RegistryUrl parts for release v2.0.0 when -registry is a bool
 func TestCreateRegistryClient(t *testing.T) {
-	lc := logger.NewClientStdOut("unit-test", false, "TRACE")
+	lc := logger.NewMockClient()
 	tests := []struct {
 		Name          string
 		RegistryUrl   string
@@ -144,7 +146,7 @@ func (ut unitTestConfiguration) GetInsecureSecrets() config.InsecureSecrets {
 	return nil
 }
 
-func (ut unitTestConfiguration) UpdateFromRaw(rawConfig interface{}) bool {
+func (ut unitTestConfiguration) UpdateFromRaw(_ interface{}) bool {
 	panic("should not be called")
 }
 
@@ -152,7 +154,7 @@ func (ut unitTestConfiguration) EmptyWritablePtr() interface{} {
 	panic("should not be called")
 }
 
-func (ut unitTestConfiguration) UpdateWritableFromRaw(rawWritable interface{}) bool {
+func (ut unitTestConfiguration) UpdateWritableFromRaw(_ interface{}) bool {
 	panic("should not be called")
 }
 

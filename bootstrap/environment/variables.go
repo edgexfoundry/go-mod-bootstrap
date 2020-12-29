@@ -23,11 +23,12 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/pelletier/go-toml"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
+	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
+
+	"github.com/pelletier/go-toml"
 )
 
 const (
@@ -48,7 +49,7 @@ const (
 )
 
 // Variables is receiver that holds Variables variables and encapsulates toml.Tree-based configuration field
-// overrides.  Assumes "_" embedded in Variables variable key separates substructs; e.g. foo_bar_baz might refer to
+// overrides.  Assumes "_" embedded in Variables variable key separates sub-structs; e.g. foo_bar_baz might refer to
 //
 // 		type foo struct {
 // 			bar struct {
@@ -171,7 +172,7 @@ func (e *Variables) buildUppercasePathMap(paths []string) map[string]string {
 
 // getKeyForMatchedPath searches for match of the environment variable name with the uppercase path (pathMap keys)
 // If matched found to original path (pathMap values) is returned as the "key"
-// For backward compatibility a case insensitive comparision is currently used.
+// For backward compatibility a case insensitive comparison is currently used.
 // TODO: For release v2.0.0 Change this to NOT check that `envVarName` is uppercase and only compare against uppercase
 //  so only uppercase environment variable names will match.
 func (e *Variables) getKeyForMatchedPath(pathMap map[string]string, envVarName string) (string, bool) {
@@ -287,7 +288,7 @@ type StartupInfo struct {
 // or uses the default values.
 func GetStartupInfo(serviceKey string) StartupInfo {
 	// Logger hasn't be created at the time this info is needed so have to create local client.
-	lc := logging.FactoryToStdout(serviceKey)
+	lc := logger.NewClient(serviceKey, models.InfoLog)
 
 	startup := StartupInfo{
 		Duration: bootTimeoutSecondsDefault,
@@ -306,7 +307,7 @@ func GetStartupInfo(serviceKey string) StartupInfo {
 	}
 
 	// Get the startup timer interval, if provided.
-	// Have to support old V1 lowercase version of key and new uppercase version of the key unitl release v2.0.0
+	// Have to support old V1 lowercase version of key and new uppercase version of the key until release v2.0.0
 	key, value = getEnvironmentValue(envKeyStartupInterval, envV1KeyStartupInterval)
 	if len(value) > 0 {
 		logEnvironmentOverride(lc, "Startup Interval", key, value)

@@ -23,18 +23,19 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/BurntSushi/toml"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-configuration/configuration"
-	configTypes "github.com/edgexfoundry/go-mod-configuration/pkg/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
+	"github.com/edgexfoundry/go-mod-configuration/configuration"
+	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
+	"github.com/BurntSushi/toml"
 )
 
 const writableKey = "/Writable"
@@ -150,13 +151,9 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 			break
 		}
 
-		// Have to create new Logger here so it is used in long running listenForChanges()
-		cp.Logger = logging.FactoryFromConfiguration(serviceKey, serviceConfig.GetBootstrap(), serviceConfig.GetLogLevel())
 		cp.listenForChanges(serviceConfig, configClient)
 
 	case false:
-		// Have to create new Logger here so that have one created from local configuration.
-		cp.Logger = logging.FactoryFromConfiguration(serviceKey, serviceConfig.GetBootstrap(), serviceConfig.GetLogLevel())
 		cp.logConfigInfo("Using local configuration from file", overrideCount)
 	}
 	return err
@@ -166,7 +163,7 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 func (cp *Processor) createProviderClient(
 	serviceKey string,
 	configStem string,
-	providerConfig configTypes.ServiceConfig) (configuration.Client, error) {
+	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
 	providerConfig.BasePath = configStem + serviceKey
 
@@ -248,7 +245,7 @@ func (cp *Processor) processWithProvider(
 }
 
 // listenForChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
-// service's configuration struct's writable sub-struct.  It's assumed the log level is universally part of the
+// service's configuration writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
 func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client) {
