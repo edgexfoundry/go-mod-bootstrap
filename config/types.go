@@ -77,12 +77,6 @@ type RegistryInfo struct {
 	Type string
 }
 
-// LoggingInfo provides basic parameters related to where logs should be written.
-type LoggingInfo struct {
-	EnableRemote bool
-	File         string
-}
-
 // ClientInfo provides the host and port of another service in the eco-system.
 type ClientInfo struct {
 	// Host is the hostname or IP address of a service.
@@ -150,6 +144,5 @@ type BootstrapConfiguration struct {
 	Service     ServiceInfo
 	Config      ConfigProviderInfo
 	Registry    RegistryInfo
-	Logging     LoggingInfo
 	SecretStore SecretStoreInfo
 }
