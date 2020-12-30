@@ -32,10 +32,8 @@ import (
 )
 
 const (
-	goodUrlValue         = "consul.http://localhost:8500"
-	goodRegistryUrlValue = "consul://localhost:8500"
-
-	badUrlValue = "Not a url"
+	goodUrlValue = "consul.http://localhost:8500"
+	badUrlValue  = "Not a url"
 
 	expectedTypeValue     = "consul"
 	expectedHostValue     = "localhost"
@@ -66,27 +64,10 @@ func TestOverrideConfigProviderInfo(t *testing.T) {
 	err := os.Setenv(envKeyConfigUrl, goodUrlValue)
 	require.NoError(t, err)
 
-	env := NewVariables()
-	providerConfig, err = env.OverrideConfigProviderInfo(lc, providerConfig)
+	env := NewVariables(lc)
+	providerConfig, err = env.OverrideConfigProviderInfo(providerConfig)
 
 	assert.NoError(t, err, "Unexpected error")
-	assert.Equal(t, providerConfig.Host, expectedHostValue)
-	assert.Equal(t, providerConfig.Port, expectedPortValue)
-	assert.Equal(t, providerConfig.Type, expectedTypeValue)
-	assert.Equal(t, providerConfig.Protocol, expectedProtocolValue)
-}
-
-// TODO: Remove once -registry is back to a bool in release V2.0.0
-func TestOverrideConfigProviderInfo_RegistryUrl(t *testing.T) {
-	providerConfig, lc := initializeTest()
-
-	err := os.Setenv(envKeyRegistryUrl, goodRegistryUrlValue)
-	require.NoError(t, err)
-
-	env := NewVariables()
-	providerConfig, err = env.OverrideConfigProviderInfo(lc, providerConfig)
-
-	require.NoError(t, err, "Unexpected error")
 	assert.Equal(t, providerConfig.Host, expectedHostValue)
 	assert.Equal(t, providerConfig.Port, expectedPortValue)
 	assert.Equal(t, providerConfig.Type, expectedTypeValue)
@@ -96,8 +77,8 @@ func TestOverrideConfigProviderInfo_RegistryUrl(t *testing.T) {
 func TestOverrideConfigProviderInfo_NoEnvVariables(t *testing.T) {
 	providerConfig, lc := initializeTest()
 
-	env := NewVariables()
-	providerConfig, err := env.OverrideConfigProviderInfo(lc, providerConfig)
+	env := NewVariables(lc)
+	providerConfig, err := env.OverrideConfigProviderInfo(providerConfig)
 
 	assert.NoError(t, err, "Unexpected error")
 	assert.Equal(t, providerConfig.Host, defaultHostValue)
@@ -112,21 +93,10 @@ func TestOverrideConfigProviderInfo_ConfigProviderInfoError(t *testing.T) {
 	err := os.Setenv(envKeyConfigUrl, badUrlValue)
 	require.NoError(t, err)
 
-	env := NewVariables()
-	_, err = env.OverrideConfigProviderInfo(lc, providerConfig)
+	env := NewVariables(lc)
+	_, err = env.OverrideConfigProviderInfo(providerConfig)
 
 	assert.Error(t, err, "Expected an error")
-}
-
-// TODO: Remove once -registry is back to a bool in release V2.0.0
-func TestGetRegistryProviderInfoOverride(t *testing.T) {
-	_, lc := initializeTest()
-
-	err := os.Setenv(envKeyRegistryUrl, goodRegistryUrlValue)
-	require.NoError(t, err)
-	env := NewVariables()
-	actual := env.GetRegistryProviderInfoOverride(lc)
-	assert.Equal(t, goodRegistryUrlValue, actual)
 }
 
 func TestGetStartupInfo(t *testing.T) {
@@ -137,7 +107,6 @@ func TestGetStartupInfo(t *testing.T) {
 		IntervalEnvName  string
 		ExpectedInterval int
 	}{
-		{"V1 Envs", envV1KeyStartupDuration, 60, envV1KeyStartupInterval, 10},
 		{"V2 Envs", envKeyStartupDuration, 120, envKeyStartupInterval, 30},
 		{"No Envs", "", bootTimeoutSecondsDefault, "", bootRetrySecondsDefault},
 	}
@@ -202,7 +171,6 @@ func TestGetProfileDir(t *testing.T) {
 		PassedInName string
 		ExpectedName string
 	}{
-		{"With V1 Env Var", envV1Profile, "myProfileV1", "sample", "myProfileV1/"},
 		{"With V2 Env Var", envProfile, "myProfileV2", "sample", "myProfileV2/"},
 		{"With No Env Var", "", "", "sample", "sample/"},
 		{"With No Env Var and no passed in", "", "", "", ""},
@@ -331,10 +299,11 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 		},
 	}
 
-	expectedOverrideCount := 5
+	// only all upper case environment variable names now, so none of these overrides should have worked.
+	expectedOverrideCount := 0
+
 	expectedHost := "edgex-core-consul"
 	expectedPort := 98500
-	expectedList := []string{"joe", "mary", "bob"}
 	expectedFloatVal := float32(24.234)
 	expectedAuthType := "secure"
 
@@ -345,16 +314,11 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 	_ = os.Setenv("FloatVal", strVal)
 	_ = os.Setenv("SecretStore_Authentication_AuthType", expectedAuthType)
 
-	env := NewVariables()
-	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
-
+	env := NewVariables(lc)
+	actualCount, err := env.OverrideConfiguration(&serviceConfig)
 	require.NoError(t, err)
+
 	assert.Equal(t, expectedOverrideCount, actualCount)
-	assert.Equal(t, expectedHost, serviceConfig.Registry.Host)
-	assert.Equal(t, expectedPort, serviceConfig.Registry.Port)
-	assert.Equal(t, expectedList, serviceConfig.List)
-	assert.Equal(t, expectedFloatVal, serviceConfig.FloatVal)
-	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
 }
 
 func TestOverrideConfigurationUppercase(t *testing.T) {
@@ -396,8 +360,8 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 	// Lowercase will not match, so value will not change
 	_ = os.Setenv("secretstore_authentication_authtoken", "NoToken")
 
-	env := NewVariables()
-	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
+	env := NewVariables(lc)
+	actualCount, err := env.OverrideConfiguration(&serviceConfig)
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedOverrideCount, actualCount)
@@ -441,8 +405,8 @@ func TestOverrideConfigurationWithBlankValue(t *testing.T) {
 	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTYPE", expectedAuthType)
 	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTOKEN", expectedAuthToken)
 
-	env := NewVariables()
-	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
+	env := NewVariables(lc)
+	actualCount, err := env.OverrideConfiguration(&serviceConfig)
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedOverrideCount, actualCount)
@@ -470,8 +434,8 @@ func TestOverrideConfigurationWithEqualInValue(t *testing.T) {
 
 	_ = os.Setenv("SECRETSTORE_AUTHENTICATION_AUTHTOKEN", expectedAuthToken)
 
-	env := NewVariables()
-	actualCount, err := env.OverrideConfiguration(lc, &serviceConfig)
+	env := NewVariables(lc)
+	actualCount, err := env.OverrideConfiguration(&serviceConfig)
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedOverrideCount, actualCount)

@@ -38,8 +38,8 @@ const (
 func TestNewConfigProviderInfoUrl(t *testing.T) {
 	lc := logger.NewMockClient()
 
-	envVars := environment.NewVariables()
-	target, err := NewProviderInfo(lc, envVars, goodUrlValue)
+	envVars := environment.NewVariables(lc)
+	target, err := NewProviderInfo(envVars, goodUrlValue)
 	require.NoError(t, err)
 
 	actual := target.ServiceConfig()
@@ -56,8 +56,8 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 	err := os.Setenv(envKeyConfigUrl, goodUrlValue)
 	require.NoError(t, err)
 
-	envVars := environment.NewVariables()
-	target, err := NewProviderInfo(lc, envVars, goodUrlValue)
+	envVars := environment.NewVariables(lc)
+	target, err := NewProviderInfo(envVars, goodUrlValue)
 	require.NoError(t, err)
 
 	actual := target.ServiceConfig()
@@ -71,8 +71,8 @@ func TestNewConfigProviderInfoEnv(t *testing.T) {
 func TestNewConfigProviderInfoBadUrl(t *testing.T) {
 	lc := logger.NewMockClient()
 
-	envVars := environment.NewVariables()
-	_, err := NewProviderInfo(lc, envVars, badUrlValue)
+	envVars := environment.NewVariables(lc)
+	_, err := NewProviderInfo(envVars, badUrlValue)
 	assert.Error(t, err)
 }
 
@@ -83,7 +83,7 @@ func TestNewConfigProviderInfoBadEnvUrl(t *testing.T) {
 	err := os.Setenv(envKeyConfigUrl, badUrlValue)
 	require.NoError(t, err)
 
-	envVars := environment.NewVariables()
-	_, err = NewProviderInfo(lc, envVars, goodUrlValue)
+	envVars := environment.NewVariables(lc)
+	_, err = NewProviderInfo(envVars, goodUrlValue)
 	assert.Error(t, err)
 }

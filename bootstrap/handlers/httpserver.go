@@ -96,18 +96,6 @@ func (b *HttpServer) BootstrapHandler(
 		ReadTimeout:  timeout,
 	}
 
-	lc.Info("Web server starting (" + addr + ")")
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		b.isRunning = true
-		_ = server.ListenAndServe()
-		lc.Info("Web server stopped")
-		b.isRunning = false
-	}()
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -116,6 +104,26 @@ func (b *HttpServer) BootstrapHandler(
 		lc.Info("Web server shutting down")
 		_ = server.Shutdown(context.Background())
 		lc.Info("Web server shut down")
+	}()
+
+	lc.Info("Web server starting (" + addr + ")")
+
+	wg.Add(1)
+	go func() {
+		defer func() {
+			wg.Done()
+			b.isRunning = false
+		}()
+
+		b.isRunning = true
+		err := server.ListenAndServe()
+		if err != nil {
+			lc.Errorf("Web server failed: %v", err)
+			cancel := container.CancelFuncFrom(dic.Get)
+			cancel() // this will caused the service to stop
+		} else {
+			lc.Info("Web server stopped")
+		}
 	}()
 
 	return true
