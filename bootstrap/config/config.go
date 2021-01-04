@@ -138,6 +138,10 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 	case false:
 		cp.logConfigInfo("Using local configuration from file", overrideCount)
 	}
+
+	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
+	lc.SetLogLevel(serviceConfig.GetLogLevel())
+
 	return err
 }
 
