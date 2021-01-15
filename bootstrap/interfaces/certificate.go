@@ -14,7 +14,7 @@
 
 package interfaces
 
-import "github.com/edgexfoundry/go-mod-bootstrap/config"
+import "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 // CertificateProvider interface provides an abstraction for obtaining certificate pair.
 type CertificateProvider interface {

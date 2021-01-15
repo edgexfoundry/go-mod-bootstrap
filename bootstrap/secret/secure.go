@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/secrets"

@@ -19,7 +19,7 @@ package registration
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 

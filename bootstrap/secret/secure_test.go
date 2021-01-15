@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/pkg"
 	mocks2 "github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader/mocks"

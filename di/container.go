@@ -20,7 +20,7 @@
 //
 //		import (
 //			"fmt"
-//			"github.com/edgexfoundry/go-mod-bootstrap/di"
+//			"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 //		)
 //
 //		type foo struct {

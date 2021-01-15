@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 

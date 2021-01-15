@@ -15,7 +15,7 @@
 
 package interfaces
 
-import "github.com/edgexfoundry/go-mod-bootstrap/config"
+import "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 // Configuration interface provides an abstraction around a configuration struct.
 type Configuration interface {
