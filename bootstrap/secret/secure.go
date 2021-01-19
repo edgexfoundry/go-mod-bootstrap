@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
-	"github.com/edgexfoundry/go-mod-secrets/secrets"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 
 	"sync"
 	"time"

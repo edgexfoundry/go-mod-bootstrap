@@ -2,10 +2,10 @@ module github.com/edgexfoundry/go-mod-bootstrap/v2
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/edgexfoundry/go-mod-configuration v0.0.8
-	github.com/edgexfoundry/go-mod-core-contracts v0.1.147
-	github.com/edgexfoundry/go-mod-registry v0.1.27
-	github.com/edgexfoundry/go-mod-secrets v0.0.32
+	github.com/edgexfoundry/go-mod-configuration/v2 v2.0.0-dev.1
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.1
+	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0-dev.1
+	github.com/edgexfoundry/go-mod-secrets/v2 v2.0.0-dev.2
 	github.com/gorilla/mux v1.7.1
 	github.com/pelletier/go-toml v1.2.0
 	github.com/stretchr/testify v1.6.1

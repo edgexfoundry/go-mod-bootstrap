@@ -25,11 +25,11 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/secrets"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 
-	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/token/fileioperformer"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/fileioperformer"
 )
 
 // SecureProviderBootstrapHandler full initializes the Secret Provider.

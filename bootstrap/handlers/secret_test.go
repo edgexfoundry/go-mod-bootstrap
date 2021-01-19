@@ -30,9 +30,9 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader/mocks"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader/mocks"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

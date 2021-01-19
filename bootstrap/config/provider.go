@@ -14,7 +14,7 @@
 package config
 
 import (
-	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
+	"github.com/edgexfoundry/go-mod-configuration/v2/pkg/types"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/environment"
 )
