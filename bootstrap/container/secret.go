@@ -16,8 +16,8 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 )
 
 // SecretProviderName contains the name of the interfaces.SecretProvider implementation in the DIC.
