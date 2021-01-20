@@ -23,9 +23,9 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
-	"github.com/edgexfoundry/go-mod-configuration/pkg/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	secretsTypes "github.com/edgexfoundry/go-mod-secrets/pkg/types"
+	"github.com/edgexfoundry/go-mod-configuration/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	secretsTypes "github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-secrets/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 )
 
 // ServiceInfo contains configuration settings necessary for the basic operation of any EdgeX service.
