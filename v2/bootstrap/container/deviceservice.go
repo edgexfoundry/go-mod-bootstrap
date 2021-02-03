@@ -13,9 +13,22 @@ import (
 // DeviceServiceCallbackClientName contains the name of the DeviceServiceCallbackClient instance in the DIC.
 var DeviceServiceCallbackClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCallbackClient)(nil))
 
-// DeviceServiceCallbackClientFrom helper function queries the DIC and returns the DeviceServiceCallbackClientFrom instance.
+// DeviceServiceCommandClientName contains the name of the DeviceServiceCommandClient instance in the DIC.
+var DeviceServiceCommandClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCommandClient)(nil))
+
+// DeviceServiceCallbackClientFrom helper function queries the DIC and returns the DeviceServiceCallbackClient instance.
 func DeviceServiceCallbackClientFrom(get di.Get) interfaces.DeviceServiceCallbackClient {
 	client, ok := get(DeviceServiceCallbackClientName).(interfaces.DeviceServiceCallbackClient)
+	if !ok {
+		return nil
+	}
+
+	return client
+}
+
+// DeviceServiceCommandClientFrom helper function queries the DIC and returns the DeviceServiceCommandClient instance.
+func DeviceServiceCommandClientFrom(get di.Get) interfaces.DeviceServiceCommandClient {
+	client, ok := get(DeviceServiceCommandClientName).(interfaces.DeviceServiceCommandClient)
 	if !ok {
 		return nil
 	}
