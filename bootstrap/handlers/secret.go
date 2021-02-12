@@ -68,7 +68,7 @@ func SecureProviderBootstrapHandler(
 				var secretClient secrets.SecretClient
 
 				lc.Info("Attempting to create secret client")
-				secretClient, err = secrets.NewUserClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
+				secretClient, err = secrets.NewSecretsClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
 				if err == nil {
 					secureProvider.SetClient(secretClient)
 					provider = secureProvider
