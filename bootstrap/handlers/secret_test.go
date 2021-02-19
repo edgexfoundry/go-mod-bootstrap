@@ -30,9 +30,12 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader/mocks"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -62,7 +65,7 @@ func TestProvider_BootstrapHandler(t *testing.T) {
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
-					return logger.MockLogger{}
+					return logger.NewMockClient()
 				},
 				container.ConfigurationInterfaceName: func(get di.Get) interface{} {
 					return TestConfig{}
@@ -124,6 +127,7 @@ type TestConfig struct {
 func NewTestConfig(port int) TestConfig {
 	return TestConfig{
 		SecretStore: bootstrapConfig.SecretStoreInfo{
+			Type:       secrets.Vault,
 			Host:       "localhost",
 			Port:       port,
 			Protocol:   "http",

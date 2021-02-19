@@ -94,6 +94,7 @@ func (c ClientInfo) Url() string {
 
 // SecretStoreInfo encapsulates configuration properties used to create a SecretClient.
 type SecretStoreInfo struct {
+	Type                    string
 	Host                    string
 	Port                    int
 	Path                    string

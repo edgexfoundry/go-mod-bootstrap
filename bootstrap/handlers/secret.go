@@ -68,7 +68,7 @@ func SecureProviderBootstrapHandler(
 				var secretClient secrets.SecretClient
 
 				lc.Info("Attempting to create secret client")
-				secretClient, err = secrets.NewClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
+				secretClient, err = secrets.NewSecretsClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
 				if err == nil {
 					secureProvider.SetClient(secretClient)
 					provider = secureProvider
@@ -103,6 +103,7 @@ func SecureProviderBootstrapHandler(
 // If a token file is present it will override the Authentication.AuthToken value.
 func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtokenloader.AuthTokenLoader) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
+		Type:                    secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
 		Host:                    secretStoreInfo.Host,
 		Port:                    secretStoreInfo.Port,
 		Path:                    secretStoreInfo.Path,
