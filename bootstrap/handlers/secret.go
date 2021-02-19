@@ -103,7 +103,7 @@ func SecureProviderBootstrapHandler(
 // If a token file is present it will override the Authentication.AuthToken value.
 func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtokenloader.AuthTokenLoader) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
-		Type:                    secretStoreInfo.Type,
+		Type:                    secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
 		Host:                    secretStoreInfo.Host,
 		Port:                    secretStoreInfo.Port,
 		Path:                    secretStoreInfo.Path,
