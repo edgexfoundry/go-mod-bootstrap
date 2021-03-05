@@ -135,6 +135,12 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 
 		cp.listenForChanges(serviceConfig, configClient)
 
+		cp.dic.Update(di.ServiceConstructorMap{
+			container.ConfigClientInterfaceName: func(get di.Get) interface{} {
+				return configClient
+			},
+		})
+
 	case false:
 		cp.logConfigInfo("Using local configuration from file", overrideCount)
 	}

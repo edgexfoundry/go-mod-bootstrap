@@ -15,6 +15,8 @@
 package container
 
 import (
+	"github.com/edgexfoundry/go-mod-configuration/v2/configuration"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 )
@@ -30,4 +32,17 @@ func ConfigurationFrom(get di.Get) interfaces.Configuration {
 	}
 
 	return configuration
+}
+
+// ConfigClientInterfaceName contains the name of the configuration.Client implementation in the DIC.
+var ConfigClientInterfaceName = di.TypeInstanceToName((*configuration.Client)(nil))
+
+// ConfigClientFrom helper function queries the DIC and returns the configuration.Client implementation.
+func ConfigClientFrom(get di.Get) configuration.Client {
+	client, ok := get(ConfigClientInterfaceName).(configuration.Client)
+	if !ok {
+		return nil
+	}
+
+	return client
 }
