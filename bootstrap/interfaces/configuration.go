@@ -17,19 +17,35 @@ package interfaces
 
 import "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
+// UpdatableConfig interface allows service to have their custom configuration populated from configuration stored
+// in the Configuration Provider (aka Consul). A service using custom configuration must implement this interface
+// on the custom configuration, even if not using Configuration Provider. If not using the Configuration Provider
+// it can have dummy implementations of this interface.
+type UpdatableConfig interface {
+	// UpdateFromRaw converts configuration received from the Configuration Provider to a service-specific
+	// configuration struct which is then used to overwrite the service's existing configuration struct.
+	UpdateFromRaw(rawConfig interface{}) bool
+}
+
+// WritableConfig allows service to listen for changes from the Configuration Provider and have the configuration updated
+// when the changes occur
+type WritableConfig interface {
+	// UpdateWritableFromRaw converts updated configuration received from the Configuration Provider to a
+	// service-specific struct that is being watched for changes by the Configuration Provider.
+	// The changes are used to overwrite the service's existing configuration's watched struct.
+	UpdateWritableFromRaw(rawWritableConfig interface{}) bool
+}
+
 // Configuration interface provides an abstraction around a configuration struct.
 type Configuration interface {
-	// UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is
-	// then used to overwrite the service's existing configuration struct.
-	UpdateFromRaw(rawConfig interface{}) bool
+	// These two interfaces have been separated out for use in the custom configuration capability for
+	// App and Device services
+	UpdatableConfig
+	WritableConfig
 
 	// EmptyWritablePtr returns a pointer to a service-specific empty WritableInfo struct.  It is used by the bootstrap to
 	// provide the appropriate structure to registry.Client's WatchForChanges().
 	EmptyWritablePtr() interface{}
-
-	// UpdateWritableFromRaw converts configuration received from the registry to a service-specific WritableInfo struct
-	// which is then used to overwrite the service's existing configuration's WritableInfo struct.
-	UpdateWritableFromRaw(rawWritable interface{}) bool
 
 	// GetBootstrap returns the configuration elements required by the bootstrap.
 	GetBootstrap() config.BootstrapConfiguration
