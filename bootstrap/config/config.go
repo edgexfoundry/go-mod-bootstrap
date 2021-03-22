@@ -78,6 +78,21 @@ func NewProcessor(
 	}
 }
 
+func NewProcessorForCustomConfig(
+	lc logger.LoggingClient,
+	flags flags.Common,
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	dic *di.Container) *Processor {
+	return &Processor{
+		Logger: lc,
+		flags:  flags,
+		ctx:    ctx,
+		wg:     wg,
+		dic:    dic,
+	}
+}
+
 func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig interfaces.Configuration) error {
 	// Create some shorthand for frequently used items
 	envVars := cp.envVars
@@ -87,7 +102,7 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 
 	// Local configuration must be loaded first in case need registry config info and/or
 	// need to push it to the Configuration Provider.
-	if err := cp.loadFromFile(serviceConfig); err != nil {
+	if err := cp.loadFromFile(serviceConfig, "service"); err != nil {
 		return err
 	}
 
@@ -146,9 +161,131 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 	}
 
 	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
-	lc.SetLogLevel(serviceConfig.GetLogLevel())
+	err = lc.SetLogLevel(serviceConfig.GetLogLevel())
 
 	return err
+}
+
+// LoadCustomConfigSection loads the specified custom configuration section from file or Configuration provider.
+// Section will be seed if Configuration provider does yet have it. This is used for structures custom configuration
+// in App and Device services
+func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, sectionName string) error {
+	var overrideCount = -1
+	var err error
+	source := "file"
+
+	if cp.envVars == nil {
+		cp.envVars = environment.NewVariables(cp.Logger)
+	}
+
+	configClient := container.ConfigClientFrom(cp.dic.Get)
+	if configClient == nil {
+		cp.Logger.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
+		if err := cp.loadFromFile(config, "custom"); err != nil {
+			return err
+		}
+	} else {
+		cp.Logger.Infof("Checking if custom configuration ('%s') exists in Configuration Provider", sectionName)
+
+		exists, err := configClient.HasSubConfiguration(sectionName)
+		if err != nil {
+			return fmt.Errorf(
+				"unable to determine if custom configuration exists in Configuration Provider: %s",
+				err.Error())
+		}
+
+		if exists {
+			source = "Configuration Provider"
+			rawConfig, err := configClient.GetConfiguration(config)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to get custom configuration from Configuration Provider: %s",
+					err.Error())
+			}
+
+			if ok := config.UpdateFromRaw(rawConfig); !ok {
+				return fmt.Errorf("unable to update custom configuration from Configuration Provider")
+			}
+		} else {
+			if err := cp.loadFromFile(config, "custom"); err != nil {
+				return err
+			}
+
+			// Must apply override before pushing into Configuration Provider
+			overrideCount, err = cp.envVars.OverrideConfiguration(config)
+			if err != nil {
+				return fmt.Errorf("unable to apply environment overrides: %s", err.Error())
+			}
+
+			err = configClient.PutConfiguration(reflect.ValueOf(config).Elem().Interface(), true)
+			if err != nil {
+				return fmt.Errorf("error pushing custom config to Configuration Provider: %s", err.Error())
+			}
+
+			cp.Logger.Info("Custom Config loaded from file and pushed to Configuration Provider")
+		}
+	}
+
+	// Still need to apply overrides if only loaded from file or loaded from Configuration Provider
+	if overrideCount == -1 {
+		overrideCount, err = cp.envVars.OverrideConfiguration(config)
+		if err != nil {
+			return fmt.Errorf("unable to apply environment overrides: %s", err.Error())
+		}
+	}
+
+	cp.Logger.Infof("Loaded custom configuration from %s (%d envVars overrides applied)", source, overrideCount)
+
+	return nil
+}
+
+// ListenForCustomConfigChanges listens for changes to the specified custom configuration section. When changes occur it
+// applies the changes to the custom configuration section and signals the the changes have occurred.
+func (cp *Processor) ListenForCustomConfigChanges(
+	configToWatch interfaces.WritableConfig,
+	sectionName string,
+	writableChanged chan bool) error {
+	configClient := container.ConfigClientFrom(cp.dic.Get)
+	if configClient == nil {
+		return fmt.Errorf("unable to watch custom configuration for changes: Configuration Provider not available")
+	}
+
+	cp.wg.Add(1)
+	go func() {
+		defer cp.wg.Done()
+
+		errorStream := make(chan error)
+		defer close(errorStream)
+
+		updateStream := make(chan interface{})
+		defer close(updateStream)
+
+		configClient.WatchForChanges(updateStream, errorStream, configToWatch, sectionName)
+
+		for {
+			select {
+			case <-cp.ctx.Done():
+				cp.Logger.Infof("Exiting waiting for custom configuration changes")
+				return
+
+			case ex := <-errorStream:
+				cp.Logger.Error(ex.Error())
+
+			case raw := <-updateStream:
+				if ok := configToWatch.UpdateWritableFromRaw(raw); !ok {
+					cp.Logger.Error("unable to update custom writable configuration from Configuration Provider")
+					continue
+				}
+
+				cp.Logger.Infof("Updated custom configuration '%s' has been received from the Configuration Provider", sectionName)
+				writableChanged <- true
+			}
+		}
+	}()
+
+	cp.Logger.Infof("Watching for custom configuration changes has started for `%s`", sectionName)
+
+	return nil
 }
 
 // createProviderClient creates and returns a configuration.Client instance and logs Client connection information
@@ -169,7 +306,7 @@ func (cp *Processor) createProviderClient(
 }
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
-func (cp *Processor) loadFromFile(config interfaces.Configuration) error {
+func (cp *Processor) loadFromFile(config interface{}, configType string) error {
 	configDir := environment.GetConfDir(cp.Logger, cp.flags.ConfigDirectory())
 	profileDir := environment.GetProfileDir(cp.Logger, cp.flags.Profile())
 	configFileName := environment.GetConfigFileName(cp.Logger, cp.flags.ConfigFileName())
@@ -178,13 +315,13 @@ func (cp *Processor) loadFromFile(config interfaces.Configuration) error {
 
 	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("could not load configuration file (%s): %s", filePath, err.Error())
+		return fmt.Errorf("could not load %s configuration file (%s): %s", configType, filePath, err.Error())
 	}
 	if err = toml.Unmarshal(contents, config); err != nil {
-		return fmt.Errorf("could not load configuration file (%s): %s", filePath, err.Error())
+		return fmt.Errorf("could not load %s configuration file (%s): %s", configType, filePath, err.Error())
 	}
 
-	cp.Logger.Info(fmt.Sprintf("Loaded configuration from %s", filePath))
+	cp.Logger.Info(fmt.Sprintf("Loaded %s configuration from %s", configType, filePath))
 
 	return nil
 }
