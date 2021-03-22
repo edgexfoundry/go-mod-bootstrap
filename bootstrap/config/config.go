@@ -194,7 +194,7 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 				err.Error())
 		}
 
-		if exists {
+		if exists && !cp.flags.OverwriteConfig() {
 			source = "Configuration Provider"
 			rawConfig, err := configClient.GetConfiguration(config)
 			if err != nil {
@@ -222,11 +222,16 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 				return fmt.Errorf("error pushing custom config to Configuration Provider: %s", err.Error())
 			}
 
-			cp.Logger.Info("Custom Config loaded from file and pushed to Configuration Provider")
+			var overwriteMessage = ""
+			if exists && cp.flags.OverwriteConfig() {
+				overwriteMessage = "(overwritten)"
+			}
+			cp.Logger.Infof("Custom Config loaded from file and pushed to Configuration Provider %s", overwriteMessage)
 		}
 	}
 
-	// Still need to apply overrides if only loaded from file or loaded from Configuration Provider
+	// Still need to apply overrides if only loaded from file or only loaded from Configuration Provider,
+	// i.e. Did Not load from file and push to Configuration Provider
 	if overrideCount == -1 {
 		overrideCount, err = cp.envVars.OverrideConfiguration(config)
 		if err != nil {
