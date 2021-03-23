@@ -247,12 +247,13 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 // ListenForCustomConfigChanges listens for changes to the specified custom configuration section. When changes occur it
 // applies the changes to the custom configuration section and signals the the changes have occurred.
 func (cp *Processor) ListenForCustomConfigChanges(
-	configToWatch interfaces.WritableConfig,
+	configToWatch interface{},
 	sectionName string,
-	writableChanged chan bool) error {
+	changedCallback func(interface{})) {
 	configClient := container.ConfigClientFrom(cp.dic.Get)
 	if configClient == nil {
-		return fmt.Errorf("unable to watch custom configuration for changes: Configuration Provider not available")
+		cp.Logger.Warnf("unable to watch custom configuration for changes: Configuration Provider not enabled")
+		return
 	}
 
 	cp.wg.Add(1)
@@ -277,20 +278,18 @@ func (cp *Processor) ListenForCustomConfigChanges(
 				cp.Logger.Error(ex.Error())
 
 			case raw := <-updateStream:
-				if ok := configToWatch.UpdateWritableFromRaw(raw); !ok {
-					cp.Logger.Error("unable to update custom writable configuration from Configuration Provider")
-					continue
-				}
+				//if ok := configToWatch.UpdateWritableFromRaw(raw); !ok {
+				//	cp.Logger.Error("unable to update custom writable configuration from Configuration Provider")
+				//	continue
+				//}
 
 				cp.Logger.Infof("Updated custom configuration '%s' has been received from the Configuration Provider", sectionName)
-				writableChanged <- true
+				changedCallback(raw)
 			}
 		}
 	}()
 
 	cp.Logger.Infof("Watching for custom configuration changes has started for `%s`", sectionName)
-
-	return nil
 }
 
 // createProviderClient creates and returns a configuration.Client instance and logs Client connection information
