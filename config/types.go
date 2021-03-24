@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 )
 
@@ -52,7 +52,7 @@ type ServiceInfo struct {
 // HealthCheck is a URL specifying a health check REST endpoint used by the Registry to determine if the
 // service is available.
 func (s ServiceInfo) HealthCheck() string {
-	hc := fmt.Sprintf("%s://%s:%v%s", s.Protocol, s.Host, s.Port, clients.ApiPingRoute)
+	hc := fmt.Sprintf("%s://%s:%v%s", s.Protocol, s.Host, s.Port, v2.ApiPingRoute)
 	return hc
 }
 
