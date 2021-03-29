@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/token"
 )
 
 // createRegistryClient creates and returns a registry.Client instance.
@@ -36,10 +38,22 @@ func createRegistryClient(
 	lc logger.LoggingClient) (registry.Client, error) {
 	bootstrapConfig := serviceConfig.GetBootstrap()
 
+	tokenFile := bootstrapConfig.Registry.AccessTokenFile
+	accessToken, err := token.LoadAccessToken(tokenFile)
+	if err != nil {
+		// access token file doesn't exist means the access token is not needed.
+		if os.IsNotExist(err) {
+			lc.Warnf("Registry access token at %s doesn't exist. Skipping use of access token", tokenFile)
+		} else {
+			return nil, fmt.Errorf("unable to load Registry client access token at %s: %s", tokenFile, err.Error())
+		}
+	}
+
 	registryConfig := registryTypes.Config{
 		Host:            bootstrapConfig.Registry.Host,
 		Port:            bootstrapConfig.Registry.Port,
 		Type:            bootstrapConfig.Registry.Type,
+		AccessToken:     accessToken,
 		ServiceKey:      serviceKey,
 		ServiceHost:     bootstrapConfig.Service.Host,
 		ServicePort:     bootstrapConfig.Service.Port,

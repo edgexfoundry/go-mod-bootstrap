@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2020 Intel Inc.
+ * Copyright 2021 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"sync"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/token"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/go-mod-configuration/v2/configuration"
@@ -124,7 +126,18 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 
 	switch configProviderInfo.UseProvider() {
 	case true:
-		configClient, err := cp.createProviderClient(serviceKey, configStem, configProviderInfo.ServiceConfig())
+		tokenFile := serviceConfig.GetBootstrap().Service.ConfigAccessTokenFile
+		accessToken, err := token.LoadAccessToken(tokenFile)
+		if err != nil {
+			// access token file doesn't exist means the access token is not needed.
+			if os.IsNotExist(err) {
+				lc.Warnf("Configuration Provider access token at %s doesn't exist. Skipping use of access token", tokenFile)
+			} else {
+				return fmt.Errorf("unable to load Configuration Provider client access token at %s: %s", tokenFile, err.Error())
+			}
+		}
+
+		configClient, err := cp.createProviderClient(serviceKey, configStem, accessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
 		}
@@ -296,9 +309,11 @@ func (cp *Processor) ListenForCustomConfigChanges(
 func (cp *Processor) createProviderClient(
 	serviceKey string,
 	configStem string,
+	accessTokenFile string,
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
 	providerConfig.BasePath = configStem + serviceKey
+	providerConfig.AccessToken = accessTokenFile
 
 	cp.Logger.Info(fmt.Sprintf(
 		"Using Configuration provider (%s) from: %s with base path of %s",
