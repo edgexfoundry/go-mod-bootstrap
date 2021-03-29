@@ -47,6 +47,8 @@ type ServiceInfo struct {
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int
+	// ConfigAccessTokenFile is the location of the access token to use with the Configuration Provider client
+	ConfigAccessTokenFile string
 }
 
 // HealthCheck is a URL specifying a health check REST endpoint used by the Registry to determine if the
@@ -72,9 +74,14 @@ type ConfigProviderInfo struct {
 
 // RegistryInfo defines the type and location (via host/port) of the desired service registry (e.g. Consul, Eureka)
 type RegistryInfo struct {
+	// Host is the host name where the Registry client is running
 	Host string
+	// Port is the port number that the Registry client is listening
 	Port int
+	// Type is the type of Registry client to use, i.e. 'consul'
 	Type string
+	// AccessTokenFile is the location of the access token to use with the Registry client
+	AccessTokenFile string
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
