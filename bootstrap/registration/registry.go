@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	registryTypes "github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
@@ -59,7 +59,7 @@ func createRegistryClient(
 		ServicePort:     bootstrapConfig.Service.Port,
 		ServiceProtocol: bootstrapConfig.Service.Protocol,
 		CheckInterval:   bootstrapConfig.Service.CheckInterval,
-		CheckRoute:      clients.ApiPingRoute,
+		CheckRoute:      v2.ApiPingRoute,
 	}
 
 	lc.Info(fmt.Sprintf("Using Registry (%s) from %s", registryConfig.Type, registryConfig.GetRegistryUrl()))
