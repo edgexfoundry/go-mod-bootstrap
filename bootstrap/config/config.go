@@ -154,6 +154,8 @@ func (cp *Processor) Process(
 			}
 
 			cp.lc.Infof("Using Config Provider access token of length %d", len(accessToken))
+		} else {
+			cp.lc.Info("Not configured to use Config Provider access token")
 		}
 
 		configClient, err := cp.createProviderClient(serviceKey, configStem, accessToken, configProviderInfo.ServiceConfig())
@@ -310,11 +312,6 @@ func (cp *Processor) ListenForCustomConfigChanges(
 				cp.lc.Error(ex.Error())
 
 			case raw := <-updateStream:
-				//if ok := configToWatch.UpdateWritableFromRaw(raw); !ok {
-				//	cp.lc.Error("unable to update custom writable configuration from Configuration Provider")
-				//	continue
-				//}
-
 				cp.lc.Infof("Updated custom configuration '%s' has been received from the Configuration Provider", sectionName)
 				changedCallback(raw)
 			}
@@ -494,5 +491,5 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 
 // logConfigInfo logs the config info message with number over overrides that occurred.
 func (cp *Processor) logConfigInfo(message string, overrideCount int) {
-	cp.lc.Info(fmt.Sprintf("%s (%d envVars overrides applied)", message, overrideCount))
+	cp.lc.Infof("%s (%d envVars overrides applied)", message, overrideCount)
 }
