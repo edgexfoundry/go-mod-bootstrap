@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sync"
 
@@ -40,7 +41,10 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const writableKey = "/Writable"
+const (
+	writableKey   = "/Writable"
+	configVersion = "2.0"
+)
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
 type UpdatedStream chan struct{}
@@ -312,7 +316,7 @@ func (cp *Processor) createProviderClient(
 	accessTokenFile string,
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
-	providerConfig.BasePath = configStem + serviceKey
+	providerConfig.BasePath = filepath.Join(configStem, configVersion, serviceKey)
 	providerConfig.AccessToken = accessTokenFile
 
 	cp.Logger.Info(fmt.Sprintf(
