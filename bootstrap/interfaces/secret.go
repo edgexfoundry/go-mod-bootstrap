@@ -16,4 +16,6 @@ type SecretProvider interface {
 
 	// SecretsLastUpdated returns the last time secrets were updated
 	SecretsLastUpdated() time.Time
+
+	GetAccessToken(tokenType string, serviceKey string) (string, error)
 }

@@ -19,19 +19,19 @@ import (
 	"time"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInsecureProvider_GetSecrets(t *testing.T) {
-	expected := map[string]string{"username": "admin", "password": "sam123!"}
-
 	configAllSecrets := TestConfig{
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
-				Path:    "redis",
-				Secrets: expected,
+				Path:    expectedPath,
+				Secrets: expectedSecrets,
 			},
 		},
 	}
@@ -51,9 +51,9 @@ func TestInsecureProvider_GetSecrets(t *testing.T) {
 		Config      TestConfig
 		ExpectError bool
 	}{
-		{"Valid", "redis", []string{"username", "password"}, configAllSecrets, false},
-		{"Valid just path", "redis", nil, configAllSecrets, false},
-		{"Invalid - No secrets", "redis", []string{"username", "password"}, configMissingSecrets, true},
+		{"Valid", expectedPath, []string{"username", "password"}, configAllSecrets, false},
+		{"Valid just path", expectedPath, nil, configAllSecrets, false},
+		{"Invalid - No secrets", expectedPath, []string{"username", "password"}, configMissingSecrets, true},
 		{"Invalid - Bad Path", "bogus", []string{"username", "password"}, configAllSecrets, true},
 	}
 
@@ -67,7 +67,7 @@ func TestInsecureProvider_GetSecrets(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, expected, actual)
+			assert.Equal(t, expectedSecrets, actual)
 		})
 	}
 }
@@ -85,4 +85,11 @@ func TestInsecureProvider_SecretsUpdated_SecretsLastUpdated(t *testing.T) {
 	target.SecretsUpdated()
 	current := target.SecretsLastUpdated()
 	assert.True(t, current.After(previous))
+}
+
+func TestInsecureProvider_GetAccessToken(t *testing.T) {
+	target := NewInsecureProvider(nil, logger.MockLogger{})
+	actualToken, err := target.GetAccessToken(TokenTypeConsul, "my-service-key")
+	require.NoError(t, err)
+	assert.Len(t, actualToken, 0)
 }

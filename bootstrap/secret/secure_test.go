@@ -20,11 +20,13 @@ import (
 	"time"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
 	mocks2 "github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader/mocks"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets/mocks"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -218,37 +220,34 @@ func TestSecureProvider_DefaultTokenExpiredCallback(t *testing.T) {
 	}
 }
 
-type TestConfig struct {
-	InsecureSecrets bootstrapConfig.InsecureSecrets
-	SecretStore     bootstrapConfig.SecretStoreInfo
-}
+func TestSecureProvider_GetAccessToken(t *testing.T) {
+	testServiceKey := "edgex-unit-test"
+	expectedToken := "myAccessToken"
+	mock := &mocks.SecretClient{}
+	mock.On("GenerateConsulToken", "", testServiceKey).Return(expectedToken, nil)
 
-func (t TestConfig) UpdateFromRaw(_ interface{}) bool {
-	panic("implement me")
-}
-
-func (t TestConfig) EmptyWritablePtr() interface{} {
-	panic("implement me")
-}
-
-func (t TestConfig) UpdateWritableFromRaw(_ interface{}) bool {
-	panic("implement me")
-}
-
-func (t TestConfig) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
-	return bootstrapConfig.BootstrapConfiguration{
-		SecretStore: t.SecretStore,
+	tests := []struct {
+		name        string
+		tokenType   string
+		expectError bool
+	}{
+		{"Valid", TokenTypeConsul, false},
+		{"Invalid token Type", "bad-type", true},
 	}
-}
 
-func (t TestConfig) GetLogLevel() string {
-	panic("implement me")
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			target := NewSecureProvider(TestConfig{}, logger.MockLogger{}, nil)
+			target.SetClient(mock)
 
-func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
-	panic("implement me")
-}
+			actualToken, err := target.GetAccessToken(test.tokenType, testServiceKey)
+			if test.expectError {
+				require.Error(t, err)
+				return
+			}
 
-func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
-	return t.InsecureSecrets
+			require.NoError(t, err)
+			assert.Equal(t, expectedToken, actualToken)
+		})
+	}
 }

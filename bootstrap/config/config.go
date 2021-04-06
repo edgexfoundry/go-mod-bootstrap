@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"reflect"
 	"sync"
@@ -29,8 +28,8 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/token"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/go-mod-configuration/v2/configuration"
@@ -50,7 +49,7 @@ const (
 type UpdatedStream chan struct{}
 
 type Processor struct {
-	Logger          logger.LoggingClient
+	lc              logger.LoggingClient
 	flags           flags.Common
 	envVars         *environment.Variables
 	startupTimer    startup.Timer
@@ -63,7 +62,6 @@ type Processor struct {
 
 // NewProcessor creates a new configuration Processor
 func NewProcessor(
-	lc logger.LoggingClient,
 	flags flags.Common,
 	envVars *environment.Variables,
 	startupTimer startup.Timer,
@@ -73,7 +71,7 @@ func NewProcessor(
 	dic *di.Container,
 ) *Processor {
 	return &Processor{
-		Logger:        lc,
+		lc:            container.LoggingClientFrom(dic.Get),
 		flags:         flags,
 		envVars:       envVars,
 		startupTimer:  startupTimer,
@@ -85,24 +83,27 @@ func NewProcessor(
 }
 
 func NewProcessorForCustomConfig(
-	lc logger.LoggingClient,
 	flags flags.Common,
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	dic *di.Container) *Processor {
 	return &Processor{
-		Logger: lc,
-		flags:  flags,
-		ctx:    ctx,
-		wg:     wg,
-		dic:    dic,
+		lc:    container.LoggingClientFrom(dic.Get),
+		flags: flags,
+		ctx:   ctx,
+		wg:    wg,
+		dic:   dic,
 	}
 }
 
-func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig interfaces.Configuration) error {
+func (cp *Processor) Process(
+	serviceKey string,
+	configStem string,
+	serviceConfig interfaces.Configuration,
+	useSecretProvider bool) error {
+
 	// Create some shorthand for frequently used items
 	envVars := cp.envVars
-	lc := cp.Logger
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
 
@@ -120,6 +121,16 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 		return err
 	}
 
+	// Now that configuration has been loaded from file and overrides applied,
+	// the Secret Provider can be initialized and added to the DIC, but only if it is configured to be used.
+	var secretProvider interfaces.SecretProvider
+	if useSecretProvider {
+		secretProvider, err = secret.NewSecretProvider(serviceConfig, cp.ctx, cp.startupTimer, cp.dic)
+		if err != nil {
+			return fmt.Errorf("failed to create SecretProvider: %s", err.Error())
+		}
+	}
+
 	configProviderUrl := cp.flags.ConfigProviderUrl()
 
 	// Create new ProviderInfo and initialize it from command-line flag or Variables variables
@@ -130,15 +141,19 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 
 	switch configProviderInfo.UseProvider() {
 	case true:
-		tokenFile := serviceConfig.GetBootstrap().Service.ConfigAccessTokenFile
-		accessToken, err := token.LoadAccessToken(tokenFile)
-		if err != nil {
-			// access token file doesn't exist means the access token is not needed.
-			if os.IsNotExist(err) {
-				lc.Warnf("Configuration Provider access token at %s doesn't exist. Skipping use of access token", tokenFile)
-			} else {
-				return fmt.Errorf("unable to load Configuration Provider client access token at %s: %s", tokenFile, err.Error())
+		var accessToken string
+
+		// secretProvider will be nil if not configured to be used. In that case, no access token required.
+		if secretProvider != nil {
+			accessToken, err = secretProvider.GetAccessToken(configProviderInfo.serviceConfig.Type, serviceKey)
+			if err != nil {
+				return fmt.Errorf(
+					"failed to get Configuration Provider (%s) access token: %s",
+					configProviderInfo.serviceConfig.Type,
+					err.Error())
 			}
+
+			cp.lc.Infof("Using Config Provider access token of length %d", len(accessToken))
 		}
 
 		configClient, err := cp.createProviderClient(serviceKey, configStem, accessToken, configProviderInfo.ServiceConfig())
@@ -152,7 +167,7 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 				serviceConfig,
 				overrideCount,
 			); err != nil {
-				lc.Error(err.Error())
+				cp.lc.Error(err.Error())
 				select {
 				case <-cp.ctx.Done():
 					return errors.New("aborted Updating to/from Configuration Provider")
@@ -178,7 +193,7 @@ func (cp *Processor) Process(serviceKey string, configStem string, serviceConfig
 	}
 
 	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
-	err = lc.SetLogLevel(serviceConfig.GetLogLevel())
+	err = cp.lc.SetLogLevel(serviceConfig.GetLogLevel())
 
 	return err
 }
@@ -192,17 +207,17 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 	source := "file"
 
 	if cp.envVars == nil {
-		cp.envVars = environment.NewVariables(cp.Logger)
+		cp.envVars = environment.NewVariables(cp.lc)
 	}
 
 	configClient := container.ConfigClientFrom(cp.dic.Get)
 	if configClient == nil {
-		cp.Logger.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
+		cp.lc.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
 		if err := cp.loadFromFile(config, "custom"); err != nil {
 			return err
 		}
 	} else {
-		cp.Logger.Infof("Checking if custom configuration ('%s') exists in Configuration Provider", sectionName)
+		cp.lc.Infof("Checking if custom configuration ('%s') exists in Configuration Provider", sectionName)
 
 		exists, err := configClient.HasSubConfiguration(sectionName)
 		if err != nil {
@@ -243,7 +258,7 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 			if exists && cp.flags.OverwriteConfig() {
 				overwriteMessage = "(overwritten)"
 			}
-			cp.Logger.Infof("Custom Config loaded from file and pushed to Configuration Provider %s", overwriteMessage)
+			cp.lc.Infof("Custom Config loaded from file and pushed to Configuration Provider %s", overwriteMessage)
 		}
 	}
 
@@ -256,7 +271,7 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 		}
 	}
 
-	cp.Logger.Infof("Loaded custom configuration from %s (%d envVars overrides applied)", source, overrideCount)
+	cp.lc.Infof("Loaded custom configuration from %s (%d envVars overrides applied)", source, overrideCount)
 
 	return nil
 }
@@ -269,7 +284,7 @@ func (cp *Processor) ListenForCustomConfigChanges(
 	changedCallback func(interface{})) {
 	configClient := container.ConfigClientFrom(cp.dic.Get)
 	if configClient == nil {
-		cp.Logger.Warnf("unable to watch custom configuration for changes: Configuration Provider not enabled")
+		cp.lc.Warnf("unable to watch custom configuration for changes: Configuration Provider not enabled")
 		return
 	}
 
@@ -288,25 +303,25 @@ func (cp *Processor) ListenForCustomConfigChanges(
 		for {
 			select {
 			case <-cp.ctx.Done():
-				cp.Logger.Infof("Exiting waiting for custom configuration changes")
+				cp.lc.Infof("Exiting waiting for custom configuration changes")
 				return
 
 			case ex := <-errorStream:
-				cp.Logger.Error(ex.Error())
+				cp.lc.Error(ex.Error())
 
 			case raw := <-updateStream:
 				//if ok := configToWatch.UpdateWritableFromRaw(raw); !ok {
-				//	cp.Logger.Error("unable to update custom writable configuration from Configuration Provider")
+				//	cp.lc.Error("unable to update custom writable configuration from Configuration Provider")
 				//	continue
 				//}
 
-				cp.Logger.Infof("Updated custom configuration '%s' has been received from the Configuration Provider", sectionName)
+				cp.lc.Infof("Updated custom configuration '%s' has been received from the Configuration Provider", sectionName)
 				changedCallback(raw)
 			}
 		}
 	}()
 
-	cp.Logger.Infof("Watching for custom configuration changes has started for `%s`", sectionName)
+	cp.lc.Infof("Watching for custom configuration changes has started for `%s`", sectionName)
 }
 
 // createProviderClient creates and returns a configuration.Client instance and logs Client connection information
@@ -319,7 +334,7 @@ func (cp *Processor) createProviderClient(
 	providerConfig.BasePath = filepath.Join(configStem, ConfigVersion, serviceKey)
 	providerConfig.AccessToken = accessTokenFile
 
-	cp.Logger.Info(fmt.Sprintf(
+	cp.lc.Info(fmt.Sprintf(
 		"Using Configuration provider (%s) from: %s with base path of %s",
 		providerConfig.Type,
 		providerConfig.GetUrl(),
@@ -330,9 +345,9 @@ func (cp *Processor) createProviderClient(
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
 func (cp *Processor) loadFromFile(config interface{}, configType string) error {
-	configDir := environment.GetConfDir(cp.Logger, cp.flags.ConfigDirectory())
-	profileDir := environment.GetProfileDir(cp.Logger, cp.flags.Profile())
-	configFileName := environment.GetConfigFileName(cp.Logger, cp.flags.ConfigFileName())
+	configDir := environment.GetConfDir(cp.lc, cp.flags.ConfigDirectory())
+	profileDir := environment.GetProfileDir(cp.lc, cp.flags.Profile())
+	configFileName := environment.GetConfigFileName(cp.lc, cp.flags.ConfigFileName())
 
 	filePath := configDir + "/" + profileDir + configFileName
 
@@ -344,7 +359,7 @@ func (cp *Processor) loadFromFile(config interface{}, configType string) error {
 		return fmt.Errorf("could not load %s configuration file (%s): %s", configType, filePath, err.Error())
 	}
 
-	cp.Logger.Info(fmt.Sprintf("Loaded %s configuration from %s", configType, filePath))
+	cp.lc.Info(fmt.Sprintf("Loaded %s configuration from %s", configType, filePath))
 
 	return nil
 }
@@ -401,7 +416,7 @@ func (cp *Processor) processWithProvider(
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
 func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client) {
-	lc := cp.Logger
+	lc := cp.lc
 	isFirstUpdate := true
 
 	cp.wg.Add(1)
@@ -479,5 +494,5 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 
 // logConfigInfo logs the config info message with number over overrides that occurred.
 func (cp *Processor) logConfigInfo(message string, overrideCount int) {
-	cp.Logger.Info(fmt.Sprintf("%s (%d envVars overrides applied)", message, overrideCount))
+	cp.lc.Info(fmt.Sprintf("%s (%d envVars overrides applied)", message, overrideCount))
 }

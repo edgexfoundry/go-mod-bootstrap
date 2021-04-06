@@ -19,34 +19,41 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	registryTypes "github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/token"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 )
 
 // createRegistryClient creates and returns a registry.Client instance.
 func createRegistryClient(
 	serviceKey string,
 	serviceConfig interfaces.Configuration,
-	lc logger.LoggingClient) (registry.Client, error) {
+	lc logger.LoggingClient,
+	dic *di.Container) (registry.Client, error) {
 	bootstrapConfig := serviceConfig.GetBootstrap()
 
-	tokenFile := bootstrapConfig.Registry.AccessTokenFile
-	accessToken, err := token.LoadAccessToken(tokenFile)
-	if err != nil {
-		// access token file doesn't exist means the access token is not needed.
-		if os.IsNotExist(err) {
-			lc.Warnf("Registry access token at %s doesn't exist. Skipping use of access token", tokenFile)
-		} else {
-			return nil, fmt.Errorf("unable to load Registry client access token at %s: %s", tokenFile, err.Error())
+	var err error
+	var accessToken string
+
+	secretProvider := container.SecretProviderFrom(dic.Get)
+	// secretProvider will be nil if not configured to be used. In that case, no access token required.
+	if secretProvider != nil {
+		accessToken, err = secretProvider.GetAccessToken(bootstrapConfig.Registry.Type, serviceKey)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to get Registry (%s) access token: %s",
+				bootstrapConfig.Registry.Type,
+				err.Error())
 		}
+
+		lc.Infof("Using Registry access token of length %d", len(accessToken))
 	}
 
 	registryConfig := registryTypes.Config{
@@ -73,7 +80,8 @@ func RegisterWithRegistry(
 	startupTimer startup.Timer,
 	config interfaces.Configuration,
 	lc logger.LoggingClient,
-	serviceKey string) (registry.Client, error) {
+	serviceKey string,
+	dic *di.Container) (registry.Client, error) {
 
 	var registryWithRegistry = func(registryClient registry.Client) error {
 		if !registryClient.IsAlive() {
@@ -87,7 +95,7 @@ func RegisterWithRegistry(
 		return nil
 	}
 
-	registryClient, err := createRegistryClient(serviceKey, config, lc)
+	registryClient, err := createRegistryClient(serviceKey, config, lc, dic)
 	if err != nil {
 		return nil, fmt.Errorf("createRegistryClient failed: %v", err.Error())
 	}

@@ -18,15 +18,17 @@ package secret
 import (
 	"errors"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
-
-	"sync"
-	"time"
 )
+
+const TokenTypeConsul = "consul"
 
 // SecureProvider implements the SecretProvider interface
 type SecureProvider struct {
@@ -155,6 +157,16 @@ func (p *SecureProvider) SecretsUpdated() {
 // SecretsLastUpdated returns the last time secure secrets were updated
 func (p *SecureProvider) SecretsLastUpdated() time.Time {
 	return p.lastUpdated
+}
+
+// GetAccessToken returns the access token for the requested token type.
+func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
+	switch tokenType {
+	case TokenTypeConsul:
+		return p.secretClient.GenerateConsulToken("", serviceKey)
+	default:
+		return "", fmt.Errorf("invalid access token type '%s'", tokenType)
+	}
 }
 
 // defaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function

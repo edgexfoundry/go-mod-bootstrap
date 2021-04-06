@@ -17,11 +17,11 @@ package secret
 import (
 	"errors"
 	"fmt"
-
 	"strings"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
@@ -105,4 +105,10 @@ func (p *InsecureProvider) SecretsUpdated() {
 // SecretsLastUpdated returns the last time insecure secrets were updated
 func (p *InsecureProvider) SecretsLastUpdated() time.Time {
 	return p.lastUpdated
+}
+
+// GetAccessToken returns the AccessToken for the specified type, which in insecure mode is not need
+// so just returning an empty token.
+func (p *InsecureProvider) GetAccessToken(_ string, _ string) (string, error) {
+	return "", nil
 }

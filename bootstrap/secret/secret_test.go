@@ -12,7 +12,7 @@
  * the License.
  *******************************************************************************/
 
-package handlers
+package secret
 
 import (
 	"context"
@@ -22,11 +22,10 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"sync"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -47,9 +46,9 @@ const (
 )
 
 var testTokenResponse = `{"auth":{"accessor":"9OvxnrjgV0JTYMeBreak7YJ9","client_token":"s.oPJ8uuJCkTRb2RDdcNova8wg","entity_id":"","lease_duration":3600,"metadata":{"edgex-service-name":"edgex-core-data"},"orphan":true,"policies":["default","edgex-service-edgex-core-data"],"renewable":true,"token_policies":["default","edgex-service-edgex-core-data"],"token_type":"service"},"data":null,"lease_duration":0,"lease_id":"","renewable":false,"request_id":"ee749ee1-c8bf-6fa9-3ed5-644181fc25b0","warnings":null,"wrap_info":null}`
-var expectedSecrets = map[string]string{secret.UsernameKey: expectedUsername, secret.PasswordKey: expectedPassword}
+var expectedSecrets = map[string]string{UsernameKey: expectedUsername, PasswordKey: expectedPassword}
 
-func TestProvider_BootstrapHandler(t *testing.T) {
+func TestNewSecretProvider(t *testing.T) {
 	tests := []struct {
 		Name   string
 		Secure string
@@ -60,7 +59,7 @@ func TestProvider_BootstrapHandler(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
-			_ = os.Setenv(secret.EnvSecretStore, tc.Secure)
+			_ = os.Setenv(EnvSecretStore, tc.Secure)
 			timer := startup.NewStartUpTimer("UnitTest")
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
@@ -71,6 +70,8 @@ func TestProvider_BootstrapHandler(t *testing.T) {
 					return TestConfig{}
 				},
 			})
+
+			var configuration interfaces.Configuration
 
 			if tc.Secure == "true" {
 				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +93,7 @@ func TestProvider_BootstrapHandler(t *testing.T) {
 
 				serverUrl, _ := url.Parse(testServer.URL)
 				port, _ := strconv.Atoi(serverUrl.Port())
-				config := NewTestConfig(port)
+				configuration = NewTestConfig(port, nil)
 
 				mockTokenLoader := &mocks.AuthTokenLoader{}
 				mockTokenLoader.On("Load", "token.json").Return("Test Token", nil)
@@ -100,21 +101,26 @@ func TestProvider_BootstrapHandler(t *testing.T) {
 					container.AuthTokenLoaderInterfaceName: func(get di.Get) interface{} {
 						return mockTokenLoader
 					},
-					container.ConfigurationInterfaceName: func(get di.Get) interface{} {
-						return config
+				})
+			} else {
+				configuration = NewTestConfig(0, map[string]bootstrapConfig.InsecureSecretsInfo{
+					"DB": {
+						Path:    expectedPath,
+						Secrets: expectedSecrets,
 					},
 				})
 			}
 
-			actual := SecureProviderBootstrapHandler(context.Background(), &sync.WaitGroup{}, timer, dic)
-			require.True(t, actual)
+			actual, err := NewSecretProvider(configuration, context.Background(), timer, dic)
+			require.NoError(t, err)
+			require.NotNil(t, actual)
 			actualProvider := container.SecretProviderFrom(dic.Get)
 			assert.NotNil(t, actualProvider)
 
 			actualSecrets, err := actualProvider.GetSecrets(expectedPath)
 			require.NoError(t, err)
-			assert.Equal(t, expectedUsername, actualSecrets[secret.UsernameKey])
-			assert.Equal(t, expectedPassword, actualSecrets[secret.PasswordKey])
+			assert.Equal(t, expectedUsername, actualSecrets[UsernameKey])
+			assert.Equal(t, expectedPassword, actualSecrets[PasswordKey])
 		})
 	}
 }
@@ -124,8 +130,9 @@ type TestConfig struct {
 	SecretStore     bootstrapConfig.SecretStoreInfo
 }
 
-func NewTestConfig(port int) TestConfig {
+func NewTestConfig(port int, insecureSecrets bootstrapConfig.InsecureSecrets) TestConfig {
 	return TestConfig{
+		InsecureSecrets: insecureSecrets,
 		SecretStore: bootstrapConfig.SecretStoreInfo{
 			Type:       secrets.Vault,
 			Host:       "localhost",
@@ -168,10 +175,5 @@ func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 }
 
 func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
-	return map[string]bootstrapConfig.InsecureSecretsInfo{
-		"DB": {
-			Path:    expectedPath,
-			Secrets: expectedSecrets,
-		},
-	}
+	return t.InsecureSecrets
 }
