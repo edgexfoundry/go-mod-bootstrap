@@ -43,7 +43,7 @@ import (
 
 const (
 	writableKey   = "/Writable"
-	configVersion = "2.0"
+	ConfigVersion = "2.0"
 )
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
@@ -316,7 +316,7 @@ func (cp *Processor) createProviderClient(
 	accessTokenFile string,
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
-	providerConfig.BasePath = filepath.Join(configStem, configVersion, serviceKey)
+	providerConfig.BasePath = filepath.Join(configStem, ConfigVersion, serviceKey)
 	providerConfig.AccessToken = accessTokenFile
 
 	cp.Logger.Info(fmt.Sprintf(
