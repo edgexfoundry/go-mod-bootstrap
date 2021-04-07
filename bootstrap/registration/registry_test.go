@@ -19,7 +19,9 @@ package registration
 import (
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
@@ -43,7 +45,16 @@ func TestCreateRegistryClient(t *testing.T) {
 		},
 	}
 
-	actual, err := createRegistryClient("unit-test", serviceConfig, lc)
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		container.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
+			return serviceConfig
+		},
+	})
+
+	actual, err := createRegistryClient("unit-test", serviceConfig, lc, dic)
 	require.NoError(t, err)
 	assert.NotNil(t, actual)
 }

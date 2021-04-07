@@ -265,7 +265,7 @@ type StartupInfo struct {
 // GetStartupInfo gets the Service StartupInfo values from an Variables variable value (if it exists)
 // or uses the default values.
 func GetStartupInfo(serviceKey string) StartupInfo {
-	// Logger hasn't be created at the time this info is needed so have to create local client.
+	// lc hasn't be created at the time this info is needed so have to create local client.
 	lc := logger.NewClient(serviceKey, models.InfoLog)
 
 	startup := StartupInfo{

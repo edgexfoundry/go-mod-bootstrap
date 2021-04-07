@@ -12,38 +12,36 @@
  * the License.
  *******************************************************************************/
 
-package handlers
+package secret
 
 import (
 	"context"
 	"fmt"
-	"sync"
+
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/fileioperformer"
 )
 
-// SecureProviderBootstrapHandler full initializes the Secret Provider.
-func SecureProviderBootstrapHandler(
+// NewSecretProvider creates a new fully initialized the Secret Provider.
+func NewSecretProvider(
+	configuration interfaces.Configuration,
 	ctx context.Context,
-	_ *sync.WaitGroup,
 	startupTimer startup.Timer,
-	dic *di.Container) bool {
+	dic *di.Container) (interfaces.SecretProvider, error) {
 	lc := container.LoggingClientFrom(dic.Get)
-	configuration := container.ConfigurationFrom(dic.Get)
 
 	var provider interfaces.SecretProvider
 
-	switch secret.IsSecurityEnabled() {
+	switch IsSecurityEnabled() {
 	case true:
 		// attempt to create a new Secure client only if security is enabled.
 		var err error
@@ -64,7 +62,7 @@ func SecureProviderBootstrapHandler(
 
 			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader)
 			if err == nil {
-				secureProvider := secret.NewSecureProvider(configuration, lc, tokenLoader)
+				secureProvider := NewSecureProvider(configuration, lc, tokenLoader)
 				var secretClient secrets.SecretClient
 
 				lc.Info("Attempting to create secret client")
@@ -82,12 +80,11 @@ func SecureProviderBootstrapHandler(
 		}
 
 		if err != nil {
-			lc.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
-			return false
+			return nil, fmt.Errorf("unable to create SecretClient: %s", err.Error())
 		}
 
 	case false:
-		provider = secret.NewInsecureProvider(configuration, lc)
+		provider = NewInsecureProvider(configuration, lc)
 	}
 
 	dic.Update(di.ServiceConstructorMap{
@@ -96,7 +93,7 @@ func SecureProviderBootstrapHandler(
 		},
 	})
 
-	return true
+	return provider, nil
 }
 
 // getSecretConfig creates a SecretConfig based on the SecretStoreInfo configuration properties.
@@ -116,7 +113,7 @@ func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtok
 		RetryWaitPeriod:         secretStoreInfo.RetryWaitPeriod,
 	}
 
-	if !secret.IsSecurityEnabled() || secretStoreInfo.TokenFile == "" {
+	if !IsSecurityEnabled() || secretStoreInfo.TokenFile == "" {
 		return secretConfig, nil
 	}
 

@@ -16,4 +16,8 @@ type SecretProvider interface {
 
 	// SecretsLastUpdated returns the last time secrets were updated
 	SecretsLastUpdated() time.Time
+
+	// GetAccessToken return an access token for the specified token type and service key.
+	// Service key is use as the access token role which must have be previously setup.
+	GetAccessToken(tokenType string, serviceKey string) (string, error)
 }

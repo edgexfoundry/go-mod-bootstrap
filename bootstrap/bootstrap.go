@@ -86,29 +86,35 @@ func RunAndReturnWaitGroup(
 	configUpdated config.UpdatedStream,
 	startupTimer startup.Timer,
 	dic *di.Container,
+	useSecretProvider bool,
 	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, Deferred, bool) {
 
 	var err error
 	var wg sync.WaitGroup
 	deferred := func() {}
 
-	// Check if service provided an initial Logging Client to use. If not create one.
+	// Check if service provided an initial Logging Client to use. If not create one and add it to the DIC.
 	lc := container.LoggingClientFrom(dic.Get)
 	if lc == nil {
 		lc = logger.NewClient(serviceKey, models.InfoLog)
+		dic.Update(di.ServiceConstructorMap{
+			container.LoggingClientInterfaceName: func(get di.Get) interface{} {
+				return lc
+			},
+		})
 	}
 
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	envVars := environment.NewVariables(lc)
 
-	configProcessor := config.NewProcessor(lc, commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
-	if err := configProcessor.Process(serviceKey, configStem, serviceConfig); err != nil {
+	// The SecretProvider is initialized and placed in the DIS as part of processing the configuration due
+	// to the need for it to be used to get Access Token for the Configuration Provider and having to wait to
+	// initialize it until after the configuration is loaded from file.
+	configProcessor := config.NewProcessor(commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
+	if err := configProcessor.Process(serviceKey, configStem, serviceConfig, useSecretProvider); err != nil {
 		fatalError(err, lc)
 	}
-
-	// Now the the configuration has been processed the logger has been created based on configuration.
-	lc = configProcessor.Logger
 
 	var registryClient registry.Client
 
@@ -119,7 +125,8 @@ func RunAndReturnWaitGroup(
 			startupTimer,
 			serviceConfig,
 			lc,
-			serviceKey)
+			serviceKey,
+			dic)
 		if err != nil {
 			fatalError(err, lc)
 		}
@@ -136,9 +143,6 @@ func RunAndReturnWaitGroup(
 	dic.Update(di.ServiceConstructorMap{
 		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
 			return serviceConfig
-		},
-		container.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return lc
 		},
 		container.RegistryClientInterfaceName: func(get di.Get) interface{} {
 			return registryClient
@@ -174,6 +178,7 @@ func Run(
 	serviceConfig interfaces.Configuration,
 	startupTimer startup.Timer,
 	dic *di.Container,
+	useSecretProvider bool,
 	handlers []interfaces.BootstrapHandler) {
 
 	wg, deferred, _ := RunAndReturnWaitGroup(
@@ -186,6 +191,7 @@ func Run(
 		nil,
 		startupTimer,
 		dic,
+		useSecretProvider,
 		handlers,
 	)
 
