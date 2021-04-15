@@ -163,7 +163,7 @@ func (p *SecureProvider) SecretsLastUpdated() time.Time {
 func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
 	switch tokenType {
 	case TokenTypeConsul:
-		return p.secretClient.GenerateConsulToken("", serviceKey)
+		return p.secretClient.GenerateConsulToken(serviceKey)
 	default:
 		return "", fmt.Errorf("invalid access token type '%s'", tokenType)
 	}

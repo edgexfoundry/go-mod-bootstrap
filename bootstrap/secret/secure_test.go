@@ -224,7 +224,7 @@ func TestSecureProvider_GetAccessToken(t *testing.T) {
 	testServiceKey := "edgex-unit-test"
 	expectedToken := "myAccessToken"
 	mock := &mocks.SecretClient{}
-	mock.On("GenerateConsulToken", "", testServiceKey).Return(expectedToken, nil)
+	mock.On("GenerateConsulToken", testServiceKey).Return(expectedToken, nil)
 
 	tests := []struct {
 		name        string
