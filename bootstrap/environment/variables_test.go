@@ -324,18 +324,22 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 func TestOverrideConfigurationUppercase(t *testing.T) {
 	_, lc := initializeTest()
 
-	expectedOverrideCount := 4
-	expectedHost := "edgex-core-consul"
+	expectedOverrideCount := 5
+	expectedRegistryHost := "edgex-core-consul"
+	expectedCoreDataHost := "edgex-core-data"
 	expectedList := []string{"joe", "mary", "bob"}
 	expectedFloatVal := float32(24.234)
 	expectedAuthType := "secure"
 	expectedAuthToken := "token"
+
+	coreDataClientKey := "edgex-core-data"
 
 	serviceConfig := struct {
 		Registry    config.RegistryInfo
 		List        []string
 		FloatVal    float32
 		SecretStore config.SecretStoreInfo
+		Clients     map[string]config.ClientInfo
 	}{
 		Registry: config.RegistryInfo{
 			Host: "localhost",
@@ -350,9 +354,17 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 				AuthToken: expectedAuthToken,
 			},
 		},
+		Clients: map[string]config.ClientInfo{
+			coreDataClientKey: {
+				Host:     "localhost",
+				Port:     49080,
+				Protocol: "http",
+			},
+		},
 	}
 
-	_ = os.Setenv("REGISTRY_HOST", expectedHost)
+	_ = os.Setenv("REGISTRY_HOST", expectedRegistryHost)
+	_ = os.Setenv("CLIENTS_EDGEX_CORE_DATA_HOST", expectedCoreDataHost)
 	_ = os.Setenv("LIST", " joe,mary  ,  bob  ")
 	strVal := fmt.Sprintf("%v", expectedFloatVal)
 	_ = os.Setenv("FLOATVAL", strVal)
@@ -365,7 +377,8 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedOverrideCount, actualCount)
-	assert.Equal(t, expectedHost, serviceConfig.Registry.Host)
+	assert.Equal(t, expectedRegistryHost, serviceConfig.Registry.Host)
+	assert.Equal(t, expectedCoreDataHost, serviceConfig.Clients[coreDataClientKey].Host)
 	assert.Equal(t, expectedList, serviceConfig.List)
 	assert.Equal(t, expectedFloatVal, serviceConfig.FloatVal)
 	assert.Equal(t, expectedAuthType, serviceConfig.SecretStore.Authentication.AuthType)
