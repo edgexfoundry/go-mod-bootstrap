@@ -61,12 +61,7 @@ type Variables struct {
 	lc        logger.LoggingClient
 }
 
-type overrideSpec struct {
-	tomlPath     string
-	overrideName string
-}
-
-// NewEnvironment constructor reads/stores os.Environ() for use by Variables receiver methods.
+// NewVariables constructor reads/stores os.Environ() for use by Variables receiver methods.
 func NewVariables(lc logger.LoggingClient) *Variables {
 	osEnv := os.Environ()
 	e := &Variables{
@@ -118,12 +113,12 @@ func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error
 	// The toml.Tree API keys() only return to top level keys, rather that paths.
 	// It is also missing a GetPaths so have to spin our own
 	paths := e.buildPaths(configTree.ToMap())
-	// Now that we have all the paths in the config tree, we need to create a override specs that have
-	// the matching override names for each path.
-	overrideSpecs := e.buildOverrideSpecs(paths)
+	// Now that we have all the paths in the config tree, we need to create map of corresponding override names that
+	// could match override environment variable names.
+	overrideNames := e.buildOverrideNames(paths)
 
 	for envVar, envValue := range e.variables {
-		path, found := e.getPathForMatchedOverride(overrideSpecs, envVar)
+		path, found := overrideNames[envVar]
 		if !found {
 			continue
 		}
@@ -170,17 +165,13 @@ func (e *Variables) buildPaths(keyMap map[string]interface{}) []string {
 	return paths
 }
 
-func (e *Variables) buildOverrideSpecs(paths []string) []overrideSpec {
-	var specs []overrideSpec
+func (e *Variables) buildOverrideNames(paths []string) map[string]string {
+	names := map[string]string{}
 	for _, path := range paths {
-		spec := overrideSpec{
-			tomlPath:     path,
-			overrideName: e.getOverrideNameFor(path),
-		}
-		specs = append(specs, spec)
+		names[e.getOverrideNameFor(path)] = path
 	}
 
-	return specs
+	return names
 }
 
 func (_ *Variables) getOverrideNameFor(path string) string {
@@ -189,16 +180,6 @@ func (_ *Variables) getOverrideNameFor(path string) string {
 	override = strings.ReplaceAll(override, tomlNameSeparator, envNameSeparator)
 	override = strings.ToUpper(override)
 	return override
-}
-
-func (e *Variables) getPathForMatchedOverride(specs []overrideSpec, envVarName string) (string, bool) {
-	for _, spec := range specs {
-		if spec.overrideName == envVarName {
-			return spec.tomlPath, true
-		}
-	}
-
-	return "", false
 }
 
 // OverrideConfigProviderInfo overrides the Configuration Provider ServiceConfig values
