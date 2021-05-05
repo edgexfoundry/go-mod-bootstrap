@@ -57,7 +57,7 @@ func TestSecureProvider_GetSecrets(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewSecureProvider(tc.Config, logger.MockLogger{}, nil)
 			target.SetClient(tc.Client)
-			actual, err := target.GetSecrets(tc.Path, tc.Keys...)
+			actual, err := target.GetSecret(tc.Path, tc.Keys...)
 			if tc.ExpectError {
 				require.Error(t, err)
 				return
@@ -79,19 +79,19 @@ func TestSecureProvider_GetSecrets_Cached(t *testing.T) {
 	target := NewSecureProvider(nil, logger.MockLogger{}, nil)
 	target.SetClient(mock)
 
-	actual, err := target.GetSecrets("redis", "username", "password")
+	actual, err := target.GetSecret("redis", "username", "password")
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
 	// Now have mock return error if it is called which should not happen of secrets are cached
 	mock.On("GetSecrets", "redis", "username", "password").Return(nil, errors.New("No Cached"))
-	actual, err = target.GetSecrets("redis", "username", "password")
+	actual, err = target.GetSecret("redis", "username", "password")
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
 	// Now check for error when not all requested keys not in cache.
 	mock.On("GetSecrets", "redis", "username", "password2").Return(nil, errors.New("No Cached"))
-	_, err = target.GetSecrets("redis", "username", "password2")
+	_, err = target.GetSecret("redis", "username", "password2")
 	require.Error(t, err)
 }
 
@@ -106,17 +106,17 @@ func TestSecureProvider_GetSecrets_Cached_Invalidated(t *testing.T) {
 	target := NewSecureProvider(nil, logger.MockLogger{}, nil)
 	target.SetClient(mock)
 
-	actual, err := target.GetSecrets("redis", "username", "password")
+	actual, err := target.GetSecret("redis", "username", "password")
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
 	// Invalidate the secrets cache by storing new secrets
-	err = target.StoreSecrets("redis", expected)
+	err = target.StoreSecret("redis", expected)
 	require.NoError(t, err)
 
 	// Now have mock return error is it is called which should now happen if the cache was properly invalidated by the above call to StoreSecrets
 	mock.On("GetSecrets", "redis", "username", "password").Return(nil, errors.New("No Cached"))
-	_, err = target.GetSecrets("redis", "username", "password")
+	_, err = target.GetSecret("redis", "username", "password")
 	require.Error(t, err)
 }
 
@@ -143,7 +143,7 @@ func TestSecureProvider_StoreSecrets_Secure(t *testing.T) {
 			target := NewSecureProvider(nil, logger.MockLogger{}, nil)
 			target.SetClient(tc.Client)
 
-			err := target.StoreSecrets(tc.Path, input)
+			err := target.StoreSecret(tc.Path, input)
 			if tc.ExpectError {
 				require.Error(t, err)
 				return
@@ -164,7 +164,7 @@ func TestSecureProvider_SecretsLastUpdated(t *testing.T) {
 
 	previous := target.SecretsLastUpdated()
 	time.Sleep(1 * time.Second)
-	err := target.StoreSecrets("redis", input)
+	err := target.StoreSecret("redis", input)
 	require.NoError(t, err)
 	current := target.SecretsLastUpdated()
 	assert.True(t, current.After(previous))

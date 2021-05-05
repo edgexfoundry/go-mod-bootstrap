@@ -64,6 +64,10 @@ type unitTestConfiguration struct {
 	Registry config.RegistryInfo
 }
 
+func (ut unitTestConfiguration) GetMessageBusInfo() config.MessageBusInfo {
+	panic("implement me")
+}
+
 func (ut unitTestConfiguration) GetInsecureSecrets() config.InsecureSecrets {
 	return nil
 }
