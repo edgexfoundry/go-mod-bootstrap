@@ -162,7 +162,7 @@ func TestValidateSecrets(t *testing.T) {
 		ErrorExpectation bool
 		ErrorMessage     string
 	}{
-		{"Invalid AuthMode", "BadAuthMode", SecretData{}, true, "Invalid AuthMode selected"},
+		{"Invalid AuthMode", "BadAuthMode", SecretData{}, true, "Invalid AuthMode of 'BadAuthMode' selected"},
 		{"No Auth No error", AuthModeNone, SecretData{}, false, ""},
 		{"UsernamePassword No Error", AuthModeUsernamePassword, SecretData{
 			Username: "user",
