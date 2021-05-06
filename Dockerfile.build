@@ -21,6 +21,7 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
 
 RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
+# ZMQ needed due to dependency on go-mod-messaging
 RUN apk add --update --no-cache git make zeromq-dev
 
 WORKDIR /build

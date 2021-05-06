@@ -103,35 +103,37 @@ func BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer star
 		default:
 			err = msgClient.Connect()
 			if err != nil {
-				lc.Warnf("Unable to connect MessageBus: %v", err)
-			} else {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					select {
-					case <-ctx.Done():
-						_ = msgClient.Disconnect()
-						lc.Infof("Disconnecting from MessageBus")
-					}
-				}()
-				dic.Update(di.ServiceConstructorMap{
-					container.MessagingClientName: func(get di.Get) interface{} {
-						return msgClient
-					},
-				})
-
-				lc.Info(fmt.Sprintf(
-					"Connected to %s Message Bus @ %s://%s:%d publishing on '%s' prefix topic with AuthMode='%s'",
-					messageBusInfo.Type,
-					messageBusInfo.Protocol,
-					messageBusInfo.Host,
-					messageBusInfo.Port,
-					messageBusInfo.PublishTopicPrefix,
-					messageBusInfo.AuthMode))
-
-				return true
+				lc.Warnf("Unable to connect MessageBus: %w", err)
+				startupTimer.SleepForInterval()
+				continue
 			}
-			startupTimer.SleepForInterval()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				select {
+				case <-ctx.Done():
+					_ = msgClient.Disconnect()
+					lc.Infof("Disconnecting from MessageBus")
+				}
+			}()
+
+			dic.Update(di.ServiceConstructorMap{
+				container.MessagingClientName: func(get di.Get) interface{} {
+					return msgClient
+				},
+			})
+
+			lc.Info(fmt.Sprintf(
+				"Connected to %s Message Bus @ %s://%s:%d publishing on '%s' prefix topic with AuthMode='%s'",
+				messageBusInfo.Type,
+				messageBusInfo.Protocol,
+				messageBusInfo.Host,
+				messageBusInfo.Port,
+				messageBusInfo.PublishTopicPrefix,
+				messageBusInfo.AuthMode))
+
+			return true
 		}
 	}
 
@@ -172,7 +174,6 @@ func setOptionsAuthData(messageBusInfo *config.MessageBusInfo, lc logger.Logging
 		messageBusInfo.Optional[OptionsKeyPEMBlockKey] = string(secretData.KeyPemBlock)
 	case AuthModeCA:
 		messageBusInfo.Optional[OptionsCaPEMBlockKey] = string(secretData.CaPemBlock)
-		break
 	}
 
 	return nil
@@ -200,21 +201,27 @@ func GetSecretData(authMode string, secretName string, provider SecretDataProvid
 }
 
 func ValidateSecretData(authMode string, secretName string, secretData *SecretData) error {
-	if authMode == AuthModeUsernamePassword {
+	switch authMode {
+	case AuthModeUsernamePassword:
 		if secretData.Username == "" || secretData.Password == "" {
 			return fmt.Errorf("AuthModeUsernamePassword selected however Username or Password was not found for secret=%s", secretName)
 		}
-	} else if authMode == AuthModeCert {
+
+	case AuthModeCert:
 		// need both to make a successful connection
 		if len(secretData.KeyPemBlock) <= 0 || len(secretData.CertPemBlock) <= 0 {
 			return fmt.Errorf("AuthModeCert selected however the key or cert PEM block was not found for secret=%s", secretName)
 		}
-	} else if authMode == AuthModeCA {
+
+	case AuthModeCA:
 		if len(secretData.CaPemBlock) <= 0 {
 			return fmt.Errorf("AuthModeCA selected however no PEM Block was found for secret=%s", secretName)
 		}
-	} else if authMode != AuthModeNone {
-		return fmt.Errorf("Invalid AuthMode selected")
+
+	case AuthModeNone:
+		// Nothing to validate
+	default:
+		return fmt.Errorf("Invalid AuthMode of '%s' selected", authMode)
 	}
 
 	if len(secretData.CaPemBlock) > 0 {
