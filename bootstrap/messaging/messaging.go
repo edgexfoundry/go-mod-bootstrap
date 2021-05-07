@@ -113,8 +113,10 @@ func BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer star
 				defer wg.Done()
 				select {
 				case <-ctx.Done():
-					_ = msgClient.Disconnect()
-					lc.Infof("Disconnecting from MessageBus")
+					if msgClient != nil {
+						_ = msgClient.Disconnect()
+					}
+					lc.Infof("Disconnected from MessageBus")
 				}
 			}()
 
