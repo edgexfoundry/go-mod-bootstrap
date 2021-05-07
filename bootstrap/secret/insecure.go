@@ -41,11 +41,11 @@ func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClien
 	}
 }
 
-// GetSecrets retrieves secrets from a Insecure Secrets secret store.
+// GetSecret retrieves secrets from a Insecure Secrets secret store.
 // path specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
-func (p *InsecureProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
+func (p *InsecureProvider) GetSecret(path string, keys ...string) (map[string]string, error) {
 	results := make(map[string]string)
 	pathExists := false
 	var missingKeys []string
@@ -92,8 +92,8 @@ func (p *InsecureProvider) GetSecrets(path string, keys ...string) (map[string]s
 	return results, nil
 }
 
-// StoreSecrets stores the secrets, but is not supported for Insecure Secrets
-func (p *InsecureProvider) StoreSecrets(_ string, _ map[string]string) error {
+// StoreSecret stores the secrets, but is not supported for Insecure Secrets
+func (p *InsecureProvider) StoreSecret(_ string, _ map[string]string) error {
 	return errors.New("storing secrets is not supported when running in insecure mode")
 }
 

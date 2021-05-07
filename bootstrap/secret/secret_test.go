@@ -117,7 +117,7 @@ func TestNewSecretProvider(t *testing.T) {
 			actualProvider := container.SecretProviderFrom(dic.Get)
 			assert.NotNil(t, actualProvider)
 
-			actualSecrets, err := actualProvider.GetSecrets(expectedPath)
+			actualSecrets, err := actualProvider.GetSecret(expectedPath)
 			require.NoError(t, err)
 			assert.Equal(t, expectedUsername, actualSecrets[UsernameKey])
 			assert.Equal(t, expectedPassword, actualSecrets[PasswordKey])
@@ -176,4 +176,8 @@ func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 
 func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
 	return t.InsecureSecrets
+}
+
+func (t TestConfig) GetMessageBusInfo() bootstrapConfig.MessageBusInfo {
+	panic("implement me")
 }

@@ -34,8 +34,8 @@ func (_m *SecretProvider) GetAccessToken(tokenType string, serviceKey string) (s
 	return r0, r1
 }
 
-// GetSecrets provides a mock function with given fields: path, keys
-func (_m *SecretProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
+// GetSecret provides a mock function with given fields: path, keys
+func (_m *SecretProvider) GetSecret(path string, keys ...string) (map[string]string, error) {
 	_va := make([]interface{}, len(keys))
 	for _i := range keys {
 		_va[_i] = keys[_i]
@@ -83,8 +83,8 @@ func (_m *SecretProvider) SecretsUpdated() {
 	_m.Called()
 }
 
-// StoreSecrets provides a mock function with given fields: path, secrets
-func (_m *SecretProvider) StoreSecrets(path string, secrets map[string]string) error {
+// StoreSecret provides a mock function with given fields: path, secrets
+func (_m *SecretProvider) StoreSecret(path string, secrets map[string]string) error {
 	ret := _m.Called(path, secrets)
 
 	var r0 error

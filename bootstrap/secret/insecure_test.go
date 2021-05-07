@@ -60,7 +60,7 @@ func TestInsecureProvider_GetSecrets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
-			actual, err := target.GetSecrets(tc.Path, tc.Keys...)
+			actual, err := target.GetSecret(tc.Path, tc.Keys...)
 			if tc.ExpectError {
 				require.Error(t, err)
 				return
@@ -74,7 +74,7 @@ func TestInsecureProvider_GetSecrets(t *testing.T) {
 
 func TestInsecureProvider_StoreSecrets_Secure(t *testing.T) {
 	target := NewInsecureProvider(nil, nil)
-	err := target.StoreSecrets("myPath", map[string]string{"Key": "value"})
+	err := target.StoreSecret("myPath", map[string]string{"Key": "value"})
 	require.Error(t, err)
 }
 

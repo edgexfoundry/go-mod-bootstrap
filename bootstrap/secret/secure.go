@@ -59,11 +59,11 @@ func (p *SecureProvider) SetClient(client secrets.SecretClient) {
 	p.secretClient = client
 }
 
-// GetSecrets retrieves secrets from a secret store.
+// GetSecret retrieves secrets from a secret store.
 // path specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
-func (p *SecureProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
+func (p *SecureProvider) GetSecret(path string, keys ...string) (map[string]string, error) {
 	if cachedSecrets := p.getSecretsCache(path, keys...); cachedSecrets != nil {
 		return cachedSecrets, nil
 	}
@@ -125,11 +125,11 @@ func (p *SecureProvider) updateSecretsCache(path string, secrets map[string]stri
 	}
 }
 
-// StoreSecrets stores the secrets to a secret store.
+// StoreSecret stores the secrets to a secret store.
 // it sets the values requested at provided keys
 // path specifies the type or location of the secrets to store
 // secrets map specifies the "key": "value" pairs of secrets to store
-func (p *SecureProvider) StoreSecrets(path string, secrets map[string]string) error {
+func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) error {
 	if p.secretClient == nil {
 		return errors.New("can't store secrets. Secure secret provider is not properly initialized")
 	}
