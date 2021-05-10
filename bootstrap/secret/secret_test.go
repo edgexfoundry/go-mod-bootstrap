@@ -177,7 +177,3 @@ func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
 	return t.InsecureSecrets
 }
-
-func (t TestConfig) GetMessageBusInfo() bootstrapConfig.MessageBusInfo {
-	panic("implement me")
-}

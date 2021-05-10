@@ -58,7 +58,4 @@ type Configuration interface {
 
 	// GetInsecureSecrets gets the config.InsecureSecrets field from the ConfigurationStruct.
 	GetInsecureSecrets() config.InsecureSecrets
-
-	// GetMessageBusInfo gets the config.MessageBusInfo field from the ConfigurationStruct.
-	GetMessageBusInfo() config.MessageBusInfo
 }
