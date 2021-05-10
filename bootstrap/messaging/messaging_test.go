@@ -9,6 +9,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -157,47 +158,57 @@ func TestGetSecretData(t *testing.T) {
 func TestValidateSecrets(t *testing.T) {
 	tests := []struct {
 		Name             string
+		SecureMode       bool
 		AuthMode         string
-		secrets          SecretData
+		SecretData       SecretData
 		ErrorExpectation bool
 		ErrorMessage     string
 	}{
-		{"Invalid AuthMode", "BadAuthMode", SecretData{}, true, "Invalid AuthMode of 'BadAuthMode' selected"},
-		{"No Auth No error", AuthModeNone, SecretData{}, false, ""},
-		{"UsernamePassword No Error", AuthModeUsernamePassword, SecretData{
+		{"Invalid AuthMode", true, "BadAuthMode", SecretData{}, true, "Invalid AuthMode of 'BadAuthMode' selected"},
+		{"No Auth No error", true, AuthModeNone, SecretData{}, false, ""},
+		{"UsernamePassword No Error", true, AuthModeUsernamePassword, SecretData{
 			Username: "user",
 			Password: "Password",
 		}, false, ""},
-		{"UsernamePassword Error no Username", AuthModeUsernamePassword, SecretData{
+		{"UsernamePassword Error no Username", true, AuthModeUsernamePassword, SecretData{
 			Password: "Password",
 		}, true, "AuthModeUsernamePassword selected however Username or Password was not found for secret=unit-test"},
-		{"UsernamePassword Error no Password", AuthModeUsernamePassword, SecretData{
+		{"UsernamePassword blank - non-secure", false, AuthModeUsernamePassword, SecretData{
+			Username: "",
+			Password: "",
+		}, false, ""},
+		{"UsernamePassword Error no Password", true, AuthModeUsernamePassword, SecretData{
 			Username: "user",
 		}, true, "AuthModeUsernamePassword selected however Username or Password was not found for secret=unit-test"},
-		{"ClientCert No Error", AuthModeCert, SecretData{
+		{"ClientCert No Error", true, AuthModeCert, SecretData{
 			CertPemBlock: []byte("----"),
 			KeyPemBlock:  []byte("----"),
 		}, false, ""},
-		{"ClientCert No Key", AuthModeCert, SecretData{
+		{"ClientCert No Key", true, AuthModeCert, SecretData{
 			CertPemBlock: []byte("----"),
 		}, true, "AuthModeCert selected however the key or cert PEM block was not found for secret=unit-test"},
-		{"ClientCert No Cert", AuthModeCert, SecretData{
+		{"ClientCert No Cert", true, AuthModeCert, SecretData{
 			KeyPemBlock: []byte("----"),
 		}, true, "AuthModeCert selected however the key or cert PEM block was not found for secret=unit-test"},
-		{"CACert no error", AuthModeCA, SecretData{
+		{"CACert no error", true, AuthModeCA, SecretData{
 			CaPemBlock: []byte(testCACert),
 		}, false, ""},
-		{"CACert invalid error", AuthModeCA, SecretData{
+		{"CACert invalid error", true, AuthModeCA, SecretData{
 			CaPemBlock: []byte(`------`),
 		}, true, "Error parsing CA Certificate"},
-		{"CACert no ca error", AuthModeCA, SecretData{}, true, "AuthModeCA selected however no PEM Block was found for secret=unit-test"},
+		{"CACert no ca error", true, AuthModeCA, SecretData{}, true, "AuthModeCA selected however no PEM Block was found for secret=unit-test"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			result := ValidateSecretData(test.AuthMode, "unit-test", &test.secrets)
+			if test.SecureMode {
+				_ = os.Setenv(secret.EnvSecretStore, "true")
+				defer func() { _ = os.Setenv(secret.EnvSecretStore, "false") }()
+			}
+
+			result := ValidateSecretData(test.AuthMode, "unit-test", &test.SecretData)
 			if test.ErrorExpectation {
-				assert.Error(t, result, "Result should be an error")
+				require.Error(t, result, "Result should be an error")
 				assert.Equal(t, test.ErrorMessage, result.(error).Error())
 			} else {
 				assert.Nil(t, result, "Should be nil")
@@ -207,6 +218,9 @@ func TestValidateSecrets(t *testing.T) {
 }
 
 func TestSetOptionalAuthData(t *testing.T) {
+	_ = os.Setenv(secret.EnvSecretStore, "true")
+	defer func() { _ = os.Setenv(secret.EnvSecretStore, "false") }()
+
 	tests := []struct {
 		Name                string
 		Authmode            string
@@ -287,9 +301,9 @@ func TestSetOptionalAuthData(t *testing.T) {
 			if test.Provider != nil {
 				if len(test.SecretName) == 0 {
 					test.SecretName = "notfound"
-					test.Provider.On("GetSecret", test.SecretName).Return(nil, errors.New("Not Found"))
+					test.Provider.On("GetSecret", test.SecretName).Return(nil, errors.New("Not Found")).Once()
 				} else {
-					test.Provider.On("GetSecret", test.SecretName).Return(test.SecretData, nil)
+					test.Provider.On("GetSecret", test.SecretName).Return(test.SecretData, nil).Once()
 				}
 
 				dic = di.NewContainer(di.ServiceConstructorMap{

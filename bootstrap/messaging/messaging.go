@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -205,7 +206,7 @@ func GetSecretData(authMode string, secretName string, provider SecretDataProvid
 func ValidateSecretData(authMode string, secretName string, secretData *SecretData) error {
 	switch authMode {
 	case AuthModeUsernamePassword:
-		if secretData.Username == "" || secretData.Password == "" {
+		if secret.IsSecurityEnabled() && (secretData.Username == "" || secretData.Password == "") {
 			return fmt.Errorf("AuthModeUsernamePassword selected however Username or Password was not found for secret=%s", secretName)
 		}
 
