@@ -12,24 +12,22 @@
  * the License.
  *******************************************************************************/
 
+// Package messaging contains common constants and utilities functions used when setting up Secure MessageBus.
+// A common bootstrap handler can not be here due to the fact that it would pull in dependency on go-mod-messaging
+// which is dependent on ZMQ. This causes all services that use go-mod-boostrap to them have a dependency on ZMQ which
+// breaks the security bootstrapping.
 package messaging
 
 import (
-	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"strings"
-	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
 
 const (
@@ -67,84 +65,7 @@ type SecretData struct {
 	CaPemBlock   []byte
 }
 
-// BootstrapHandler fulfills the BootstrapHandler contract.  if enabled, tt creates and initializes the Messaging client
-// and adds it to the DIC
-func BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
-	lc := container.LoggingClientFrom(dic.Get)
-	messageBusInfo := container.ConfigurationFrom(dic.Get).GetMessageBusInfo()
-
-	messageBusInfo.AuthMode = strings.ToLower(strings.TrimSpace(messageBusInfo.AuthMode))
-	if len(messageBusInfo.AuthMode) > 0 && messageBusInfo.AuthMode != AuthModeNone {
-		if err := setOptionsAuthData(&messageBusInfo, lc, dic); err != nil {
-			lc.Error(err.Error())
-			return false
-		}
-	}
-
-	msgClient, err := messaging.NewMessageClient(
-		types.MessageBusConfig{
-			PublishHost: types.HostInfo{
-				Host:     messageBusInfo.Host,
-				Port:     messageBusInfo.Port,
-				Protocol: messageBusInfo.Protocol,
-			},
-			Type:     messageBusInfo.Type,
-			Optional: messageBusInfo.Optional,
-		})
-
-	if err != nil {
-		lc.Errorf("Failed to create MessageClient: %v", err)
-		return false
-	}
-
-	for startupTimer.HasNotElapsed() {
-		select {
-		case <-ctx.Done():
-			return false
-		default:
-			err = msgClient.Connect()
-			if err != nil {
-				lc.Warnf("Unable to connect MessageBus: %w", err)
-				startupTimer.SleepForInterval()
-				continue
-			}
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				select {
-				case <-ctx.Done():
-					if msgClient != nil {
-						_ = msgClient.Disconnect()
-					}
-					lc.Infof("Disconnected from MessageBus")
-				}
-			}()
-
-			dic.Update(di.ServiceConstructorMap{
-				container.MessagingClientName: func(get di.Get) interface{} {
-					return msgClient
-				},
-			})
-
-			lc.Info(fmt.Sprintf(
-				"Connected to %s Message Bus @ %s://%s:%d publishing on '%s' prefix topic with AuthMode='%s'",
-				messageBusInfo.Type,
-				messageBusInfo.Protocol,
-				messageBusInfo.Host,
-				messageBusInfo.Port,
-				messageBusInfo.PublishTopicPrefix,
-				messageBusInfo.AuthMode))
-
-			return true
-		}
-	}
-
-	lc.Error("Connecting to MessageBus time out")
-	return false
-}
-
-func setOptionsAuthData(messageBusInfo *config.MessageBusInfo, lc logger.LoggingClient, dic *di.Container) error {
+func SetOptionsAuthData(messageBusInfo *config.MessageBusInfo, lc logger.LoggingClient, dic *di.Container) error {
 	lc.Infof("Setting options for secure MessageBus with AuthMode='%s' and SecretName='%s",
 		messageBusInfo.AuthMode,
 		messageBusInfo.SecretName)

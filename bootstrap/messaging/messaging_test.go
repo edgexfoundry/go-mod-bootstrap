@@ -1,20 +1,16 @@
 package messaging
 
 import (
-	"context"
 	"errors"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,75 +32,6 @@ func TestMain(m *testing.M) {
 	})
 
 	os.Exit(m.Run())
-}
-
-func TestBootstrapHandler(t *testing.T) {
-	validCreateClient := messageTestConfig{
-		messageBusInfo: config.MessageBusInfo{
-			Type:               messaging.ZeroMQ, // Use ZMQ so no issue connecting.
-			Protocol:           "http",
-			Host:               "*",
-			Port:               8765,
-			PublishTopicPrefix: "edgex/events/#",
-			AuthMode:           AuthModeUsernamePassword,
-			SecretName:         "redisdb",
-		},
-	}
-
-	invalidSecrets := messageTestConfig{
-		messageBusInfo: config.MessageBusInfo{
-			AuthMode:   AuthModeCert,
-			SecretName: "redisdb",
-		},
-	}
-
-	invalidNoConnect := messageTestConfig{
-		messageBusInfo: config.MessageBusInfo{
-			Type:       messaging.MQTT, // This will cause no connection since broker not available
-			Protocol:   "tcp",
-			Host:       "localhost",
-			Port:       8765,
-			AuthMode:   AuthModeUsernamePassword,
-			SecretName: "redisdb",
-		},
-	}
-
-	tests := []struct {
-		Name           string
-		Config         messageTestConfig
-		ExpectedResult bool
-		ExpectClient   bool
-	}{
-		{"Valid - creates client", validCreateClient, true, true},
-		{"Invalid - secrets error", invalidSecrets, false, false},
-		{"Invalid - can't connect", invalidNoConnect, false, false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			provider := &mocks.SecretProvider{}
-			provider.On("GetSecret", validCreateClient.GetMessageBusInfo().SecretName).Return(usernameSecretData, nil)
-			dic.Update(di.ServiceConstructorMap{
-				container.ConfigurationInterfaceName: func(get di.Get) interface{} {
-					return test.Config
-				},
-				container.SecretProviderName: func(get di.Get) interface{} {
-					return provider
-				},
-				container.MessagingClientName: func(get di.Get) interface{} {
-					return nil
-				},
-			})
-
-			actual := BootstrapHandler(context.Background(), &sync.WaitGroup{}, startup.NewTimer(1, 1), dic)
-			assert.Equal(t, test.ExpectedResult, actual)
-			if test.ExpectClient {
-				assert.NotNil(t, container.MessagingClientFrom(dic.Get))
-			} else {
-				assert.Nil(t, container.MessagingClientFrom(dic.Get))
-			}
-		})
-	}
 }
 
 func TestGetSecretData(t *testing.T) {
@@ -320,7 +247,7 @@ func TestSetOptionalAuthData(t *testing.T) {
 				SecretName: test.SecretName,
 			}
 
-			err := setOptionsAuthData(&messageBusInfo, lc, dic)
+			err := SetOptionsAuthData(&messageBusInfo, lc, dic)
 			if test.ErrorExpected {
 				require.Error(t, err)
 				return
@@ -329,40 +256,4 @@ func TestSetOptionalAuthData(t *testing.T) {
 			assert.Equal(t, test.ExpectedOptionsData, messageBusInfo.Optional)
 		})
 	}
-}
-
-type messageTestConfig struct {
-	messageBusInfo config.MessageBusInfo
-}
-
-func (c messageTestConfig) GetMessageBusInfo() config.MessageBusInfo {
-	return c.messageBusInfo
-}
-
-func (c messageTestConfig) UpdateFromRaw(_ interface{}) bool {
-	panic("implement me")
-}
-
-func (c messageTestConfig) UpdateWritableFromRaw(_ interface{}) bool {
-	panic("implement me")
-}
-
-func (c messageTestConfig) EmptyWritablePtr() interface{} {
-	panic("implement me")
-}
-
-func (c messageTestConfig) GetBootstrap() config.BootstrapConfiguration {
-	panic("implement me")
-}
-
-func (c messageTestConfig) GetLogLevel() string {
-	panic("implement me")
-}
-
-func (c messageTestConfig) GetRegistryInfo() config.RegistryInfo {
-	panic("implement me")
-}
-
-func (c messageTestConfig) GetInsecureSecrets() config.InsecureSecrets {
-	panic("implement me")
 }
