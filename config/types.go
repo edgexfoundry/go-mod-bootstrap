@@ -179,6 +179,8 @@ type MessageBusInfo struct {
 	// Typically the key is the name of the configuration property and the value is a string representation of the
 	// desired value for the configuration property.
 	Optional map[string]string
+	// SubscribeEnabled indicates whether enable the subscription to the Message Queue
+	SubscribeEnabled bool
 }
 
 // URL constructs a URL from the protocol, host and port and returns that as a string.
