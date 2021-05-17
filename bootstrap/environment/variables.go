@@ -42,6 +42,10 @@ const (
 	envConfDir            = "EDGEX_CONF_DIR"
 	envProfile            = "EDGEX_PROFILE"
 	envFile               = "EDGEX_CONFIG_FILE"
+
+	tomlPathSeparator = "."
+	tomlNameSeparator = "-"
+	envNameSeparator  = "_"
 )
 
 // Variables is receiver that holds Variables variables and encapsulates toml.Tree-based configuration field
@@ -57,7 +61,7 @@ type Variables struct {
 	lc        logger.LoggingClient
 }
 
-// NewEnvironment constructor reads/stores os.Environ() for use by Variables receiver methods.
+// NewVariables constructor reads/stores os.Environ() for use by Variables receiver methods.
 func NewVariables(lc logger.LoggingClient) *Variables {
 	osEnv := os.Environ()
 	e := &Variables{
@@ -109,28 +113,26 @@ func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error
 	// The toml.Tree API keys() only return to top level keys, rather that paths.
 	// It is also missing a GetPaths so have to spin our own
 	paths := e.buildPaths(configTree.ToMap())
-	// Now that we have all the paths in the config tree, we need to create a map that has the uppercase versions as
-	// the map keys and the original versions as the map values so we can match against uppercase names but use the
-	// originals to set values.
-	pathMap := e.buildUppercasePathMap(paths)
+	// Now that we have all the paths in the config tree, we need to create map of corresponding override names that
+	// could match override environment variable names.
+	overrideNames := e.buildOverrideNames(paths)
 
 	for envVar, envValue := range e.variables {
-		envKey := strings.Replace(envVar, "_", ".", -1)
-		key, found := e.getKeyForMatchedPath(pathMap, envKey)
+		path, found := overrideNames[envVar]
 		if !found {
 			continue
 		}
 
-		oldValue := configTree.Get(key)
+		oldValue := configTree.Get(path)
 
 		newValue, err := e.convertToType(oldValue, envValue)
 		if err != nil {
 			return 0, fmt.Errorf("environment value override failed for %s=%s: %s", envVar, envValue, err.Error())
 		}
 
-		configTree.Set(key, newValue)
+		configTree.Set(path, newValue)
 		overrideCount++
-		logEnvironmentOverride(e.lc, key, envVar, envValue)
+		logEnvironmentOverride(e.lc, path, envVar, envValue)
 	}
 
 	// Put the configuration back into the services configuration struct with the overridden values
@@ -163,28 +165,21 @@ func (e *Variables) buildPaths(keyMap map[string]interface{}) []string {
 	return paths
 }
 
-// buildUppercasePathMap builds a map where the key is the uppercase version of the path
-// and the value is original version of the path
-func (e *Variables) buildUppercasePathMap(paths []string) map[string]string {
-	ucMap := make(map[string]string)
+func (e *Variables) buildOverrideNames(paths []string) map[string]string {
+	names := map[string]string{}
 	for _, path := range paths {
-		ucMap[strings.ToUpper(path)] = path
+		names[e.getOverrideNameFor(path)] = path
 	}
 
-	return ucMap
+	return names
 }
 
-// getKeyForMatchedPath searches for match of the environment variable name with the uppercase path (pathMap keys)
-// If matched found to original path (pathMap values) is returned as the "key"
-// For backward compatibility a case insensitive comparison is currently used.
-func (e *Variables) getKeyForMatchedPath(pathMap map[string]string, envVarName string) (string, bool) {
-	for ucKey, lcKey := range pathMap {
-		if ucKey == envVarName {
-			return lcKey, true
-		}
-	}
-
-	return "", false
+func (_ *Variables) getOverrideNameFor(path string) string {
+	// "." & "-" are the only special character allowed in TOML path not allowed in environment variable Name
+	override := strings.ReplaceAll(path, tomlPathSeparator, envNameSeparator)
+	override = strings.ReplaceAll(override, tomlNameSeparator, envNameSeparator)
+	override = strings.ToUpper(override)
+	return override
 }
 
 // OverrideConfigProviderInfo overrides the Configuration Provider ServiceConfig values
