@@ -34,9 +34,8 @@ func TestCreateRegistryClient(t *testing.T) {
 
 	serviceConfig := unitTestConfiguration{
 		Service: config.ServiceInfo{
-			Host:     "localhost",
-			Port:     8080,
-			Protocol: "http",
+			Host: "localhost",
+			Port: 8080,
 		},
 		Registry: config.RegistryInfo{
 			Host: "localhost",
