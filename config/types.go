@@ -23,13 +23,12 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 )
 
+const DefaultHttpProtocol = "http"
+
 // ServiceInfo contains configuration settings necessary for the basic operation of any EdgeX service.
 type ServiceInfo struct {
-	// BootTimeout indicates, in milliseconds, how long the service will retry connecting to upstream dependencies
-	// before giving up. Default is 30,000.
-	BootTimeout int
-	// Health check interval
-	CheckInterval string
+	// HealthCheckInterval is the interval for Registry heal check callback
+	HealthCheckInterval string
 	// Host is the hostname or IP address of the service.
 	Host string
 	// Port is the HTTP port of the service.
@@ -37,30 +36,30 @@ type ServiceInfo struct {
 	// ServerBindAddr specifies an IP address or hostname
 	// for ListenAndServe to bind to, such as 0.0.0.0
 	ServerBindAddr string
-	// The protocol that should be used to call this service
-	Protocol string
 	// StartupMsg specifies a string to log once service
 	// initialization and startup is completed.
 	StartupMsg string
 	// MaxResultCount specifies the maximum size list supported
 	// in response to REST calls to other services.
 	MaxResultCount int
-	// Timeout specifies a timeout (in milliseconds) for
-	// processing REST calls from other services.
-	Timeout int
+	// MaxRequestSize defines the maximum size of http request body in bytes
+	MaxRequestSize int64
+	// RequestTimeout specifies a timeout (in milliseconds) for
+	// processing REST request calls from other services.
+	RequestTimeout string
 }
 
 // HealthCheck is a URL specifying a health check REST endpoint used by the Registry to determine if the
 // service is available.
 func (s ServiceInfo) HealthCheck() string {
-	hc := fmt.Sprintf("%s://%s:%v%s", s.Protocol, s.Host, s.Port, v2.ApiPingRoute)
+	hc := fmt.Sprintf("%s://%s:%v%s", "http", s.Host, s.Port, v2.ApiPingRoute)
 	return hc
 }
 
 // Url provides a way to obtain the full url of the host service for use in initialization or, in some cases,
 // responses to a caller.
 func (s ServiceInfo) Url() string {
-	url := fmt.Sprintf("%s://%s:%v", s.Protocol, s.Host, s.Port)
+	url := fmt.Sprintf("%s://%s:%v", DefaultHttpProtocol, s.Host, s.Port)
 	return url
 }
 

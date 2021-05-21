@@ -88,7 +88,8 @@ func (b *HttpServer) BootstrapHandler(
 		addr = bootstrapConfig.Service.Host + ":" + port
 	}
 
-	timeout := time.Millisecond * time.Duration(bootstrapConfig.Service.Timeout)
+	timeout, err := time.ParseDuration(bootstrapConfig.Service.RequestTimeout)
+	lc.Errorf("unable to parse RequestTimeout value of %s to a duration: %w", bootstrapConfig.Service.RequestTimeout, err)
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      b.router,

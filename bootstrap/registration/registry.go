@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	registryTypes "github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
@@ -64,8 +65,8 @@ func createRegistryClient(
 		ServiceKey:      serviceKey,
 		ServiceHost:     bootstrapConfig.Service.Host,
 		ServicePort:     bootstrapConfig.Service.Port,
-		ServiceProtocol: bootstrapConfig.Service.Protocol,
-		CheckInterval:   bootstrapConfig.Service.CheckInterval,
+		ServiceProtocol: config.DefaultHttpProtocol,
+		CheckInterval:   bootstrapConfig.Service.HealthCheckInterval,
 		CheckRoute:      v2.ApiPingRoute,
 	}
 
