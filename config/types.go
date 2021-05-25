@@ -17,7 +17,6 @@ package config
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
@@ -97,18 +96,15 @@ func (c ClientInfo) Url() string {
 
 // SecretStoreInfo encapsulates configuration properties used to create a SecretClient.
 type SecretStoreInfo struct {
-	Type                    string
-	Host                    string
-	Port                    int
-	Path                    string
-	Protocol                string
-	Namespace               string
-	RootCaCertPath          string
-	ServerName              string
-	Authentication          types.AuthenticationInfo
-	AdditionalRetryAttempts int
-	RetryWaitPeriod         string
-	retryWaitPeriodTime     time.Duration
+	Type           string
+	Host           string
+	Port           int
+	Path           string
+	Protocol       string
+	Namespace      string
+	RootCaCertPath string
+	ServerName     string
+	Authentication types.AuthenticationInfo
 	// TokenFile provides a location to a token file.
 	TokenFile string
 }

@@ -103,17 +103,15 @@ func NewSecretProvider(
 // If a token file is present it will override the Authentication.AuthToken value.
 func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtokenloader.AuthTokenLoader) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
-		Type:                    secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
-		Host:                    secretStoreInfo.Host,
-		Port:                    secretStoreInfo.Port,
-		Path:                    addEdgeXSecretPathPrefix(secretStoreInfo.Path),
-		Protocol:                secretStoreInfo.Protocol,
-		Namespace:               secretStoreInfo.Namespace,
-		RootCaCertPath:          secretStoreInfo.RootCaCertPath,
-		ServerName:              secretStoreInfo.ServerName,
-		Authentication:          secretStoreInfo.Authentication,
-		AdditionalRetryAttempts: secretStoreInfo.AdditionalRetryAttempts,
-		RetryWaitPeriod:         secretStoreInfo.RetryWaitPeriod,
+		Type:           secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
+		Host:           secretStoreInfo.Host,
+		Port:           secretStoreInfo.Port,
+		Path:           addEdgeXSecretPathPrefix(secretStoreInfo.Path),
+		Protocol:       secretStoreInfo.Protocol,
+		Namespace:      secretStoreInfo.Namespace,
+		RootCaCertPath: secretStoreInfo.RootCaCertPath,
+		ServerName:     secretStoreInfo.ServerName,
+		Authentication: secretStoreInfo.Authentication,
 	}
 
 	if !IsSecurityEnabled() || secretStoreInfo.TokenFile == "" {
