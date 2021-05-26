@@ -177,3 +177,24 @@ func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
 	return t.InsecureSecrets
 }
+
+func TestAddPrefix(t *testing.T) {
+	expectedPrefixPath := "/v1/secret/edgex/"
+
+	tests := []struct {
+		name             string
+		secretPath       string
+		expectedFullPath string
+	}{
+		{"non-empty given secret path without trailing slash", "core-command", expectedPrefixPath + "core-command/"},
+		{"non-empty given secret path with trailing slash", "core-command/", expectedPrefixPath + "core-command/"},
+		{"empty given secret path", "", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actualSecretFullPath := addEdgeXSecretPathPrefix(test.secretPath)
+			require.Equal(t, test.expectedFullPath, actualSecretFullPath)
+		})
+	}
+}
