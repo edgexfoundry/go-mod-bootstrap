@@ -1,5 +1,6 @@
 /********************************************************************************
  *  Copyright 2019 Dell Inc.
+ *  Copyright 2021 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,6 +18,8 @@ package secret
 import (
 	"context"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
@@ -103,7 +106,7 @@ func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtok
 		Type:                    secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
 		Host:                    secretStoreInfo.Host,
 		Port:                    secretStoreInfo.Port,
-		Path:                    secretStoreInfo.Path,
+		Path:                    addEdgeXSecretPathPrefix(secretStoreInfo.Path),
 		Protocol:                secretStoreInfo.Protocol,
 		Namespace:               secretStoreInfo.Namespace,
 		RootCaCertPath:          secretStoreInfo.RootCaCertPath,
@@ -124,4 +127,15 @@ func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtok
 
 	secretConfig.Authentication.AuthToken = token
 	return secretConfig, nil
+}
+
+func addEdgeXSecretPathPrefix(secretPath string) string {
+	trimmedSecretPath := strings.TrimSpace(secretPath)
+
+	// in this case, treat it as no secret path
+	if len(trimmedSecretPath) == 0 {
+		return ""
+	}
+
+	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretPath) + "/"
 }
