@@ -7,7 +7,7 @@ package container
 
 import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 )
 
 // DeviceServiceCallbackClientName contains the name of the DeviceServiceCallbackClient instance in the DIC.
