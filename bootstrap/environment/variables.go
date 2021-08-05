@@ -297,7 +297,7 @@ func GetConfDir(lc logger.LoggingClient, configDir string) string {
 	envValue := os.Getenv(envConfDir)
 	if len(envValue) > 0 {
 		configDir = envValue
-		logEnvironmentOverride(lc, "-c/-confdir", envFile, envValue)
+		logEnvironmentOverride(lc, "-c/-confdir", envConfDir, envValue)
 	}
 
 	if len(configDir) == 0 {
