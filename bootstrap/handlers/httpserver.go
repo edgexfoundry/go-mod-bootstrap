@@ -94,11 +94,13 @@ func (b *HttpServer) BootstrapHandler(
 		return false
 	}
 
+	b.router.Use(func(next http.Handler) http.Handler {
+		return http.TimeoutHandler(next, timeout, "HTTP request timeout")
+	})
+
 	server := &http.Server{
-		Addr:         addr,
-		Handler:      b.router,
-		WriteTimeout: timeout,
-		ReadTimeout:  timeout,
+		Addr:    addr,
+		Handler: b.router,
 	}
 
 	wg.Add(1)
