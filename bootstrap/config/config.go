@@ -328,7 +328,7 @@ func (cp *Processor) createProviderClient(
 	accessTokenFile string,
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
-	providerConfig.BasePath = filepath.Join(configStem, ConfigVersion, serviceKey)
+	providerConfig.BasePath = filepath.ToSlash(filepath.Join(configStem, ConfigVersion, serviceKey))
 	providerConfig.AccessToken = accessTokenFile
 
 	cp.lc.Info(fmt.Sprintf(
