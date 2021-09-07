@@ -1,0 +1,40 @@
+name: SonarQube
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the v[0-9]+.[0-9]+-branch (e.g. v2.0-branch)
+  push:
+    branches:
+      - v[0-9]+.[0-9]+-branch
+  pull_request:
+    # By default, a pull_request's activity type is opened, synchronize, or reopened
+    branches:
+      - v[0-9]+.[0-9]+-branch
+
+jobs:
+  sonarqube-scan:
+    runs-on: ubuntu-latest
+    steps:
+      # Reference the major version of actions/checkout
+      - uses: actions/checkout@v2
+        # input parameters defined by the action
+        with:
+          fetch-depth: 0
+      # Reference the major version of actions/setup-go
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.16"
+      - name: Run unit tests
+        run: |
+          make test-sdk
+      # Reference the master branch of sonarsource/sonarqube-scan-action
+      - uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarqube.iotechsys.com/
+          PROJECT: go-mod-bootstrap
+        with:
+          # set sonar.qualitygate.wait=true to fail the job if the Quality Gate is red
+          args: >
+            -Dsonar.projectKey=${{ env.PROJECT }}
+            -Dsonar.qualitygate.wait=true
