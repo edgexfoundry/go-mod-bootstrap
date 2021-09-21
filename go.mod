@@ -11,4 +11,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 )
 
+replace github.com/edgexfoundry/go-mod-secrets/v2 => ../go-mod-secrets
+
 go 1.16

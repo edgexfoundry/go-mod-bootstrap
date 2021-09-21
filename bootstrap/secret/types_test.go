@@ -26,16 +26,26 @@ func TestServiceSecrets_UnmarshalJson_Imported_false(t *testing.T) {
 	expected := ServiceSecrets{
 		[]ServiceSecret{
 			{
+<<<<<<< HEAD
 				Path:     "credentials001",
 				Imported: false,
+=======
+				Path:       "credentials001",
+				Imported:   false,
+>>>>>>> feat: Add optional capability to seed service secrets
 				SecretData: []common.SecretDataKeyValue{{
 					Key:   "user1",
 					Value: "password1",
 				}},
 			},
 			{
+<<<<<<< HEAD
 				Path:     "credentials002",
 				Imported: false,
+=======
+				Path:       "credentials002",
+				Imported:   false,
+>>>>>>> feat: Add optional capability to seed service secrets
 				SecretData: []common.SecretDataKeyValue{{
 					Key:   "user2",
 					Value: "password2",
@@ -81,7 +91,11 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 			{
 				Path:       "credentials001",
 				Imported:   true,
+<<<<<<< HEAD
 				SecretData: make([]common.SecretDataKeyValue, 0),
+=======
+				SecretData: make([]common.SecretDataKeyValue,0),
+>>>>>>> feat: Add optional capability to seed service secrets
 			},
 			{
 				Path:       "credentials002",
@@ -121,8 +135,13 @@ func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 	missingValue := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`
 
 	tests := []struct {
+<<<<<<< HEAD
 		name          string
 		data          string
+=======
+		name string
+		data string
+>>>>>>> feat: Add optional capability to seed service secrets
 		expectedError string
 	}{
 		{"All good", allGood, ""},
@@ -135,7 +154,12 @@ func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 		{"Missing Value", missingValue, "ServiceSecrets.Secrets[0].SecretData[0].Value field is required"},
 	}
 
+<<<<<<< HEAD
 	for _, test := range tests {
+=======
+
+	for _, test := range tests{
+>>>>>>> feat: Add optional capability to seed service secrets
 		t.Run(test.name, func(t *testing.T) {
 			_, err := UnmarshalServiceSecretsJson([]byte(test.data))
 			if len(test.expectedError) == 0 {
@@ -157,11 +181,19 @@ func TestServiceSecrets_MarshalJson(t *testing.T) {
 			{
 				Path:       "credentials001",
 				Imported:   true,
+<<<<<<< HEAD
 				SecretData: make([]common.SecretDataKeyValue, 0),
 			},
 			{
 				Path:       "credentials002",
 				SecretData: make([]common.SecretDataKeyValue, 0),
+=======
+				SecretData: make([]common.SecretDataKeyValue,0),
+			},
+			{
+				Path:       "credentials002",
+				SecretData: make([]common.SecretDataKeyValue,0),
+>>>>>>> feat: Add optional capability to seed service secrets
 				Imported:   true,
 			},
 		},
@@ -170,4 +202,8 @@ func TestServiceSecrets_MarshalJson(t *testing.T) {
 	data, err := secrets.MarshalJson()
 	require.NoError(t, err)
 	assert.Equal(t, expected, string(data))
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> feat: Add optional capability to seed service secrets

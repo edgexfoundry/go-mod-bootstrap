@@ -72,6 +72,18 @@ func NewSecretProvider(
 				secretClient, err = secrets.NewSecretsClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
 				if err == nil {
 					secureProvider.SetClient(secretClient)
+
+					lc.Infof("SecretsFile is '%s'", secretConfig.SecretsFile)
+
+					if len(strings.TrimSpace(secretConfig.SecretsFile)) > 0 {
+						err = secureProvider.LoadServiceSecrets(secretConfig.SecretsFile)
+						if err != nil {
+							return nil, err
+						}
+					} else {
+						lc.Infof("SecretsFile not set, skipping seeding of service secrets.")
+					}
+
 					provider = secureProvider
 					lc.Info("Created SecretClient")
 
