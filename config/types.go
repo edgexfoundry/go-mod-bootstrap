@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 )
 
@@ -107,6 +108,8 @@ type SecretStoreInfo struct {
 	Authentication types.AuthenticationInfo
 	// TokenFile provides a location to a token file.
 	TokenFile string
+	// Path to optional JSON file containing secrets to seed into service's SecretStore
+	SecretsFile string
 }
 
 type Database struct {

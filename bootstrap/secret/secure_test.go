@@ -19,9 +19,12 @@ import (
 	"testing"
 	"time"
 
+	mock2 "github.com/stretchr/testify/mock"
+
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
 	mocks2 "github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader/mocks"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
@@ -248,6 +251,52 @@ func TestSecureProvider_GetAccessToken(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, expectedToken, actualToken)
+		})
+	}
+}
+
+func TestSecureProvider_seedSecrets(t *testing.T) {
+	allGood := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
+	allGoodExpected := `{"secrets":[{"path":"auth","imported":true,"secretData":[]}]}`
+	badJson := `{"secrets": [{"path": "","imported": false,"secretData": null}]}`
+
+	tests := []struct {
+		name        string
+		secretsJson   string
+		expectedJson string
+		mockError bool
+		expectedError string
+	}{
+		{"Valid", allGood, allGoodExpected, false,""},
+		{"Partial Valid", allGood, allGoodExpected, false,""},
+		{"Bad JSON", badJson, "", false, "seeding secrets failed unmarshaling JSON: ServiceSecrets.Secrets[0].Path field should not be empty string; ServiceSecrets.Secrets[0].SecretData field is required"},
+		{"Store Error", allGood, "", true, "1 error occurred:\n\t* failed to store secret for 'auth': store failed\n\n"},
+	}
+
+	target := NewSecureProvider(TestConfig{}, logger.MockLogger{}, nil)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			mock := &mocks.SecretClient{}
+
+			if test.mockError {
+				mock.On("StoreSecrets", mock2.Anything, mock2.Anything).Return(errors.New("store failed")).Once()
+			} else {
+				mock.On("StoreSecrets", mock2.Anything, mock2.Anything).Return(nil).Once()
+			}
+
+			target.SetClient(mock)
+
+			actual, err := target.seedSecrets([]byte(test.secretsJson))
+			if len(test.expectedError) > 0 {
+				require.Error(t, err)
+				assert.EqualError(t, err, test.expectedError)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedJson, string(actual))
 		})
 	}
 }
