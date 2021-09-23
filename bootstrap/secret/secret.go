@@ -73,7 +73,7 @@ func NewSecretProvider(
 				if err == nil {
 					secureProvider.SetClient(secretClient)
 
-					lc.Infof("SecretsFile is '%s'", secretConfig.SecretsFile)
+					lc.Debugf("SecretsFile is '%s'", secretConfig.SecretsFile)
 
 					if len(strings.TrimSpace(secretConfig.SecretsFile)) > 0 {
 						err = secureProvider.LoadServiceSecrets(secretConfig.SecretsFile)
