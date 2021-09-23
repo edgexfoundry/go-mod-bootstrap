@@ -197,6 +197,7 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 	return reReadToken, true
 }
 
+// LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
 func (p *SecureProvider) LoadServiceSecrets(filePath string) error {
 	contents, err := os.ReadFile(filePath)
 	if err != nil {
