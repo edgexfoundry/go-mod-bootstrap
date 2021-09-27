@@ -108,8 +108,11 @@ type SecretStoreInfo struct {
 	Authentication types.AuthenticationInfo
 	// TokenFile provides a location to a token file.
 	TokenFile string
-	// Path to optional JSON file containing secrets to seed into service's SecretStore
+	// SecretsFile is optional Path to JSON file containing secrets to seed into service's SecretStore
 	SecretsFile string
+	// DisableScrubSecretsFile specifies to not scrub secrets file after importing. Service will fail start-up if
+	// not disabled and file can not be written.
+	DisableScrubSecretsFile bool
 }
 
 type Database struct {

@@ -198,7 +198,7 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 }
 
 // LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
-func (p *SecureProvider) LoadServiceSecrets(filePath string) error {
+func (p *SecureProvider) LoadServiceSecrets(filePath string, scrubDisabled bool) error {
 	contents, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("seeding secrets failed: %s", err.Error())
@@ -206,9 +206,16 @@ func (p *SecureProvider) LoadServiceSecrets(filePath string) error {
 
 	data, seedingErrs := p.seedSecrets(contents)
 
+	if scrubDisabled {
+		p.lc.Infof("Scrubbing of secrets file disable.")
+		return seedingErrs
+	}
+
 	if err := os.WriteFile(filePath, data, 0); err != nil {
 		return fmt.Errorf("seeding secrets failed: unable to overwrite file with secret data removed: %s", err.Error())
 	}
+
+	p.lc.Infof("Scrubbing of secrets file complete.")
 
 	return seedingErrs
 }
