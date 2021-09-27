@@ -76,7 +76,7 @@ func NewSecretProvider(
 					lc.Debugf("SecretsFile is '%s'", secretConfig.SecretsFile)
 
 					if len(strings.TrimSpace(secretConfig.SecretsFile)) > 0 {
-						err = secureProvider.LoadServiceSecrets(secretConfig.SecretsFile)
+						err = secureProvider.LoadServiceSecrets(secretStoreConfig.SecretsFile, secretStoreConfig.DisableScrubSecretsFile)
 						if err != nil {
 							return nil, err
 						}
