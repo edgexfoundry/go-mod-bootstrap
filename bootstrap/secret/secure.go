@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
@@ -198,20 +199,21 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 }
 
 // LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
-func (p *SecureProvider) LoadServiceSecrets(filePath string, scrubDisabled bool) error {
-	contents, err := os.ReadFile(filePath)
+func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig config.SecretStoreInfo) error {
+
+	contents, err := os.ReadFile(secretStoreConfig.SecretsFile)
 	if err != nil {
 		return fmt.Errorf("seeding secrets failed: %s", err.Error())
 	}
 
 	data, seedingErrs := p.seedSecrets(contents)
 
-	if scrubDisabled {
+	if secretStoreConfig.DisableScrubSecretsFile {
 		p.lc.Infof("Scrubbing of secrets file disable.")
 		return seedingErrs
 	}
 
-	if err := os.WriteFile(filePath, data, 0); err != nil {
+	if err := os.WriteFile(secretStoreConfig.SecretsFile, data, 0); err != nil {
 		return fmt.Errorf("seeding secrets failed: unable to overwrite file with secret data removed: %s", err.Error())
 	}
 
