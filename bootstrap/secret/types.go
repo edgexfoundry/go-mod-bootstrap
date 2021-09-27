@@ -55,9 +55,9 @@ func UnmarshalServiceSecretsJson(data []byte) (*ServiceSecrets, error) {
 	var validationErrs error
 
 	// Since secretData len validation can't be specified to only validate when Imported=false, we have to do it manually here
-	for _, secret := range secrets.Secrets{
+	for _, secret := range secrets.Secrets {
 		if !secret.Imported && len(secret.SecretData) == 0 {
-			validationErrs = multierror.Append(validationErrs, fmt.Errorf("SecretData for '%s' must not be empty when Imported=false",secret.Path))
+			validationErrs = multierror.Append(validationErrs, fmt.Errorf("SecretData for '%s' must not be empty when Imported=false", secret.Path))
 		}
 	}
 
@@ -67,4 +67,3 @@ func UnmarshalServiceSecretsJson(data []byte) (*ServiceSecrets, error) {
 
 	return secrets, nil
 }
-

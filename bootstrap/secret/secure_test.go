@@ -261,14 +261,14 @@ func TestSecureProvider_seedSecrets(t *testing.T) {
 	badJson := `{"secrets": [{"path": "","imported": false,"secretData": null}]}`
 
 	tests := []struct {
-		name        string
+		name          string
 		secretsJson   string
-		expectedJson string
-		mockError bool
+		expectedJson  string
+		mockError     bool
 		expectedError string
 	}{
-		{"Valid", allGood, allGoodExpected, false,""},
-		{"Partial Valid", allGood, allGoodExpected, false,""},
+		{"Valid", allGood, allGoodExpected, false, ""},
+		{"Partial Valid", allGood, allGoodExpected, false, ""},
 		{"Bad JSON", badJson, "", false, "seeding secrets failed unmarshaling JSON: ServiceSecrets.Secrets[0].Path field should not be empty string; ServiceSecrets.Secrets[0].SecretData field is required"},
 		{"Store Error", allGood, "", true, "1 error occurred:\n\t* failed to store secret for 'auth': store failed\n\n"},
 	}

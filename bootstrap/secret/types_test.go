@@ -26,16 +26,16 @@ func TestServiceSecrets_UnmarshalJson_Imported_false(t *testing.T) {
 	expected := ServiceSecrets{
 		[]ServiceSecret{
 			{
-				Path:       "credentials001",
-				Imported:   false,
+				Path:     "credentials001",
+				Imported: false,
 				SecretData: []common.SecretDataKeyValue{{
 					Key:   "user1",
 					Value: "password1",
 				}},
 			},
 			{
-				Path:       "credentials002",
-				Imported:   false,
+				Path:     "credentials002",
+				Imported: false,
 				SecretData: []common.SecretDataKeyValue{{
 					Key:   "user2",
 					Value: "password2",
@@ -81,7 +81,7 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 			{
 				Path:       "credentials001",
 				Imported:   true,
-				SecretData: make([]common.SecretDataKeyValue,0),
+				SecretData: make([]common.SecretDataKeyValue, 0),
 			},
 			{
 				Path:       "credentials002",
@@ -121,8 +121,8 @@ func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 	missingValue := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`
 
 	tests := []struct {
-		name string
-		data string
+		name          string
+		data          string
 		expectedError string
 	}{
 		{"All good", allGood, ""},
@@ -135,8 +135,7 @@ func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 		{"Missing Value", missingValue, "ServiceSecrets.Secrets[0].SecretData[0].Value field is required"},
 	}
 
-
-	for _, test := range tests{
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := UnmarshalServiceSecretsJson([]byte(test.data))
 			if len(test.expectedError) == 0 {
@@ -158,11 +157,11 @@ func TestServiceSecrets_MarshalJson(t *testing.T) {
 			{
 				Path:       "credentials001",
 				Imported:   true,
-				SecretData: make([]common.SecretDataKeyValue,0),
+				SecretData: make([]common.SecretDataKeyValue, 0),
 			},
 			{
 				Path:       "credentials002",
-				SecretData: make([]common.SecretDataKeyValue,0),
+				SecretData: make([]common.SecretDataKeyValue, 0),
 				Imported:   true,
 			},
 		},
