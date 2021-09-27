@@ -72,18 +72,6 @@ func NewSecretProvider(
 				secretClient, err = secrets.NewSecretsClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
 				if err == nil {
 					secureProvider.SetClient(secretClient)
-
-					lc.Debugf("SecretsFile is '%s'", secretConfig.SecretsFile)
-
-					if len(strings.TrimSpace(secretConfig.SecretsFile)) > 0 {
-						err = secureProvider.LoadServiceSecrets(secretStoreConfig)
-						if err != nil {
-							return nil, err
-						}
-					} else {
-						lc.Infof("SecretsFile not set, skipping seeding of service secrets.")
-					}
-
 					provider = secureProvider
 					lc.Info("Created SecretClient")
 
@@ -94,6 +82,19 @@ func NewSecretProvider(
 						break
 					}
 
+<<<<<<< HEAD
+					provider = secureProvider
+					lc.Info("Created SecretClient")
+
+					lc.Debugf("SecretsFile is '%s'", secretConfig.SecretsFile)
+
+					if len(strings.TrimSpace(secretConfig.SecretsFile)) == 0 {
+						lc.Infof("SecretsFile not set, skipping seeding of service secrets.")
+						break
+					}
+
+=======
+>>>>>>> refactor: refactoring per PR comments
 					err = secureProvider.LoadServiceSecrets(secretStoreConfig)
 					if err != nil {
 						return nil, err
