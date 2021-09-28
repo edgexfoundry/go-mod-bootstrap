@@ -74,6 +74,18 @@ func NewSecretProvider(
 					secureProvider.SetClient(secretClient)
 					provider = secureProvider
 					lc.Info("Created SecretClient")
+
+					lc.Debugf("SecretsFile is '%s'", secretConfig.SecretsFile)
+
+					if len(strings.TrimSpace(secretConfig.SecretsFile)) == 0 {
+						lc.Infof("SecretsFile not set, skipping seeding of service secrets.")
+						break
+					}
+
+					err = secureProvider.LoadServiceSecrets(secretStoreConfig)
+					if err != nil {
+						return nil, err
+					}
 					break
 				}
 			}
@@ -107,6 +119,7 @@ func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtok
 		Host:           secretStoreInfo.Host,
 		Port:           secretStoreInfo.Port,
 		Path:           addEdgeXSecretPathPrefix(secretStoreInfo.Path),
+		SecretsFile:    secretStoreInfo.SecretsFile,
 		Protocol:       secretStoreInfo.Protocol,
 		Namespace:      secretStoreInfo.Namespace,
 		RootCaCertPath: secretStoreInfo.RootCaCertPath,

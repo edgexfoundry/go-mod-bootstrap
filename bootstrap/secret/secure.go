@@ -18,12 +18,19 @@ package secret
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 )
@@ -169,7 +176,7 @@ func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (st
 	}
 }
 
-// defaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
+// DefaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
 // It utilizes the tokenFile to re-read the token and enable retry if any update from the expired token
 func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (replacementToken string, retry bool) {
 	tokenFile := p.configuration.GetBootstrap().SecretStore.TokenFile
@@ -189,4 +196,79 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 	}
 
 	return reReadToken, true
+}
+
+// LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
+func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig config.SecretStoreInfo) error {
+
+	contents, err := os.ReadFile(secretStoreConfig.SecretsFile)
+	if err != nil {
+		return fmt.Errorf("seeding secrets failed: %s", err.Error())
+	}
+
+	data, seedingErrs := p.seedSecrets(contents)
+
+	if secretStoreConfig.DisableScrubSecretsFile {
+		p.lc.Infof("Scrubbing of secrets file disable.")
+		return seedingErrs
+	}
+
+	if err := os.WriteFile(secretStoreConfig.SecretsFile, data, 0); err != nil {
+		return fmt.Errorf("seeding secrets failed: unable to overwrite file with secret data removed: %s", err.Error())
+	}
+
+	p.lc.Infof("Scrubbing of secrets file complete.")
+
+	return seedingErrs
+}
+
+func (p *SecureProvider) seedSecrets(contents []byte) ([]byte, error) {
+	serviceSecrets, err := UnmarshalServiceSecretsJson(contents)
+	if err != nil {
+		return nil, fmt.Errorf("seeding secrets failed unmarshaling JSON: %s", err.Error())
+	}
+
+	p.lc.Infof("Seeding %d Service Secrets", len(serviceSecrets.Secrets))
+
+	var seedingErrs error
+	for index, secret := range serviceSecrets.Secrets {
+		if secret.Imported {
+			p.lc.Infof("Secret for '%s' already imported. Skipping...", secret.Path)
+			continue
+		}
+
+		// At this pint the JSON validation and above check cover all the required validation, so go to store secret.
+		path, data := prepareSecret(secret)
+		err := p.StoreSecret(path, data)
+		if err != nil {
+			message := fmt.Sprintf("failed to store secret for '%s': %s", secret.Path, err.Error())
+			p.lc.Errorf(message)
+			seedingErrs = multierror.Append(seedingErrs, errors.New(message))
+			continue
+		}
+
+		p.lc.Infof("Secret for '%s' successfully stored.", secret.Path)
+
+		serviceSecrets.Secrets[index].Imported = true
+		serviceSecrets.Secrets[index].SecretData = make([]common.SecretDataKeyValue, 0)
+	}
+
+	// Now need to write the file back over with the imported secrets' secretData removed.
+	data, err := serviceSecrets.MarshalJson()
+	if err != nil {
+		return nil, fmt.Errorf("seeding secrets failed marshaling back to JSON to clear secrets: %s", err.Error())
+	}
+
+	return data, seedingErrs
+}
+
+func prepareSecret(secret ServiceSecret) (string, map[string]string) {
+	var secretsKV = make(map[string]string)
+	for _, secret := range secret.SecretData {
+		secretsKV[secret.Key] = secret.Value
+	}
+
+	path := strings.TrimSpace(secret.Path)
+
+	return path, secretsKV
 }
