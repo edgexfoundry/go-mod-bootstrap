@@ -257,7 +257,6 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 }
 
 // LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
-// LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
 func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig config.SecretStoreInfo) error {
 
 	contents, err := os.ReadFile(secretStoreConfig.SecretsFile)
