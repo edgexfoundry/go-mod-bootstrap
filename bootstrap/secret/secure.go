@@ -16,6 +16,7 @@
 package secret
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -35,7 +36,11 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 )
 
-const TokenTypeConsul = "consul"
+const (
+	TokenTypeConsul      = "consul"
+	AccessTokenAuthError = "HTTP response with status code 403"
+	SecretsAuthError     = "Received a '403' response"
+)
 
 // SecureProvider implements the SecretProvider interface
 type SecureProvider struct {
@@ -46,10 +51,11 @@ type SecureProvider struct {
 	secretsCache  map[string]map[string]string // secret's path, key, value
 	cacheMutex    *sync.RWMutex
 	lastUpdated   time.Time
+	ctx           context.Context
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
-func NewSecureProvider(config interfaces.Configuration, lc logger.LoggingClient, loader authtokenloader.AuthTokenLoader) *SecureProvider {
+func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc logger.LoggingClient, loader authtokenloader.AuthTokenLoader) *SecureProvider {
 	provider := &SecureProvider{
 		configuration: config,
 		lc:            lc,
@@ -57,6 +63,7 @@ func NewSecureProvider(config interfaces.Configuration, lc logger.LoggingClient,
 		secretsCache:  make(map[string]map[string]string),
 		cacheMutex:    &sync.RWMutex{},
 		lastUpdated:   time.Now(),
+		ctx:           ctx,
 	}
 	return provider
 }
@@ -80,6 +87,13 @@ func (p *SecureProvider) GetSecret(path string, keys ...string) (map[string]stri
 	}
 
 	secureSecrets, err := p.secretClient.GetSecrets(path, keys...)
+
+	retry, err := p.reloadTokenOnAuthError(err)
+	if retry {
+		// Retry with potential new token
+		secureSecrets, err = p.secretClient.GetSecrets(path, keys...)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +156,13 @@ func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) err
 	}
 
 	err := p.secretClient.StoreSecrets(path, secrets)
+
+	retry, err := p.reloadTokenOnAuthError(err)
+	if retry {
+		// Retry with potential new token
+		err = p.secretClient.StoreSecrets(path, secrets)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -154,6 +175,30 @@ func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) err
 	//indicate to the SDK that the cache has been invalidated
 	p.lastUpdated = time.Now()
 	return nil
+}
+
+func (p *SecureProvider) reloadTokenOnAuthError(err error) (bool, error) {
+	if err == nil {
+		return false, nil
+	}
+
+	if !strings.Contains(err.Error(), SecretsAuthError) &&
+		!strings.Contains(err.Error(), AccessTokenAuthError) {
+		return false, err
+	}
+
+	// Reload token in case new token was created causing the auth error
+	token, err := p.loader.Load(p.configuration.GetBootstrap().SecretStore.TokenFile)
+	if err != nil {
+		return false, err
+	}
+
+	err = p.secretClient.SetAuthToken(p.ctx, token)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // SecretsUpdated is not need for secure secrets as this is handled when secrets are stored.
@@ -170,7 +215,20 @@ func (p *SecureProvider) SecretsLastUpdated() time.Time {
 func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
 	switch tokenType {
 	case TokenTypeConsul:
-		return p.secretClient.GenerateConsulToken(serviceKey)
+		token, err := p.secretClient.GenerateConsulToken(serviceKey)
+
+		retry, err := p.reloadTokenOnAuthError(err)
+		if retry {
+			// Retry with potential new token
+			token, err = p.secretClient.GenerateConsulToken(serviceKey)
+		}
+
+		if err != nil {
+			return "", err
+		}
+
+		return token, nil
+
 	default:
 		return "", fmt.Errorf("invalid access token type '%s'", tokenType)
 	}
@@ -199,48 +257,22 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 }
 
 // LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
-<<<<<<< HEAD
-<<<<<<< HEAD
+// LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
 func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig config.SecretStoreInfo) error {
 
 	contents, err := os.ReadFile(secretStoreConfig.SecretsFile)
-=======
-func (p *SecureProvider) LoadServiceSecrets(filePath string, scrubDisabled bool) error {
-	contents, err := os.ReadFile(filePath)
->>>>>>> feat: Add DisableScrubSecretsFile setting to control srubbing of secrets file
-=======
-func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig config.SecretStoreInfo) error {
-
-	contents, err := os.ReadFile(secretStoreConfig.SecretsFile)
->>>>>>> fix: Address PR feed back on parameter passing
 	if err != nil {
 		return fmt.Errorf("seeding secrets failed: %s", err.Error())
 	}
 
 	data, seedingErrs := p.seedSecrets(contents)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if secretStoreConfig.DisableScrubSecretsFile {
-=======
-	if scrubDisabled {
->>>>>>> feat: Add DisableScrubSecretsFile setting to control srubbing of secrets file
-=======
-	if secretStoreConfig.DisableScrubSecretsFile {
->>>>>>> fix: Address PR feed back on parameter passing
 		p.lc.Infof("Scrubbing of secrets file disable.")
 		return seedingErrs
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if err := os.WriteFile(secretStoreConfig.SecretsFile, data, 0); err != nil {
-=======
-	if err := os.WriteFile(filePath, data, 0); err != nil {
->>>>>>> feat: Add DisableScrubSecretsFile setting to control srubbing of secrets file
-=======
-	if err := os.WriteFile(secretStoreConfig.SecretsFile, data, 0); err != nil {
->>>>>>> fix: Address PR feed back on parameter passing
 		return fmt.Errorf("seeding secrets failed: unable to overwrite file with secret data removed: %s", err.Error())
 	}
 

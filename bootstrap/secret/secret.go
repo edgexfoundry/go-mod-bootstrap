@@ -65,7 +65,7 @@ func NewSecretProvider(
 
 			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader)
 			if err == nil {
-				secureProvider := NewSecureProvider(configuration, lc, tokenLoader)
+				secureProvider := NewSecureProvider(ctx, configuration, lc, tokenLoader)
 				var secretClient secrets.SecretClient
 
 				lc.Info("Attempting to create secret client")
@@ -82,19 +82,9 @@ func NewSecretProvider(
 						break
 					}
 
-<<<<<<< HEAD
 					provider = secureProvider
 					lc.Info("Created SecretClient")
 
-					lc.Debugf("SecretsFile is '%s'", secretConfig.SecretsFile)
-
-					if len(strings.TrimSpace(secretConfig.SecretsFile)) == 0 {
-						lc.Infof("SecretsFile not set, skipping seeding of service secrets.")
-						break
-					}
-
-=======
->>>>>>> refactor: refactoring per PR comments
 					err = secureProvider.LoadServiceSecrets(secretStoreConfig)
 					if err != nil {
 						return nil, err
