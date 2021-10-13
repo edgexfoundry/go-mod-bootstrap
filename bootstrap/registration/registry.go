@@ -20,15 +20,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+
 	registryTypes "github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 )
 
@@ -42,19 +43,29 @@ func createRegistryClient(
 
 	var err error
 	var accessToken string
+	var getAccessToken registryTypes.GetAccessTokenCallback
 
 	secretProvider := container.SecretProviderFrom(dic.Get)
 	// secretProvider will be nil if not configured to be used. In that case, no access token required.
 	if secretProvider != nil {
-		accessToken, err = secretProvider.GetAccessToken(bootstrapConfig.Registry.Type, serviceKey)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"failed to get Registry (%s) access token: %s",
-				bootstrapConfig.Registry.Type,
-				err.Error())
+		// Define the callback function to retrieve the Access Token
+		getAccessToken = func() (string, error) {
+			accessToken, err = secretProvider.GetAccessToken(bootstrapConfig.Registry.Type, serviceKey)
+			if err != nil {
+				return "", fmt.Errorf(
+					"failed to get Registry (%s) access token: %s",
+					bootstrapConfig.Registry.Type,
+					err.Error())
+			}
+
+			lc.Infof("Using Registry access token of length %d", len(accessToken))
+			return accessToken, nil
 		}
 
-		lc.Infof("Using Registry access token of length %d", len(accessToken))
+		accessToken, err = getAccessToken()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	registryConfig := registryTypes.Config{
@@ -68,6 +79,7 @@ func createRegistryClient(
 		ServiceProtocol: config.DefaultHttpProtocol,
 		CheckInterval:   bootstrapConfig.Service.HealthCheckInterval,
 		CheckRoute:      common.ApiPingRoute,
+		GetAccessToken:  getAccessToken,
 	}
 
 	lc.Info(fmt.Sprintf("Using Registry (%s) from %s", registryConfig.Type, registryConfig.GetRegistryUrl()))

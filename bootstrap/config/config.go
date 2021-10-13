@@ -133,7 +133,7 @@ func (cp *Processor) Process(
 
 	configProviderUrl := cp.flags.ConfigProviderUrl()
 
-	// Create new ProviderInfo and initialize it from command-line flag or Variables variables
+	// Create new ProviderInfo and initialize it from command-line flag or Variables
 	configProviderInfo, err := NewProviderInfo(cp.envVars, configProviderUrl)
 	if err != nil {
 		return err
@@ -142,23 +142,29 @@ func (cp *Processor) Process(
 	switch configProviderInfo.UseProvider() {
 	case true:
 		var accessToken string
+		var getAccessToken types.GetAccessTokenCallback
 
 		// secretProvider will be nil if not configured to be used. In that case, no access token required.
 		if secretProvider != nil {
-			accessToken, err = secretProvider.GetAccessToken(configProviderInfo.serviceConfig.Type, serviceKey)
-			if err != nil {
-				return fmt.Errorf(
-					"failed to get Configuration Provider (%s) access token: %s",
-					configProviderInfo.serviceConfig.Type,
-					err.Error())
+			// Define the callback function to retrieve the Access Token
+			getAccessToken = func() (string, error) {
+				accessToken, err = secretProvider.GetAccessToken(configProviderInfo.serviceConfig.Type, serviceKey)
+				if err != nil {
+					return "", fmt.Errorf(
+						"failed to get Configuration Provider (%s) access token: %s",
+						configProviderInfo.serviceConfig.Type,
+						err.Error())
+				}
+
+				cp.lc.Infof("Using Configuration Provider access token of length %d", len(accessToken))
+				return accessToken, nil
 			}
 
-			cp.lc.Infof("Using Config Provider access token of length %d", len(accessToken))
 		} else {
 			cp.lc.Info("Not configured to use Config Provider access token")
 		}
 
-		configClient, err := cp.createProviderClient(serviceKey, configStem, accessToken, configProviderInfo.ServiceConfig())
+		configClient, err := cp.createProviderClient(serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
 		}
@@ -305,7 +311,8 @@ func (cp *Processor) ListenForCustomConfigChanges(
 		for {
 			select {
 			case <-cp.ctx.Done():
-				cp.lc.Infof("Exiting waiting for custom configuration changes")
+				configClient.StopWatching()
+				cp.lc.Infof("Watching for '%s' configuration changes has stopped", sectionName)
 				return
 
 			case ex := <-errorStream:
@@ -325,11 +332,18 @@ func (cp *Processor) ListenForCustomConfigChanges(
 func (cp *Processor) createProviderClient(
 	serviceKey string,
 	configStem string,
-	accessTokenFile string,
+	getAccessToken types.GetAccessTokenCallback,
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
+	var err error
 	providerConfig.BasePath = filepath.Join(configStem, ConfigVersion, serviceKey)
-	providerConfig.AccessToken = accessTokenFile
+	if getAccessToken != nil {
+		providerConfig.AccessToken, err = getAccessToken()
+		if err != nil {
+			return nil, err
+		}
+		providerConfig.GetAccessToken = getAccessToken
+	}
 
 	cp.lc.Info(fmt.Sprintf(
 		"Using Configuration provider (%s) from: %s with base path of %s",
@@ -431,6 +445,8 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 		for {
 			select {
 			case <-cp.ctx.Done():
+				configClient.StopWatching()
+				lc.Infof("Watching for '%s' configuration changes has stopped", writableKey)
 				return
 
 			case ex := <-errorStream:

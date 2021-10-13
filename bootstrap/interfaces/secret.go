@@ -1,6 +1,8 @@
 package interfaces
 
-import "time"
+import (
+	"time"
+)
 
 // SecretProvider defines the contract for secret provider implementations that
 // allow secrets to be retrieved/stored from/to a services Secret Store.
