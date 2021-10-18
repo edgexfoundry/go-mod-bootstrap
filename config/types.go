@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
  * Copyright 2020 Intel Inc.
+ * Copyright 2021 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -47,6 +48,8 @@ type ServiceInfo struct {
 	// RequestTimeout specifies a timeout (in milliseconds) for
 	// processing REST request calls from other services.
 	RequestTimeout string
+	// CORSConfiguration defines the cross-origin resource sharing related settings
+	CORSConfiguration CORSConfigurationInfo
 }
 
 // HealthCheck is a URL specifying a health check REST endpoint used by the Registry to determine if the
@@ -61,6 +64,35 @@ func (s ServiceInfo) HealthCheck() string {
 func (s ServiceInfo) Url() string {
 	url := fmt.Sprintf("%s://%s:%v", DefaultHttpProtocol, s.Host, s.Port)
 	return url
+}
+
+// CORSConfigurationInfo defines the cross-origin resource sharing related settings
+type CORSConfigurationInfo struct {
+	// EnableCORS indicates whether enables CORS in this service
+	EnableCORS bool
+	// CORSAllowCredentials defines the value of Access-Control-Allow-Credentials in the response header.
+	// The Access-Control-Allow-Credentials response header tells browsers whether to expose the response
+	// to the frontend JavaScript code when the request's credentials mode (Request.credentials) is included.
+	CORSAllowCredentials bool
+	// CORSAllowedOrigin defines the value of Access-Control-Allow-Origin in the response header.
+	// The Access-Control-Allow-Origin response header indicates whether the response can be shared
+	// with requesting code from the given origin.
+	CORSAllowedOrigin string
+	// CORSAllowedMethods defines the value of Access-Control-Allow-Methods in the response header.
+	// The Access-Control-Allow-Methods response header specifies one or more methods allowed when
+	// accessing a resource in response to a preflight request.
+	CORSAllowedMethods string
+	// CORSAllowedHeaders defines the value of Access-Control-Allow-Headers in the response header.
+	// The Access-Control-Allow-Headers response header is used in response to a preflight request which
+	// includes the Access-Control-Request-Headers to indicate which HTTP headers can be used during the actual request.
+	CORSAllowedHeaders string
+	// CORSExposeHeaders defines the value of Access-Control-Expose-Headers in the response header
+	// The Access-Control-Expose-Headers response header allows a server to indicate which response headers
+	// should be made available to scripts running in the browser, in response to a cross-origin request.
+	CORSExposeHeaders string
+	// CORSMaxAge defines the value of Access-Control-Max-Age in the response header.
+	// The Access-Control-Max-Age response header indicates how long the results of a preflight request can be cached.
+	CORSMaxAge int
 }
 
 // ConfigProviderInfo defines the type and location (via host/port) of the desired configuration provider (e.g. Consul, Eureka)
