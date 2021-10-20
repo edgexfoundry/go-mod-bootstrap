@@ -23,6 +23,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/gorilla/mux"
@@ -97,6 +98,7 @@ func (b *HttpServer) BootstrapHandler(
 	b.router.Use(func(next http.Handler) http.Handler {
 		return http.TimeoutHandler(next, timeout, "HTTP request timeout")
 	})
+	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
 
 	server := &http.Server{
 		Addr:    addr,
@@ -134,4 +136,31 @@ func (b *HttpServer) BootstrapHandler(
 	}()
 
 	return true
+}
+
+// ProcessCORS is a middleware function that enables CORS preflight responses and sets CORS headers.
+func ProcessCORS(corsInfo config.CORSConfigurationInfo) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if corsInfo.EnableCORS {
+				w.Header().Set("Access-Control-Allow-Credentials", strconv.FormatBool(corsInfo.CORSAllowCredentials))
+				if len(corsInfo.CORSAllowedOrigin) > 0 {
+					w.Header().Set("Access-Control-Allow-Origin", corsInfo.CORSAllowedOrigin)
+				}
+				if len(corsInfo.CORSAllowedMethods) > 0 {
+					w.Header().Set("Access-Control-Allow-Methods", corsInfo.CORSAllowedMethods)
+				}
+				if len(corsInfo.CORSAllowedHeaders) > 0 {
+					w.Header().Set("Access-Control-Allow-Headers", corsInfo.CORSAllowedHeaders)
+				}
+				if len(corsInfo.CORSExposeHeaders) > 0 {
+					w.Header().Set("Access-Control-Expose-Headers", corsInfo.CORSExposeHeaders)
+				}
+				if corsInfo.CORSMaxAge > 0 {
+					w.Header().Set("Access-Control-Max-Age", strconv.Itoa(corsInfo.CORSMaxAge))
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
