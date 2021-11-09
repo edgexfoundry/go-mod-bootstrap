@@ -3,7 +3,21 @@
 ## Bootstrap Module (in Go)
 [Github repository](https://github.com/edgexfoundry/go-mod-bootstrap)
 
-## [2.0.0] - 2021-06-30
+## [v2.1.0] - 2021-11-17
+
+### Features ✨
+
+- Use Http Request timeout handler ([#267](https://github.com/edgexfoundry/go-mod-bootstrap/issues/267)) ([#4da2238](https://github.com/edgexfoundry/go-mod-bootstrap/commits/4da2238))
+- **security:** Add Access Token callback Vault token reload ([#285](https://github.com/edgexfoundry/go-mod-bootstrap/issues/285)) ([#64217dd](https://github.com/edgexfoundry/go-mod-bootstrap/commits/64217dd))
+- **security:** Add optional capability to seed service secrets ([#276](https://github.com/edgexfoundry/go-mod-bootstrap/issues/276)) ([#a4676a4](https://github.com/edgexfoundry/go-mod-bootstrap/commits/a4676a4))
+- **security:** Add func to process CORS ([#288](https://github.com/edgexfoundry/go-mod-bootstrap/issues/288)) ([#c292656](https://github.com/edgexfoundry/go-mod-bootstrap/commits/c292656))
+- **security:** Create CORS related config struct ([#286](https://github.com/edgexfoundry/go-mod-bootstrap/issues/286)) ([#4ec4738](https://github.com/edgexfoundry/go-mod-bootstrap/commits/4ec4738))
+
+### Bug Fixes 🐛
+
+- Use correct name when logging EDGEX_CONF_DIR override ([#266](https://github.com/edgexfoundry/go-mod-bootstrap/issues/266)) ([#2a375e7](https://github.com/edgexfoundry/go-mod-bootstrap/commits/2a375e7))
+
+## [v2.0.0] - 2021-06-30
 ### Features ✨
 - **v2:** Add Subscribe config to MessageQueue config ([#240](https://github.com/edgexfoundry/go-mod-bootstrap/issues/240)) ([#ac14ba0](https://github.com/edgexfoundry/go-mod-bootstrap/commits/ac14ba0))
 - **v2:** Add bootstrap handler to create Messaging Client with secure options ([#225](https://github.com/edgexfoundry/go-mod-bootstrap/issues/225)) ([#ae196fc](https://github.com/edgexfoundry/go-mod-bootstrap/commits/ae196fc))
