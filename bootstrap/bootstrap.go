@@ -54,7 +54,7 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 	go func() {
 		defer wg.Done()
 
-		signalStream := make(chan os.Signal)
+		signalStream := make(chan os.Signal, 1)
 		defer func() {
 			signal.Stop(signalStream)
 			close(signalStream)
@@ -155,7 +155,7 @@ func RunAndReturnWaitGroup(
 	// call individual bootstrap handlers.
 	startedSuccessfully := true
 	for i := range handlers {
-		if handlers[i](ctx, &wg, startupTimer, dic) == false {
+		if !handlers[i](ctx, &wg, startupTimer, dic) {
 			cancel()
 			startedSuccessfully = false
 			break

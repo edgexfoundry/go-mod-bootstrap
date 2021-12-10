@@ -115,7 +115,9 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 	allGood := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
 	noPath := `{"secrets": [{"path": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
+	//nolint: gosec
 	noSecretData := `{"secrets": [{"path": "auth","imported": false}]}`
+	//nolint: gosec
 	emptySecretData := `{"secrets": [{"path": "auth","imported": false, "secretData": []}]}`
 	missingKey := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"value": "password1"}]}]}`
 	missingValue := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`
