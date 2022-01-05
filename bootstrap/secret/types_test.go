@@ -113,12 +113,12 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 }
 
 func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
-	allGood := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
-	noPath := `{"secrets": [{"path": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
-	noSecretData := `{"secrets": [{"path": "auth","imported": false}]}`
-	emptySecretData := `{"secrets": [{"path": "auth","imported": false, "secretData": []}]}`
-	missingKey := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"value": "password1"}]}]}`
-	missingValue := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`
+	allGood := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}` // nolint: gosec
+	noPath := `{"secrets": [{"path": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`      // nolint: gosec
+	noSecretData := `{"secrets": [{"path": "auth","imported": false}]}`                                                  // nolint: gosec
+	emptySecretData := `{"secrets": [{"path": "auth","imported": false, "secretData": []}]}`                             // nolint: gosec
+	missingKey := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"value": "password1"}]}]}`             // nolint: gosec
+	missingValue := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`                 // nolint: gosec
 
 	tests := []struct {
 		name          string

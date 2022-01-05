@@ -185,11 +185,11 @@ func TestSecureProvider_SecretsUpdated(t *testing.T) {
 }
 
 func TestSecureProvider_DefaultTokenExpiredCallback(t *testing.T) {
-	goodTokenFile := "good-token.json"
-	badTokenFile := "bad-token.json"
-	sameTokenFile := "same-token.json"
-	newToken := "new token"
-	expiredToken := "expired token"
+	goodTokenFile := "good-token.json" // nolint: gosec
+	badTokenFile := "bad-token.json"   // nolint: gosec
+	sameTokenFile := "same-token.json" // nolint: gosec
+	newToken := "new token"            // nolint: gosec
+	expiredToken := "expired token"    // nolint: gosec
 
 	mockTokenLoader := &mocks2.AuthTokenLoader{}
 	mockTokenLoader.On("Load", goodTokenFile).Return(newToken, nil)

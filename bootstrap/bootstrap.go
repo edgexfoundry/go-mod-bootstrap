@@ -59,7 +59,7 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 			signal.Stop(signalStream)
 			close(signalStream)
 		}()
-		signal.Notify(signalStream, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(signalStream, os.Interrupt, syscall.SIGTERM) // nolint: govet // FIXME
 		select {
 		case <-signalStream:
 			cancel()
@@ -155,7 +155,7 @@ func RunAndReturnWaitGroup(
 	// call individual bootstrap handlers.
 	startedSuccessfully := true
 	for i := range handlers {
-		if handlers[i](ctx, &wg, startupTimer, dic) == false {
+		if !handlers[i](ctx, &wg, startupTimer, dic) {
 			cancel()
 			startedSuccessfully = false
 			break

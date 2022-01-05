@@ -39,7 +39,7 @@ import (
 const (
 	TokenTypeConsul      = "consul"
 	AccessTokenAuthError = "HTTP response with status code 403"
-	SecretsAuthError     = "Received a '403' response"
+	SecretsAuthError     = "Received a '403' response" // nolint: gosec
 )
 
 // SecureProvider implements the SecretProvider interface
