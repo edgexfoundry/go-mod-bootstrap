@@ -136,7 +136,7 @@ func TestValidateSecrets(t *testing.T) {
 			result := ValidateSecretData(test.AuthMode, "unit-test", &test.SecretData)
 			if test.ErrorExpectation {
 				require.Error(t, result, "Result should be an error")
-				assert.Equal(t, test.ErrorMessage, result.(error).Error())
+				assert.Equal(t, test.ErrorMessage, result.Error())
 			} else {
 				assert.Nil(t, result, "Should be nil")
 			}

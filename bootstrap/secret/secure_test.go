@@ -186,6 +186,7 @@ func TestSecureProvider_SecretsUpdated(t *testing.T) {
 
 func TestSecureProvider_DefaultTokenExpiredCallback(t *testing.T) {
 	goodTokenFile := "good-token.json"
+	//nolint: gosec
 	badTokenFile := "bad-token.json"
 	sameTokenFile := "same-token.json"
 	newToken := "new token"
