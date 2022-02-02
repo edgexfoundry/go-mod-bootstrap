@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
@@ -55,7 +56,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	cb.registry = container.RegistryFrom(dic.Get)
 
 	for serviceKey, serviceInfo := range config.GetBootstrap().Clients {
-		url, err := cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer)
+		url, err := cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, lc)
 		if err != nil {
 			lc.Error(err.Error())
 			return false
@@ -120,8 +121,9 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	return true
 }
 
-func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer) (string, error) {
+func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, lc logger.LoggingClient) (string, error) {
 	if cb.registry == nil {
+		lc.Debugf("Using configuration for URL for '%s': %s", serviceKey, defaultUrl)
 		return defaultUrl, nil
 	}
 
@@ -141,6 +143,10 @@ func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, s
 		return "", fmt.Errorf("unable to Get service endpoint for '%s': %s", serviceKey, err.Error())
 	}
 
-	return fmt.Sprintf("http://%s:%v", endpoint.Host, endpoint.Port), nil
+	url := fmt.Sprintf("http://%s:%v", endpoint.Host, endpoint.Port)
+
+	lc.Debugf("Using registry for URL for '%s': %s", serviceKey, url)
+
+	return url, nil
 }
 
