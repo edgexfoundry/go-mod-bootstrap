@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2021 Intel Inc.
+ * Copyright 2022 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
 	"reflect"
 	"sync"
 
@@ -336,7 +335,14 @@ func (cp *Processor) createProviderClient(
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
 
 	var err error
-	providerConfig.BasePath = filepath.Join(configStem, ConfigVersion, serviceKey)
+
+	// The passed in configStem already contains the trailing '/' in most cases so must verify and add if missing.
+	if configStem[len(configStem)-1] != '/' {
+		configStem = configStem + "/"
+	}
+
+	// Note: Can't use filepath.Join as it uses `\` on Windows which Consul doesn't recognize as a path separator.
+	providerConfig.BasePath = fmt.Sprintf("%s%s/%s", configStem, ConfigVersion, serviceKey)
 	if getAccessToken != nil {
 		providerConfig.AccessToken, err = getAccessToken()
 		if err != nil {
