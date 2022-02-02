@@ -37,8 +37,7 @@ type ClientsBootstrap struct {
 
 // NewClientsBootstrap is a factory method that returns the initialized "ClientsBootstrap" receiver struct.
 func NewClientsBootstrap() *ClientsBootstrap {
-	return &ClientsBootstrap{
-	}
+	return &ClientsBootstrap{}
 }
 
 // BootstrapHandler fulfills the BootstrapHandler contract.
@@ -83,7 +82,6 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 				container.ProvisionWatcherClientName: func(get di.Get) interface{} {
 					return clients.NewProvisionWatcherClient(url)
 				},
-
 			})
 
 		case common.CoreCommandServiceKey:
@@ -149,4 +147,3 @@ func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, s
 
 	return url, nil
 }
-

@@ -25,9 +25,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
-	"github.com/edgexfoundry/go-mod-registry/v2/registry/mocks"
+	registryMocks "github.com/edgexfoundry/go-mod-registry/v2/registry/mocks"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -69,14 +70,14 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Protocol: "http",
 	}
 
-	registryMock := &mocks.Client{}
+	registryMock := &registryMocks.Client{}
 	registryMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.CoreMetaDataServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.CoreCommandServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.SupportNotificationsServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.SupportSchedulerServiceKey).Return(types.ServiceEndpoint{}, nil)
 
-	registryErrorMock := &mocks.Client{}
+	registryErrorMock := &registryMocks.Client{}
 	registryErrorMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, errors.New("some error"))
 
 	startupTimer := startup.NewTimer(1, 1)
@@ -155,15 +156,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			dic := di.NewContainer(di.ServiceConstructorMap{
-				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
-					return lc
-				},
-				container.RegistryClientInterfaceName: func(get di.Get) interface{} {
-					return test.Registry
-				},
-			})
-
 			clients := make(map[string]config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
@@ -186,7 +178,26 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				clients[common.SupportSchedulerServiceKey] = subscriberClientInfo
 			}
 
-			actualResult := NewClientsBootstrap(clients).BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			bootstrapConfig := config.BootstrapConfiguration{
+				Clients: clients,
+			}
+
+			configMock := &mocks.Configuration{}
+			configMock.On("GetBootstrap").Return(bootstrapConfig)
+
+			dic := di.NewContainer(di.ServiceConstructorMap{
+				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
+					return lc
+				},
+				container.RegistryClientInterfaceName: func(get di.Get) interface{} {
+					return test.Registry
+				},
+				container.ConfigurationInterfaceName: func(get di.Get) interface{} {
+					return configMock
+				},
+			})
+
+			actualResult := NewClientsBootstrap().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
 			require.Equal(t, actualResult, test.ExpectedResult)
 			if test.ExpectedResult == false {
 				return

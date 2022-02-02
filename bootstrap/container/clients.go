@@ -140,4 +140,3 @@ func IntervalActionClientFrom(get di.Get) interfaces.IntervalActionClient {
 
 	return get(IntervalActionClientName).(interfaces.IntervalActionClient)
 }
-
