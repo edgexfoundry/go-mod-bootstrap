@@ -33,6 +33,19 @@ func EventClientFrom(get di.Get) interfaces.EventClient {
 	return get(EventClientName).(interfaces.EventClient)
 }
 
+// ReadingClientName contains the name of the ReadingClient instance in the DIC.
+var ReadingClientName = di.TypeInstanceToName((*interfaces.ReadingClient)(nil))
+
+// ReadingClientFrom helper function queries the DIC and returns the ReadingClient instance.
+func ReadingClientFrom(get di.Get) interfaces.ReadingClient {
+	client, ok := get(ReadingClientName).(interfaces.ReadingClient)
+	if !ok {
+		return nil
+	}
+
+	return client
+}
+
 // CommandClientName contains the name of the CommandClient's implementation in the DIC.
 var CommandClientName = di.TypeInstanceToName((*interfaces.CommandClient)(nil))
 
@@ -139,4 +152,30 @@ func IntervalActionClientFrom(get di.Get) interfaces.IntervalActionClient {
 	}
 
 	return get(IntervalActionClientName).(interfaces.IntervalActionClient)
+}
+
+// DeviceServiceCallbackClientName contains the name of the DeviceServiceCallbackClient instance in the DIC.
+var DeviceServiceCallbackClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCallbackClient)(nil))
+
+// DeviceServiceCommandClientName contains the name of the DeviceServiceCommandClient instance in the DIC.
+var DeviceServiceCommandClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCommandClient)(nil))
+
+// DeviceServiceCallbackClientFrom helper function queries the DIC and returns the DeviceServiceCallbackClient instance.
+func DeviceServiceCallbackClientFrom(get di.Get) interfaces.DeviceServiceCallbackClient {
+	client, ok := get(DeviceServiceCallbackClientName).(interfaces.DeviceServiceCallbackClient)
+	if !ok {
+		return nil
+	}
+
+	return client
+}
+
+// DeviceServiceCommandClientFrom helper function queries the DIC and returns the DeviceServiceCommandClient instance.
+func DeviceServiceCommandClientFrom(get di.Get) interfaces.DeviceServiceCommandClient {
+	client, ok := get(DeviceServiceCommandClientName).(interfaces.DeviceServiceCommandClient)
+	if !ok {
+		return nil
+	}
+
+	return client
 }
