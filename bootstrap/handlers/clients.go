@@ -121,7 +121,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, lc logger.LoggingClient) (string, error) {
 	if cb.registry == nil {
-		lc.Debugf("Using configuration for URL for '%s': %s", serviceKey, defaultUrl)
+		lc.Infof("Using configuration for URL for '%s': %s", serviceKey, defaultUrl)
 		return defaultUrl, nil
 	}
 
@@ -134,16 +134,17 @@ func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, s
 			break
 		}
 
+		lc.Warnf("unable to Get service endpoint for '%s': %s. retrying...", serviceKey, err.Error())
 		startupTimer.SleepForInterval()
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("unable to Get service endpoint for '%s': %s", serviceKey, err.Error())
+		return "", fmt.Errorf("unable to Get service endpoint for '%s': %s. Giving up", serviceKey, err.Error())
 	}
 
 	url := fmt.Sprintf("http://%s:%v", endpoint.Host, endpoint.Port)
 
-	lc.Debugf("Using registry for URL for '%s': %s", serviceKey, url)
+	lc.Infof("Using registry for URL for '%s': %s", serviceKey, url)
 
 	return url, nil
 }
