@@ -1,6 +1,6 @@
 /********************************************************************************
  *  Copyright 2019 Dell Inc.
- *  Copyright 2021 Intel Corp.
+ *  Copyright 2022 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 
@@ -32,6 +33,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/fileioperformer"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/runtimetokenprovider"
 )
 
 // NewSecretProvider creates a new fully initialized the Secret Provider.
@@ -39,7 +41,8 @@ func NewSecretProvider(
 	configuration interfaces.Configuration,
 	ctx context.Context,
 	startupTimer startup.Timer,
-	dic *di.Container) (interfaces.SecretProvider, error) {
+	dic *di.Container,
+	serviceKey string) (interfaces.SecretProvider, error) {
 	lc := container.LoggingClientFrom(dic.Get)
 
 	var provider interfaces.SecretProvider
@@ -63,13 +66,25 @@ func NewSecretProvider(
 				tokenLoader = authtokenloader.NewAuthTokenLoader(fileioperformer.NewDefaultFileIoPerformer())
 			}
 
-			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader)
+			runtimeTokenLoader := container.RuntimeTokenProviderFrom(dic.Get)
+			if runtimeTokenLoader == nil {
+				runtimeTokenLoader = runtimetokenprovider.NewRuntimeTokenProvider(ctx, lc,
+					secretStoreConfig.RuntimeTokenProvider)
+			}
+
+			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader, runtimeTokenLoader, serviceKey, lc)
 			if err == nil {
-				secureProvider := NewSecureProvider(ctx, configuration, lc, tokenLoader)
+				secureProvider := NewSecureProvider(ctx, configuration, lc, tokenLoader, runtimeTokenLoader, serviceKey)
 				var secretClient secrets.SecretClient
 
 				lc.Info("Attempting to create secret client")
-				secretClient, err = secrets.NewSecretsClient(ctx, secretConfig, lc, secureProvider.DefaultTokenExpiredCallback)
+
+				tokenCallbackFunc := secureProvider.DefaultTokenExpiredCallback
+				if secretConfig.RuntimeTokenProvider.Enabled {
+					tokenCallbackFunc = secureProvider.RuntimeTokenExpiredCallback
+				}
+
+				secretClient, err = secrets.NewSecretsClient(ctx, secretConfig, lc, tokenCallbackFunc)
 				if err == nil {
 					secureProvider.SetClient(secretClient)
 					provider = secureProvider
@@ -116,25 +131,46 @@ func NewSecretProvider(
 
 // getSecretConfig creates a SecretConfig based on the SecretStoreInfo configuration properties.
 // If a token file is present it will override the Authentication.AuthToken value.
-func getSecretConfig(secretStoreInfo config.SecretStoreInfo, tokenLoader authtokenloader.AuthTokenLoader) (types.SecretConfig, error) {
+func getSecretConfig(secretStoreInfo config.SecretStoreInfo,
+	tokenLoader authtokenloader.AuthTokenLoader,
+	runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
+	serviceKey string,
+	lc logger.LoggingClient) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
-		Type:           secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
-		Host:           secretStoreInfo.Host,
-		Port:           secretStoreInfo.Port,
-		Path:           addEdgeXSecretPathPrefix(secretStoreInfo.Path),
-		SecretsFile:    secretStoreInfo.SecretsFile,
-		Protocol:       secretStoreInfo.Protocol,
-		Namespace:      secretStoreInfo.Namespace,
-		RootCaCertPath: secretStoreInfo.RootCaCertPath,
-		ServerName:     secretStoreInfo.ServerName,
-		Authentication: secretStoreInfo.Authentication,
+		Type:                 secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
+		Host:                 secretStoreInfo.Host,
+		Port:                 secretStoreInfo.Port,
+		Path:                 addEdgeXSecretPathPrefix(secretStoreInfo.Path),
+		SecretsFile:          secretStoreInfo.SecretsFile,
+		Protocol:             secretStoreInfo.Protocol,
+		Namespace:            secretStoreInfo.Namespace,
+		RootCaCertPath:       secretStoreInfo.RootCaCertPath,
+		ServerName:           secretStoreInfo.ServerName,
+		Authentication:       secretStoreInfo.Authentication,
+		RuntimeTokenProvider: secretStoreInfo.RuntimeTokenProvider,
 	}
 
-	if !IsSecurityEnabled() || secretStoreInfo.TokenFile == "" {
+	// maybe insecure mode
+	// if both configs of token file and runtime token provider are empty or disabled
+	// then we treat that as insecure mode
+	if !IsSecurityEnabled() || (secretStoreInfo.TokenFile == "" && !secretConfig.RuntimeTokenProvider.Enabled) {
+		lc.Info("insecure mode")
 		return secretConfig, nil
 	}
 
-	token, err := tokenLoader.Load(secretStoreInfo.TokenFile)
+	// based on whether token provider config is configured or not, we will obtain token in different way
+	var token string
+	var err error
+	if secretConfig.RuntimeTokenProvider.Enabled {
+		lc.Info("runtime token provider enabled")
+		// call spiffe token provider to get token on the fly
+		token, err = runtimeTokenLoader.GetRawToken(serviceKey)
+	} else {
+		lc.Info("load token from file")
+		// else obtain the token from TokenFile
+		token, err = tokenLoader.Load(secretStoreInfo.TokenFile)
+	}
+
 	if err != nil {
 		return secretConfig, err
 	}
