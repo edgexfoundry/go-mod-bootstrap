@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 Intel Inc.
+ * Copyright 2022 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -112,7 +112,7 @@ func TestNewSecretProvider(t *testing.T) {
 				})
 			}
 
-			actual, err := NewSecretProvider(configuration, context.Background(), timer, dic)
+			actual, err := NewSecretProvider(configuration, context.Background(), timer, dic, "testServiceKey")
 			require.NoError(t, err)
 			require.NotNil(t, actual)
 			actualProvider := container.SecretProviderFrom(dic.Get)

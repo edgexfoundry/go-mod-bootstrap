@@ -33,6 +33,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/runtimetokenprovider"
 	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
 )
 
@@ -45,26 +46,33 @@ const (
 
 // SecureProvider implements the SecretProvider interface
 type SecureProvider struct {
-	secretClient  secrets.SecretClient
-	lc            logger.LoggingClient
-	loader        authtokenloader.AuthTokenLoader
-	configuration interfaces.Configuration
-	secretsCache  map[string]map[string]string // secret's path, key, value
-	cacheMutex    *sync.RWMutex
-	lastUpdated   time.Time
-	ctx           context.Context
+	secretClient secrets.SecretClient
+	lc           logger.LoggingClient
+	loader       authtokenloader.AuthTokenLoader
+	// runtimeTokenProvider is for delayed start services
+	runtimeTokenProvider runtimetokenprovider.RuntimeTokenProvider
+	serviceKey           string
+	configuration        interfaces.Configuration
+	secretsCache         map[string]map[string]string // secret's path, key, value
+	cacheMutex           *sync.RWMutex
+	lastUpdated          time.Time
+	ctx                  context.Context
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
-func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc logger.LoggingClient, loader authtokenloader.AuthTokenLoader) *SecureProvider {
+func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc logger.LoggingClient,
+	loader authtokenloader.AuthTokenLoader, runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
+	serviceKey string) *SecureProvider {
 	provider := &SecureProvider{
-		configuration: config,
-		lc:            lc,
-		loader:        loader,
-		secretsCache:  make(map[string]map[string]string),
-		cacheMutex:    &sync.RWMutex{},
-		lastUpdated:   time.Now(),
-		ctx:           ctx,
+		configuration:        config,
+		lc:                   lc,
+		loader:               loader,
+		runtimeTokenProvider: runtimeTokenLoader,
+		serviceKey:           serviceKey,
+		secretsCache:         make(map[string]map[string]string),
+		cacheMutex:           &sync.RWMutex{},
+		lastUpdated:          time.Now(),
+		ctx:                  ctx,
 	}
 	return provider
 }
@@ -255,6 +263,16 @@ func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (repla
 	}
 
 	return reReadToken, true
+}
+
+func (p *SecureProvider) RuntimeTokenExpiredCallback(expiredToken string) (replacementToken string, retry bool) {
+	newToken, err := p.runtimeTokenProvider.GetRawToken(p.serviceKey)
+	if err != nil {
+		p.lc.Errorf("failed to get a new token for service: %s: %v", p.serviceKey, err)
+		return "", false
+	}
+
+	return newToken, true
 }
 
 // LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore

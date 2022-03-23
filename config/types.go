@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
- * Copyright 2020 Intel Inc.
+ * Copyright 2022 Intel Inc.
  * Copyright 2021 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -145,6 +145,9 @@ type SecretStoreInfo struct {
 	// DisableScrubSecretsFile specifies to not scrub secrets file after importing. Service will fail start-up if
 	// not disabled and file can not be written.
 	DisableScrubSecretsFile bool
+
+	// RuntimeTokenProvider is optional if not using delayed start from spiffe-token provider
+	RuntimeTokenProvider types.RuntimeTokenProviderInfo
 }
 
 type Database struct {

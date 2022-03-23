@@ -124,7 +124,7 @@ func (cp *Processor) Process(
 	// the Secret Provider can be initialized and added to the DIC, but only if it is configured to be used.
 	var secretProvider interfaces.SecretProvider
 	if useSecretProvider {
-		secretProvider, err = secret.NewSecretProvider(serviceConfig, cp.ctx, cp.startupTimer, cp.dic)
+		secretProvider, err = secret.NewSecretProvider(serviceConfig, cp.ctx, cp.startupTimer, cp.dic, serviceKey)
 		if err != nil {
 			return fmt.Errorf("failed to create SecretProvider: %s", err.Error())
 		}
