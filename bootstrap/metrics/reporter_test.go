@@ -86,11 +86,11 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	}
 	intValue := int64(50)
 	expectedCounterMetric, err := dtos.NewMetric(expectedMetricName,
-		dtos.MetricField{
-			Name:  counterName,
-			Value: float64(intValue), // Has to be a float64 since the JSON un-marshaling of the interface sets it as a float64
-		},
-		nil,
+		[]dtos.MetricField{
+			{
+				Name:  counterName,
+				Value: float64(intValue), // Has to be a float64 since the JSON un-marshaling of the interface sets it as a float64
+			}},
 		expectedTags)
 	require.NoError(t, err)
 
@@ -102,25 +102,38 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	gauge := gometrics.NewGauge()
 	gauge.Update(intValue)
 	expectedGaugeMetric := expectedCounterMetric
-	expectedGaugeMetric.Field.Name = gaugeName
+	expectedGaugeMetric.Fields = []dtos.MetricField{
+		{
+			Name:  gaugeName,
+			Value: float64(intValue), // Has to be a float64 since the JSON un-marshaling of the interface sets it as a float64
+		}}
 
 	floatValue := 50.55
 	expectedGaugeFloat64Metric := expectedCounterMetric
-	expectedGaugeFloat64Metric.Field.Name = gaugeFloat64Name
-	expectedGaugeFloat64Metric.Field.Value = floatValue
+	expectedGaugeFloat64Metric.Fields = []dtos.MetricField{
+		{
+			Name:  gaugeFloat64Name,
+			Value: floatValue,
+		}}
 	gaugeFloat64 := gometrics.NewGaugeFloat64()
 	gaugeFloat64.Update(floatValue)
 
 	expectedTimerMetric := expectedCounterMetric
-	expectedTimerMetric.Field.Name = timerName
-	expectedTimerMetric.Field.Value = float64(0)
-	expectedTimerMetric.AdditionalFields = []dtos.MetricField{
-		{Name: "min", Value: float64(0)},
-		{Name: "max", Value: float64(0)},
-		{Name: "mean", Value: float64(0)},
-		{Name: "stddev", Value: float64(0)},
-		{Name: "variance", Value: float64(0)},
-	}
+	copy(expectedTimerMetric.Fields, expectedCounterMetric.Fields)
+	expectedTimerMetric.Fields = []dtos.MetricField{
+		{
+			Name:  timerName,
+			Value: float64(0),
+		}}
+	expectedTimerMetric.Fields[0].Value = float64(0)
+	expectedTimerMetric.Fields = append(expectedTimerMetric.Fields,
+		[]dtos.MetricField{
+			{Name: "min", Value: float64(0)},
+			{Name: "max", Value: float64(0)},
+			{Name: "mean", Value: float64(0)},
+			{Name: "stddev", Value: float64(0)},
+			{Name: "variance", Value: float64(0)},
+		}...)
 	timer := gometrics.NewTimer()
 
 	tests := []struct {

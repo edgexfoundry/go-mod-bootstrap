@@ -83,26 +83,30 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 		switch metric := item.(type) {
 		case gometrics.Counter:
 			snapshot := metric.Snapshot()
-			nextMetric, err = dtos.NewMetric(name, dtos.MetricField{Name: counterName, Value: snapshot.Count()}, nil, tags)
+			fields := []dtos.MetricField{{Name: counterName, Value: snapshot.Count()}}
+			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		case gometrics.Gauge:
 			snapshot := metric.Snapshot()
-			nextMetric, err = dtos.NewMetric(name, dtos.MetricField{Name: gaugeName, Value: snapshot.Value()}, nil, tags)
+			fields := []dtos.MetricField{{Name: gaugeName, Value: snapshot.Value()}}
+			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		case gometrics.GaugeFloat64:
 			snapshot := metric.Snapshot()
-			nextMetric, err = dtos.NewMetric(name, dtos.MetricField{Name: gaugeFloat64Name, Value: snapshot.Value()}, nil, tags)
+			fields := []dtos.MetricField{{Name: gaugeFloat64Name, Value: snapshot.Value()}}
+			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		case gometrics.Timer:
 			snapshot := metric.Snapshot()
-			additionalFields := []dtos.MetricField{
+			fields := []dtos.MetricField{
+				{Name: timerName, Value: snapshot.Count()},
 				{Name: "min", Value: snapshot.Min()},
 				{Name: "max", Value: snapshot.Max()},
 				{Name: "mean", Value: snapshot.Mean()},
 				{Name: "stddev", Value: snapshot.StdDev()},
 				{Name: "variance", Value: snapshot.Variance()},
 			}
-			nextMetric, err = dtos.NewMetric(name, dtos.MetricField{Name: timerName, Value: snapshot.Count()}, additionalFields, tags)
+			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		default:
 			errs = multierror.Append(errs, fmt.Errorf("metric type %T not supported", metric))
