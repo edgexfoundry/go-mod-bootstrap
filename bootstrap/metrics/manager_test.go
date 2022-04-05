@@ -26,9 +26,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	mocks2 "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 )
 
 func TestNewManager(t *testing.T) {
@@ -39,8 +40,7 @@ func TestMessageBusReporter_Register(t *testing.T) {
 	loggerMock := logger.NewMockClient()
 	expectedInterval := time.Second * 5
 	reporterMock := &mocks.MetricsReporter{}
-	var m interface{}
-	m = NewManager(loggerMock, expectedInterval, reporterMock)
+	m := NewManager(loggerMock, expectedInterval, reporterMock)
 	actual := m.(*manager)
 	assert.Equal(t, expectedInterval, actual.interval)
 	assert.Equal(t, loggerMock, actual.lc)
@@ -72,9 +72,6 @@ func TestManager_Get(t *testing.T) {
 		{"Happy path Timer", gometrics.NewTimer(), nil, gometrics.NewTimer()},
 		{"Not registered Timer", gometrics.NewTimer(), nil, nil},
 		{"Wrong type Timer", gometrics.NewTimer(), gometrics.NewGauge(), nil},
-		{"Happy path Histogram", gometrics.NewHistogram(nil), nil, gometrics.NewHistogram(nil)},
-		{"Not registered Histogram", gometrics.NewHistogram(nil), nil, nil},
-		{"Wrong type Histogram", gometrics.NewHistogram(nil), gometrics.NewGauge(), nil},
 	}
 
 	for _, test := range tests {
@@ -116,8 +113,7 @@ func TestManager_Get(t *testing.T) {
 func TestManager_Register_Unregister(t *testing.T) {
 	expectedName := "my-counter"
 	expectedTags := map[string]string{"my-tag": "my-value"}
-	var m interface{}
-	m = NewManager(logger.NewMockClient(), time.Second*5, &mocks.MetricsReporter{})
+	m := NewManager(logger.NewMockClient(), time.Second*5, &mocks.MetricsReporter{})
 	target := m.(*manager)
 
 	expectedMetric := gometrics.NewCounter()
@@ -155,8 +151,7 @@ func TestManager_Run(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	var m interface{}
-	m = NewManager(logger.NewMockClient(), time.Millisecond*1, mockReporter)
+	m := NewManager(logger.NewMockClient(), time.Millisecond*1, mockReporter)
 	target := m.(*manager)
 
 	mockReporter.On("Report", target.registry, target.metricTags).Return(nil)
@@ -181,12 +176,12 @@ func TestManager_Run_Error(t *testing.T) {
 	mockReporter := &mocks.MetricsReporter{}
 	mockLogger := &mocks2.LoggingClient{}
 
-	var m interface{}
-	m = NewManager(mockLogger, time.Millisecond*1, mockReporter)
+	m := NewManager(mockLogger, time.Millisecond*1, mockReporter)
 	target := m.(*manager)
 
 	mockReporter.On("Report", target.registry, target.metricTags).Return(errors.New("failed"))
-	mockLogger.On("Errorf", mock.Anything, mock.Anything)
+	mockLogger.On("Errorf", "failed", mock.Anything)
+	mockLogger.On("Infof", mock.Anything, mock.Anything)
 	target.Run(context.Background(), &sync.WaitGroup{})
 	time.Sleep(time.Millisecond * 100)
 

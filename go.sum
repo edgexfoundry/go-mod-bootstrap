@@ -30,6 +30,10 @@ github.com/eclipse/paho.mqtt.golang v1.3.5 h1:sWtmgNxYM9P2sP+xEItMozsR3w0cqZFlqn
 github.com/eclipse/paho.mqtt.golang v1.3.5/go.mod h1:eTzb4gxwwyWpqBUHGQZ4ABAV7+Jgm1PklsYT/eo8Hcc=
 github.com/edgexfoundry/go-mod-configuration/v2 v2.2.0-dev.3 h1:dTTExUFHza9eJmTABr8G4KOE8JKBMzZCVC3wARiwIg4=
 github.com/edgexfoundry/go-mod-configuration/v2 v2.2.0-dev.3/go.mod h1:YP17JhMnXTitowXE13QJwFaKo0oc03iyoKLjWAYl4FE=
+github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.22 h1:EYWyJ0R5KlHQJbzc0DKsjaokkisvve6TjjX3F1/GkSc=
+github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.22/go.mod h1:jyfVSx7mI3u/o/oo10COxBRBvJ8O/9I3z2xAwPmNt/Q=
+github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.10 h1:/9Z2w7ebwJV+BKQb5pEyPmwIUQjdTjNuSGoYuc9DBzA=
+github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.10/go.mod h1:+X6C0h8ZTJe+lLU2AGJfiAzCJK3zL+yM6cej9VC+79E=
 github.com/edgexfoundry/go-mod-registry/v2 v2.2.0-dev.3 h1:Z1sR4g+guLsUNJw3z3gxaz472wt0gYu1XCQ4frqJl/o=
 github.com/edgexfoundry/go-mod-registry/v2 v2.2.0-dev.3/go.mod h1:DUQRnAd5fVzoROc5SI+PTFUD/vCNeZmZHBMrLElbmwI=
 github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.5 h1:250nTZS82JHMzjQ7AFScOLh2KM2P7uq3Qkv8g3eiqO4=

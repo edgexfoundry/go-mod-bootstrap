@@ -21,9 +21,10 @@ import (
 
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 )
 
 type manager struct {
@@ -32,6 +33,17 @@ type manager struct {
 	registry   gometrics.Registry
 	reporter   interfaces.MetricsReporter
 	interval   time.Duration
+	ticker     *time.Ticker
+}
+
+func (m *manager) ResetInterval(interval time.Duration) {
+	m.interval = interval
+	if m.ticker == nil {
+		return
+	}
+
+	m.ticker.Reset(m.interval)
+	m.lc.Infof("Metrics Manager report interval changed to %s", m.interval.String())
 }
 
 // NewManager creates a new metrics manager
@@ -70,12 +82,12 @@ func (m *manager) Register(name string, item interface{}, tags map[string]string
 func (m *manager) Unregister(name string) {
 	m.registry.Unregister(name)
 	m.metricTags[name] = nil
-	return
 }
 
 // Run periodically (based on configured interval) reports the collected metrics using the configured MetricsReporter.
 func (m *manager) Run(ctx context.Context, wg *sync.WaitGroup) {
-	ticker := time.Tick(m.interval)
+
+	m.ticker = time.NewTicker(m.interval)
 
 	wg.Add(1)
 	defer wg.Done()
@@ -87,7 +99,7 @@ func (m *manager) Run(ctx context.Context, wg *sync.WaitGroup) {
 				m.lc.Info("Exited Metrics Manager Run...")
 				return
 
-			case <-ticker:
+			case <-m.ticker.C:
 				if err := m.reporter.Report(m.registry, m.metricTags); err != nil {
 					m.lc.Errorf(err.Error())
 					continue
@@ -97,6 +109,8 @@ func (m *manager) Run(ctx context.Context, wg *sync.WaitGroup) {
 			}
 		}
 	}()
+
+	m.lc.Infof("Metrics Manager started with a report interval of %s", m.interval.String())
 }
 
 // GetCounter retrieves the specified registered Counter

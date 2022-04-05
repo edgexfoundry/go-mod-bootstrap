@@ -60,5 +60,5 @@ type Configuration interface {
 	GetInsecureSecrets() config.InsecureSecrets
 
 	// GetTelemetryInfo gets the config.Telemetry section from the ConfigurationStruct
-	GetTelemetryInfo() config.TelemetryInfo
+	GetTelemetryInfo() *config.TelemetryInfo
 }

@@ -2,8 +2,8 @@ module github.com/edgexfoundry/go-mod-bootstrap/v2
 
 require (
 	github.com/edgexfoundry/go-mod-configuration/v2 v2.2.0-dev.3
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.15
-	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.9
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.22
+	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.10
 	github.com/edgexfoundry/go-mod-registry/v2 v2.2.0-dev.3
 	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.5
 	github.com/google/uuid v1.3.0
@@ -13,10 +13,6 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
 	github.com/stretchr/testify v1.7.1
 )
-
-replace github.com/edgexfoundry/go-mod-core-contracts/v2 => ../go-mod-core-contracts
-
-replace github.com/edgexfoundry/go-mod-messaging/v2 => ../go-mod-messaging
 
 require (
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect

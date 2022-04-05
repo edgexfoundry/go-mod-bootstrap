@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
@@ -44,25 +45,17 @@ type messageBusReporter struct {
 	lc            logger.LoggingClient
 	serviceName   string
 	messageClient messaging.MessageClient
-	serviceTags   []dtos.MetricTag
-	baseTopic     string
+	config        *config.TelemetryInfo
 }
 
 // NewMessageBusReporter creates a new MessageBus reporter which reports metrics to the EdgeX MessageBus
-func NewMessageBusReporter(lc logger.LoggingClient, serviceName string, messageClient messaging.MessageClient, baseTopic string, tags map[string]string) interfaces.MetricsReporter {
+func NewMessageBusReporter(lc logger.LoggingClient, serviceName string, messageClient messaging.MessageClient, config *config.TelemetryInfo) interfaces.MetricsReporter {
 	reporter := &messageBusReporter{
 		lc:            lc,
 		serviceName:   serviceName,
 		messageClient: messageClient,
-		baseTopic:     fmt.Sprintf("%s/%s", baseTopic, serviceName),
+		config:        config,
 	}
-
-	if tags == nil {
-		tags = make(map[string]string)
-	}
-
-	tags[serviceNameTagKey] = serviceName
-	reporter.serviceTags = buildMetricTags(tags)
 
 	return reporter
 }
@@ -73,12 +66,24 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 	var errs error
 	publishedCount := 0
 
+	// Build the service tags each time we report since that can be changed in the Writable config
+	serviceTags := buildMetricTags(r.config.Tags)
+	serviceTags = append(serviceTags, dtos.MetricTag{
+		Name:  serviceNameTagKey,
+		Value: r.serviceName,
+	})
+
 	registry.Each(func(name string, item interface{}) {
 		var nextMetric dtos.Metric
 		var err error
 
-		tags := r.serviceTags
-		tags = append(tags, buildMetricTags(metricTags[name])...)
+		isEnabled := r.config.MetricEnabled(name)
+		if !isEnabled {
+			// This metric is not enable so do not report it.
+			return
+		}
+
+		tags := append(serviceTags, buildMetricTags(metricTags[name])...)
 
 		switch metric := item.(type) {
 		case gometrics.Counter:
@@ -131,7 +136,7 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 			ContentType:   common.ContentTypeJSON,
 		}
 
-		topic := fmt.Sprintf("%s/%s", r.baseTopic, name)
+		topic := fmt.Sprintf("%s/%s", r.baseTopic(), name)
 		if err := r.messageClient.Publish(message, topic); err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("failed to publish metric '%s' to topic '%s': %s", name, topic, err.Error()))
 			return
@@ -140,9 +145,13 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 		}
 	})
 
-	r.lc.Debugf("Publish %d metrics to the '%s' base topic", publishedCount, r.baseTopic)
+	r.lc.Debugf("Publish %d metrics to the '%s' base topic", publishedCount, r.baseTopic())
 
 	return errs
+}
+
+func (r *messageBusReporter) baseTopic() string {
+	return fmt.Sprintf("%s/%s", r.config.PublishTopicPrefix, r.serviceName)
 }
 
 func buildMetricTags(tags map[string]string) []dtos.MetricTag {

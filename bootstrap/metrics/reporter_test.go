@@ -26,6 +26,8 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging/mocks"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
@@ -34,6 +36,15 @@ func TestNewMessageBusReporter(t *testing.T) {
 	expectedServiceName := "test-service"
 	baseTopic := "metrics"
 	expectedBaseTopic := "metrics/test-service"
+
+	expectedTelemetryConfig := &config.TelemetryInfo{
+		Interval:           "30s",
+		PublishTopicPrefix: baseTopic,
+		Metrics: map[string]bool{
+			"MyMetric": true,
+		},
+		Tags: nil,
+	}
 
 	expectedSingleTag := []dtos.MetricTag{{
 		Name:  serviceNameTagKey,
@@ -59,15 +70,12 @@ func TestNewMessageBusReporter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			var reporter interface{}
-			reporter = NewMessageBusReporter(logger.NewMockClient(), test.ExpectedServiceName, nil, baseTopic, nil)
-			actual := reporter.(*messageBusReporter)
+			r := NewMessageBusReporter(logger.NewMockClient(), test.ExpectedServiceName, nil, expectedTelemetryConfig)
+			actual := r.(*messageBusReporter)
 			assert.NotNil(t, actual)
 			assert.Equal(t, expectedServiceName, actual.serviceName)
-			assert.Equal(t, expectedBaseTopic, actual.baseTopic)
-			assert.Equal(t, 1, len(actual.serviceTags))
-			assert.Equal(t, serviceNameTagKey, actual.serviceTags[0].Name)
-			assert.Equal(t, expectedServiceName, actual.serviceTags[0].Value)
+			assert.Equal(t, expectedTelemetryConfig, actual.config)
+			assert.Equal(t, expectedBaseTopic, actual.baseTopic())
 		})
 	}
 
@@ -76,8 +84,20 @@ func TestNewMessageBusReporter(t *testing.T) {
 func TestMessageBusReporter_Report(t *testing.T) {
 	expectedServiceName := "test-service"
 	expectedMetricName := "test-metric"
+	unexpectedMetricName := "disabled-metric"
 	baseTopic := "metrics"
 	expectedTopic := fmt.Sprintf("%s/%s/%s", baseTopic, expectedServiceName, expectedMetricName)
+
+	expectedTelemetryConfig := &config.TelemetryInfo{
+		Interval:           "30s",
+		PublishTopicPrefix: baseTopic,
+		Metrics: map[string]bool{
+			expectedMetricName:   true,
+			unexpectedMetricName: false,
+		},
+		Tags: nil,
+	}
+
 	expectedTags := []dtos.MetricTag{
 		{
 			Name:  serviceNameTagKey,
@@ -98,6 +118,11 @@ func TestMessageBusReporter_Report(t *testing.T) {
 
 	counter := gometrics.NewCounter()
 	counter.Inc(intValue)
+
+	disabledCounter := gometrics.NewCounter()
+	disabledCounter.Inc(intValue)
+	err = reg.Register(unexpectedMetricName, disabledCounter)
+	require.NoError(t, err)
 
 	gauge := gometrics.NewGauge()
 	gauge.Update(intValue)
@@ -161,6 +186,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 				actual := dtos.Metric{}
 				err := json.Unmarshal(message.Payload, &actual)
 				require.NoError(t, err)
+				assert.Equal(t, expectedMetricName, actual.Name)
 				actual.Timestamp = test.ExpectedMetric.Timestamp
 				assert.Equal(t, *test.ExpectedMetric, actual)
 				topicArg := args.Get(1)
@@ -168,7 +194,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 				assert.Equal(t, expectedTopic, topicArg)
 			})
 
-			target := NewMessageBusReporter(logger.NewMockClient(), expectedServiceName, mockClient, baseTopic, nil)
+			target := NewMessageBusReporter(logger.NewMockClient(), expectedServiceName, mockClient, expectedTelemetryConfig)
 
 			if test.Metric != nil {
 				err = reg.Register(expectedMetricName, test.Metric)
@@ -188,7 +214,6 @@ func TestMessageBusReporter_Report(t *testing.T) {
 
 			if test.ExpectedMetric == nil {
 				mockClient.AssertNotCalled(t, "Publish")
-
 			}
 		})
 	}

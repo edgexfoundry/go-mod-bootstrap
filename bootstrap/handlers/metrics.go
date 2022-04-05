@@ -29,27 +29,25 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
-type RegisterTelemetryFunc func(logger.LoggingClient, config.TelemetryInfo, interfaces.MetricsManager)
+type RegisterTelemetryFunc func(logger.LoggingClient, *config.TelemetryInfo, interfaces.MetricsManager)
 
 type ServiceMetrics struct {
-	serviceName      string
-	registerCallback RegisterTelemetryFunc
+	serviceName string
 }
 
-func NewServiceMetrics(serviceName string, registerCallback RegisterTelemetryFunc) *ServiceMetrics {
+func NewServiceMetrics(serviceName string) *ServiceMetrics {
 	return &ServiceMetrics{
-		serviceName:      serviceName,
-		registerCallback: registerCallback,
+		serviceName: serviceName,
 	}
 }
 
 // BootstrapHandler fulfills the BootstrapHandler contract and performs initialization of service metrics.
-func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
+func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) bool {
 	lc := container.LoggingClientFrom(dic.Get)
-	config := container.ConfigurationFrom(dic.Get)
+	serviceConfig := container.ConfigurationFrom(dic.Get)
 
 	messageClient := container.MessagingClientFrom(dic.Get)
-	telemetryConfig := config.GetTelemetryInfo()
+	telemetryConfig := serviceConfig.GetTelemetryInfo()
 
 	interval, err := time.ParseDuration(telemetryConfig.Interval)
 	if err != nil {
@@ -57,13 +55,10 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 		return false
 	}
 
-	reporter := metrics.NewMessageBusReporter(lc, s.serviceName, messageClient, telemetryConfig.PublishTopicPrefix, telemetryConfig.Tags)
+	reporter := metrics.NewMessageBusReporter(lc, s.serviceName, messageClient, telemetryConfig)
 	manager := metrics.NewManager(lc, interval, reporter)
 
-	s.registerCallback(lc, telemetryConfig, manager)
-
 	manager.Run(ctx, wg)
-	lc.Infof("Metrics manager is now running...")
 
 	dic.Update(di.ServiceConstructorMap{
 		container.MetricsManagerInterfaceName: func(get di.Get) interface{} {

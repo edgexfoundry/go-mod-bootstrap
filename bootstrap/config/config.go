@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/environment"
@@ -483,6 +484,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 
 				previousInsecureSecrets := serviceConfig.GetInsecureSecrets()
 				previousLogLevel := serviceConfig.GetLogLevel()
+				previousTelemetryInterval := serviceConfig.GetTelemetryInfo().Interval
 
 				if !serviceConfig.UpdateWritableFromRaw(raw) {
 					lc.Error("ListenForChanges() type check failed")
@@ -491,6 +493,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 
 				currentInsecureSecrets := serviceConfig.GetInsecureSecrets()
 				currentLogLevel := serviceConfig.GetLogLevel()
+				currentTelemetryInterval := serviceConfig.GetTelemetryInfo().Interval
 
 				lc.Info("Writeable configuration has been updated from the Configuration Provider")
 
@@ -509,6 +512,22 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					if secretProvider != nil {
 						secretProvider.SecretsUpdated()
 					}
+
+				case currentTelemetryInterval != previousTelemetryInterval:
+					lc.Info("Telemetry interval has been updated. Processing new value...")
+					interval, err := time.ParseDuration(currentTelemetryInterval)
+					if err != nil {
+						lc.Errorf("update telemetry interval value is invalid time duration, using previous value: %s", err.Error())
+						break
+					}
+
+					metricsManager := container.MetricsManagerFrom(cp.dic.Get)
+					if metricsManager == nil {
+						lc.Error("metrics manager not available while updating telemetry interval")
+						break
+					}
+
+					metricsManager.ResetInterval(interval)
 
 				default:
 					// Signal that configuration updates exists that have not already been processed.

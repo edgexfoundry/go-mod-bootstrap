@@ -18,12 +18,15 @@ package interfaces
 import (
 	"context"
 	"sync"
+	"time"
 
 	gometrics "github.com/rcrowley/go-metrics"
 )
 
 // MetricsManager manages a services metrics
 type MetricsManager interface {
+	// ResetInterval resets the interval between reporting the current metrics
+	ResetInterval(interval time.Duration)
 	// Register registers a go-metrics metric item such as a Counter
 	Register(name string, item interface{}, tags map[string]string) error
 	// Unregister unregisters a go-metrics metric item such as a Counter
