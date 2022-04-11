@@ -5,7 +5,7 @@ require (
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.22
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.10
 	github.com/edgexfoundry/go-mod-registry/v2 v2.2.0-dev.3
-	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.5
+	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.6
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-multierror v1.1.1
