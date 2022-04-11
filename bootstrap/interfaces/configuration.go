@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2020 Intel Inc.
+ * Copyright 2022 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -58,4 +58,7 @@ type Configuration interface {
 
 	// GetInsecureSecrets gets the config.InsecureSecrets field from the ConfigurationStruct.
 	GetInsecureSecrets() config.InsecureSecrets
+
+	// GetTelemetryInfo gets the config.Telemetry section from the ConfigurationStruct
+	GetTelemetryInfo() *config.TelemetryInfo
 }

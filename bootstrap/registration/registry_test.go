@@ -93,3 +93,7 @@ func (ut unitTestConfiguration) GetLogLevel() string {
 func (ut unitTestConfiguration) GetRegistryInfo() config.RegistryInfo {
 	return ut.Registry
 }
+
+func (ut unitTestConfiguration) GetTelemetryInfo() *config.TelemetryInfo {
+	panic("should not be called")
+}

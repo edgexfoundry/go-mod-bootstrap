@@ -223,3 +223,28 @@ type MessageBusInfo struct {
 func (p MessageBusInfo) URL() string {
 	return fmt.Sprintf("%s://%s:%v", p.Protocol, p.Host, p.Port)
 }
+
+// TelemetryInfo contains the configuration for a service's metrics collection
+type TelemetryInfo struct {
+	// Interval is the time duration in which to collect and report the service's metrics
+	Interval string
+	// PublishTopicPrefix is the base topic in which to publish (report) the service's metrics to the EdgeX MessageBus
+	// The service name and the metric name are appended to this base topic. i.e. <prefix>/<service-name>/<metric-name>
+	PublishTopicPrefix string
+	// Metrics is the list of service's metrics that can be collected. Each of the service's metrics must be in the list
+	// and set to true if enable or false if disabled.
+	Metrics map[string]bool
+	// Tags is a list of service level tags that are attached to every metric reported for the service
+	// Example: Gateway = "Gateway123"
+	Tags map[string]string
+}
+
+// MetricEnabled returns whether the named metric is enabled
+func (t *TelemetryInfo) MetricEnabled(name string) bool {
+	enabled, exists := t.Metrics[name]
+	if !exists {
+		return false
+	}
+
+	return enabled
+}

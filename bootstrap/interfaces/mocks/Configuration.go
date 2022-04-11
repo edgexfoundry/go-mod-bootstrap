@@ -87,6 +87,22 @@ func (_m *Configuration) GetRegistryInfo() config.RegistryInfo {
 	return r0
 }
 
+// GetTelemetryInfo provides a mock function with given fields:
+func (_m *Configuration) GetTelemetryInfo() *config.TelemetryInfo {
+	ret := _m.Called()
+
+	var r0 *config.TelemetryInfo
+	if rf, ok := ret.Get(0).(func() *config.TelemetryInfo); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*config.TelemetryInfo)
+		}
+	}
+
+	return r0
+}
+
 // UpdateFromRaw provides a mock function with given fields: rawConfig
 func (_m *Configuration) UpdateFromRaw(rawConfig interface{}) bool {
 	ret := _m.Called(rawConfig)
