@@ -2,7 +2,7 @@ module github.com/edgexfoundry/go-mod-bootstrap/v2
 
 require (
 	github.com/edgexfoundry/go-mod-configuration/v2 v2.2.0-dev.3
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.22
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.25
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.12
 	github.com/edgexfoundry/go-mod-registry/v2 v2.2.0-dev.3
 	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.6
