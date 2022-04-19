@@ -16,12 +16,16 @@ package metrics
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
@@ -44,17 +48,18 @@ const (
 type messageBusReporter struct {
 	lc            logger.LoggingClient
 	serviceName   string
+	dic           *di.Container
 	messageClient messaging.MessageClient
 	config        *config.TelemetryInfo
 }
 
 // NewMessageBusReporter creates a new MessageBus reporter which reports metrics to the EdgeX MessageBus
-func NewMessageBusReporter(lc logger.LoggingClient, serviceName string, messageClient messaging.MessageClient, config *config.TelemetryInfo) interfaces.MetricsReporter {
+func NewMessageBusReporter(lc logger.LoggingClient, serviceName string, dic *di.Container, config *config.TelemetryInfo) interfaces.MetricsReporter {
 	reporter := &messageBusReporter{
-		lc:            lc,
-		serviceName:   serviceName,
-		messageClient: messageClient,
-		config:        config,
+		lc:          lc,
+		serviceName: serviceName,
+		dic:         dic,
+		config:      config,
 	}
 
 	return reporter
@@ -65,6 +70,18 @@ func NewMessageBusReporter(lc logger.LoggingClient, serviceName string, messageC
 func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[string]map[string]string) error {
 	var errs error
 	publishedCount := 0
+
+	// App Services create the messaging client after bootstrapping, so must get it from DIC when the first time
+	if r.messageClient == nil {
+		r.messageClient = container.MessagingClientFrom(r.dic.Get)
+	}
+
+	// If messaging client nil, then service hasn't set it up and can not report metrics this pass.
+	// This may happen during bootstrapping if interval time is lower than time to bootstrap,
+	// but will be resolved one messaging client has been added to the DIC.
+	if r.messageClient == nil {
+		return errors.New("messaging client not available. Unable to report metrics")
+	}
 
 	// Build the service tags each time we report since that can be changed in the Writable config
 	serviceTags := buildMetricTags(r.config.Tags)

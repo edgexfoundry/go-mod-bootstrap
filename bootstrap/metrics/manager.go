@@ -30,6 +30,7 @@ import (
 type manager struct {
 	lc         logger.LoggingClient
 	metricTags map[string]map[string]string
+	tagsMutex  *sync.RWMutex
 	registry   gometrics.Registry
 	reporter   interfaces.MetricsReporter
 	interval   time.Duration
@@ -54,6 +55,7 @@ func NewManager(lc logger.LoggingClient, interval time.Duration, reporter interf
 		reporter:   reporter,
 		interval:   interval,
 		metricTags: make(map[string]map[string]string),
+		tagsMutex:  new(sync.RWMutex),
 	}
 
 	return m
@@ -80,6 +82,9 @@ func (m *manager) Register(name string, item interface{}, tags map[string]string
 
 // Unregister unregisters a metric item
 func (m *manager) Unregister(name string) {
+	m.tagsMutex.Lock()
+	defer m.tagsMutex.Unlock()
+
 	m.registry.Unregister(name)
 	m.metricTags[name] = nil
 }
@@ -100,7 +105,11 @@ func (m *manager) Run(ctx context.Context, wg *sync.WaitGroup) {
 				return
 
 			case <-m.ticker.C:
-				if err := m.reporter.Report(m.registry, m.metricTags); err != nil {
+				m.tagsMutex.RLock()
+				tags := copyTagMaps(m.metricTags)
+				m.tagsMutex.RUnlock()
+
+				if err := m.reporter.Report(m.registry, tags); err != nil {
 					m.lc.Errorf(err.Error())
 					continue
 				}
@@ -111,6 +120,24 @@ func (m *manager) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 
 	m.lc.Infof("Metrics Manager started with a report interval of %s", m.interval.String())
+}
+
+func copyTagMaps(origTagMaps map[string]map[string]string) map[string]map[string]string {
+	tags := make(map[string]map[string]string)
+	for key, value := range origTagMaps {
+		tags[key] = copyTags(value)
+	}
+
+	return tags
+}
+
+func copyTags(origTags map[string]string) map[string]string {
+	tags := make(map[string]string)
+	for key, value := range origTags {
+		tags[key] = value
+	}
+
+	return tags
 }
 
 // GetCounter retrieves the specified registered Counter
@@ -187,6 +214,9 @@ func (m *manager) setMetricTags(metricName string, tags map[string]string) error
 			return err
 		}
 	}
+
+	m.tagsMutex.Lock()
+	defer m.tagsMutex.Unlock()
 
 	m.metricTags[metricName] = tags
 	return nil
