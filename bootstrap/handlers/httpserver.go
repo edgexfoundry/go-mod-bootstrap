@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2021 IOTech Ltd
+ * Copyright 2021-2022 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,6 +17,11 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"net/http"
 	"strconv"
 	"sync"
@@ -98,6 +103,9 @@ func (b *HttpServer) BootstrapHandler(
 	b.router.Use(func(next http.Handler) http.Handler {
 		return http.TimeoutHandler(next, timeout, "HTTP request timeout")
 	})
+
+	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
+
 	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
 
 	// handle the CORS preflight request
@@ -141,4 +149,31 @@ func (b *HttpServer) BootstrapHandler(
 	}()
 
 	return true
+}
+
+// RequestLimitMiddleware is a middleware function that limits the request body size to Service.MaxRequestSize in kilobytes
+func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost, http.MethodPut, http.MethodPatch:
+				if sizeLimit > 0 && r.ContentLength > sizeLimit*1024 {
+					response := commonDTO.NewBaseResponse("", fmt.Sprintf("request size exceed Service.MaxRequestSize(%d KB)", sizeLimit), http.StatusRequestEntityTooLarge)
+					lc.Errorf(response.Message)
+
+					w.Header().Set(common.ContentType, common.ContentTypeJSON)
+					w.WriteHeader(response.StatusCode)
+					if err := json.NewEncoder(w).Encode(response); err != nil {
+						lc.Errorf("Error encoding the data:  %v", err)
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+					}
+				} else {
+					next.ServeHTTP(w, r)
+				}
+			default:
+				// ignore the other http methods because they do not have request bodies
+				next.ServeHTTP(w, r)
+			}
+		})
+	}
 }
