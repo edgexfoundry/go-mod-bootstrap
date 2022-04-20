@@ -27,7 +27,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging/mocks"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
@@ -194,7 +197,13 @@ func TestMessageBusReporter_Report(t *testing.T) {
 				assert.Equal(t, expectedTopic, topicArg)
 			})
 
-			target := NewMessageBusReporter(logger.NewMockClient(), expectedServiceName, mockClient, expectedTelemetryConfig)
+			dic := di.NewContainer(di.ServiceConstructorMap{
+				container.MessagingClientName: func(get di.Get) interface{} {
+					return mockClient
+				},
+			})
+
+			target := NewMessageBusReporter(logger.NewMockClient(), expectedServiceName, dic, expectedTelemetryConfig)
 
 			if test.Metric != nil {
 				err = reg.Register(expectedMetricName, test.Metric)

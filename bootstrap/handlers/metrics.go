@@ -20,13 +20,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/metrics"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 type RegisterTelemetryFunc func(logger.LoggingClient, *config.TelemetryInfo, interfaces.MetricsManager)
@@ -46,7 +47,6 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 	lc := container.LoggingClientFrom(dic.Get)
 	serviceConfig := container.ConfigurationFrom(dic.Get)
 
-	messageClient := container.MessagingClientFrom(dic.Get)
 	telemetryConfig := serviceConfig.GetTelemetryInfo()
 
 	interval, err := time.ParseDuration(telemetryConfig.Interval)
@@ -55,7 +55,7 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 		return false
 	}
 
-	reporter := metrics.NewMessageBusReporter(lc, s.serviceName, messageClient, telemetryConfig)
+	reporter := metrics.NewMessageBusReporter(lc, s.serviceName, dic, telemetryConfig)
 	manager := metrics.NewManager(lc, interval, reporter)
 
 	manager.Run(ctx, wg)
