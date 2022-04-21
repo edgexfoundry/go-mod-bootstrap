@@ -43,7 +43,7 @@ type ServiceInfo struct {
 	// MaxResultCount specifies the maximum size list supported
 	// in response to REST calls to other services.
 	MaxResultCount int
-	// MaxRequestSize defines the maximum size of http request body in bytes
+	// MaxRequestSize defines the maximum size of http request body in kilobytes
 	MaxRequestSize int64
 	// RequestTimeout specifies a timeout (in milliseconds) for
 	// processing REST request calls from other services.
