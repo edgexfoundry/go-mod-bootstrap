@@ -188,3 +188,18 @@ func TestManager_Run_Error(t *testing.T) {
 	mockReporter.AssertExpectations(t)
 	mockLogger.AssertExpectations(t)
 }
+
+func TestManager_ResetInterval(t *testing.T) {
+	mockReporter := &mocks.MetricsReporter{}
+	mockLogger := &mocks2.LoggingClient{}
+
+	expected := time.Millisecond * 1
+
+	m := NewManager(mockLogger, expected, mockReporter)
+	target := m.(*manager)
+	assert.Equal(t, expected, target.interval)
+
+	expected = time.Millisecond * 5
+	target.ResetInterval(expected)
+	assert.Equal(t, expected, target.interval)
+}

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"reflect"
 	"sync"
 	"time"
@@ -519,6 +520,11 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					if err != nil {
 						lc.Errorf("update telemetry interval value is invalid time duration, using previous value: %s", err.Error())
 						break
+					}
+
+					if interval == 0 {
+						lc.Infof("0 specified for metrics reporting interval. Setting to max duration to effectively disable reporting.")
+						interval = math.MaxInt64
 					}
 
 					metricsManager := container.MetricsManagerFrom(cp.dic.Get)
