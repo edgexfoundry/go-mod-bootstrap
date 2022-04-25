@@ -254,6 +254,6 @@ func (t *TelemetryInfo) MetricEnabled(metricName string) bool {
 		return enabled
 	}
 
-	// Service's metric  name did match any config Metric name.
+	// Service's metric name did not match any config Metric name.
 	return false
 }
