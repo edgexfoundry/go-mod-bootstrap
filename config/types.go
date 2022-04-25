@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 
@@ -240,11 +241,19 @@ type TelemetryInfo struct {
 }
 
 // MetricEnabled returns whether the named metric is enabled
-func (t *TelemetryInfo) MetricEnabled(name string) bool {
-	enabled, exists := t.Metrics[name]
-	if !exists {
-		return false
+func (t *TelemetryInfo) MetricEnabled(metricName string) bool {
+	for configMetricName, enabled := range t.Metrics {
+		// Match on config metric name as prefix of passed in metric name (service's metric item name)
+		// This allows for a class of Metrics to be enabled with one configured metric name.
+		// App SDK uses this for PipelineMetrics by appending the pipeline ID to the name
+		// of the metric(s) it is collecting for multiple function pipelines.
+		if !strings.HasPrefix(metricName, configMetricName) {
+			continue
+		}
+
+		return enabled
 	}
 
-	return enabled
+	// Service's metric name did not match any config Metric name.
+	return false
 }
