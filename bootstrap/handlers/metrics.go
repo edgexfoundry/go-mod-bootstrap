@@ -17,6 +17,7 @@ package handlers
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -53,6 +54,11 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 	if err != nil {
 		lc.Errorf("Telemetry interval is invalid time duration: %s", err.Error())
 		return false
+	}
+
+	if interval == 0 {
+		lc.Infof("0 specified for metrics reporting interval. Setting to max duration to effectively disable reporting.")
+		interval = math.MaxInt64
 	}
 
 	reporter := metrics.NewMessageBusReporter(lc, s.serviceName, dic, telemetryConfig)
