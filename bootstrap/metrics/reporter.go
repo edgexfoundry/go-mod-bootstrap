@@ -38,11 +38,16 @@ import (
 )
 
 const (
-	serviceNameTagKey = "service"
-	counterName       = "counter"
-	gaugeName         = "gauge"
-	gaugeFloat64Name  = "gauge-float64"
-	timerName         = "timer"
+	serviceNameTagKey     = "service"
+	counterCountName      = "counter-count"
+	gaugeValueName        = "gauge-value"
+	gaugeFloat64ValueName = "gaugeFloat64-value"
+	timerCountName        = "timer-count"
+	timerMeanName         = "timer-mean"
+	timerMinName          = "timer-min"
+	timerMaxName          = "timer-max"
+	timerStddevName       = "timer-stddev"
+	timerVarianceName     = "timer-variance"
 )
 
 type messageBusReporter struct {
@@ -105,28 +110,28 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 		switch metric := item.(type) {
 		case gometrics.Counter:
 			snapshot := metric.Snapshot()
-			fields := []dtos.MetricField{{Name: counterName, Value: snapshot.Count()}}
+			fields := []dtos.MetricField{{Name: counterCountName, Value: snapshot.Count()}}
 			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		case gometrics.Gauge:
 			snapshot := metric.Snapshot()
-			fields := []dtos.MetricField{{Name: gaugeName, Value: snapshot.Value()}}
+			fields := []dtos.MetricField{{Name: gaugeValueName, Value: snapshot.Value()}}
 			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		case gometrics.GaugeFloat64:
 			snapshot := metric.Snapshot()
-			fields := []dtos.MetricField{{Name: gaugeFloat64Name, Value: snapshot.Value()}}
+			fields := []dtos.MetricField{{Name: gaugeFloat64ValueName, Value: snapshot.Value()}}
 			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
 		case gometrics.Timer:
 			snapshot := metric.Snapshot()
 			fields := []dtos.MetricField{
-				{Name: timerName, Value: snapshot.Count()},
-				{Name: "min", Value: snapshot.Min()},
-				{Name: "max", Value: snapshot.Max()},
-				{Name: "mean", Value: snapshot.Mean()},
-				{Name: "stddev", Value: snapshot.StdDev()},
-				{Name: "variance", Value: snapshot.Variance()},
+				{Name: timerCountName, Value: snapshot.Count()},
+				{Name: timerMinName, Value: snapshot.Min()},
+				{Name: timerMaxName, Value: snapshot.Max()},
+				{Name: timerMeanName, Value: snapshot.Mean()},
+				{Name: timerStddevName, Value: snapshot.StdDev()},
+				{Name: timerVarianceName, Value: snapshot.Variance()},
 			}
 			nextMetric, err = dtos.NewMetric(name, fields, tags)
 

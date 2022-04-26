@@ -111,7 +111,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	expectedCounterMetric, err := dtos.NewMetric(expectedMetricName,
 		[]dtos.MetricField{
 			{
-				Name:  counterName,
+				Name:  counterCountName,
 				Value: float64(intValue), // Has to be a float64 since the JSON un-marshaling of the interface sets it as a float64
 			}},
 		expectedTags)
@@ -132,7 +132,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	expectedGaugeMetric := expectedCounterMetric
 	expectedGaugeMetric.Fields = []dtos.MetricField{
 		{
-			Name:  gaugeName,
+			Name:  gaugeValueName,
 			Value: float64(intValue), // Has to be a float64 since the JSON un-marshaling of the interface sets it as a float64
 		}}
 
@@ -140,7 +140,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	expectedGaugeFloat64Metric := expectedCounterMetric
 	expectedGaugeFloat64Metric.Fields = []dtos.MetricField{
 		{
-			Name:  gaugeFloat64Name,
+			Name:  gaugeFloat64ValueName,
 			Value: floatValue,
 		}}
 	gaugeFloat64 := gometrics.NewGaugeFloat64()
@@ -150,17 +150,17 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	copy(expectedTimerMetric.Fields, expectedCounterMetric.Fields)
 	expectedTimerMetric.Fields = []dtos.MetricField{
 		{
-			Name:  timerName,
+			Name:  timerCountName,
 			Value: float64(0),
 		}}
 	expectedTimerMetric.Fields[0].Value = float64(0)
 	expectedTimerMetric.Fields = append(expectedTimerMetric.Fields,
 		[]dtos.MetricField{
-			{Name: "min", Value: float64(0)},
-			{Name: "max", Value: float64(0)},
-			{Name: "mean", Value: float64(0)},
-			{Name: "stddev", Value: float64(0)},
-			{Name: "variance", Value: float64(0)},
+			{Name: timerMinName, Value: float64(0)},
+			{Name: timerMaxName, Value: float64(0)},
+			{Name: timerMeanName, Value: float64(0)},
+			{Name: timerStddevName, Value: float64(0)},
+			{Name: timerVarianceName, Value: float64(0)},
 		}...)
 	timer := gometrics.NewTimer()
 
