@@ -31,21 +31,23 @@ func TestTelemetryInfo_MetricEnabled(t *testing.T) {
 	}
 
 	tests := []struct {
-		Name              string
-		Metrics           map[string]bool
-		ServiceMetricName string
-		Expected          bool
+		Name               string
+		Metrics            map[string]bool
+		ServiceMetricName  string
+		ExpectedMetricName string
+		ExpectedEnabled    bool
 	}{
-		{"Simple Match", manyMetrics, "MyMetric", true},
-		{"Has Prefix Match", manyMetrics, "MyMetric-1234", true},
-		{"No Match", manyMetrics, "1234-MyMetric", false},
+		{"Simple Match", manyMetrics, "MyMetric", "MyMetric", true},
+		{"Has Prefix Match", manyMetrics, "MyMetric-1234", "MyMetric", true},
+		{"No Match", manyMetrics, "1234-MyMetric", "", false},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			target.Metrics = test.Metrics
-			actual := target.MetricEnabled(test.ServiceMetricName)
-			assert.Equal(t, test.Expected, actual)
+			actualName, actualEnabled := target.GetEnabledMetricName(test.ServiceMetricName)
+			assert.Equal(t, test.ExpectedEnabled, actualEnabled)
+			assert.Equal(t, test.ExpectedMetricName, actualName)
 		})
 	}
 }

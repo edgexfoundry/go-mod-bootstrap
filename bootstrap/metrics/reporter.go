@@ -95,17 +95,22 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 		Value: r.serviceName,
 	})
 
-	registry.Each(func(name string, item interface{}) {
+	registry.Each(func(itemName string, item interface{}) {
 		var nextMetric dtos.Metric
 		var err error
 
-		isEnabled := r.config.MetricEnabled(name)
+		// If itemName matches a configured Metric name, use the configured Metric name in case it is a partial match.
+		// The metric item will have the extra name portion as a tag.
+		// This is important for Metrics for App Service Pipelines, when the Metric name reported need to be the same
+		// for all pipelines, but each will have to have unique name (with pipeline ID added) registered.
+		// The Pipeline id will also be added as a tag.
+		name, isEnabled := r.config.GetEnabledMetricName(itemName)
 		if !isEnabled {
 			// This metric is not enable so do not report it.
 			return
 		}
 
-		tags := append(serviceTags, buildMetricTags(metricTags[name])...)
+		tags := append(serviceTags, buildMetricTags(metricTags[itemName])...)
 
 		switch metric := item.(type) {
 		case gometrics.Counter:

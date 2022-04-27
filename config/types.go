@@ -240,8 +240,8 @@ type TelemetryInfo struct {
 	Tags map[string]string
 }
 
-// MetricEnabled returns whether the named metric is enabled
-func (t *TelemetryInfo) MetricEnabled(metricName string) bool {
+// GetEnabledMetricName returns the matching configured Metric name and if it is enabled.
+func (t *TelemetryInfo) GetEnabledMetricName(metricName string) (string, bool) {
 	for configMetricName, enabled := range t.Metrics {
 		// Match on config metric name as prefix of passed in metric name (service's metric item name)
 		// This allows for a class of Metrics to be enabled with one configured metric name.
@@ -251,9 +251,9 @@ func (t *TelemetryInfo) MetricEnabled(metricName string) bool {
 			continue
 		}
 
-		return enabled
+		return configMetricName, enabled
 	}
 
 	// Service's metric name did not match any config Metric name.
-	return false
+	return "", false
 }
