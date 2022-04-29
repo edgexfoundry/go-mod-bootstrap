@@ -50,6 +50,10 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 
 	telemetryConfig := serviceConfig.GetTelemetryInfo()
 
+	if telemetryConfig.Interval == "" {
+		telemetryConfig.Interval = "0s"
+	}
+
 	interval, err := time.ParseDuration(telemetryConfig.Interval)
 	if err != nil {
 		lc.Errorf("Telemetry interval is invalid time duration: %s", err.Error())
