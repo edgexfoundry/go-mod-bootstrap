@@ -50,18 +50,14 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 
 	telemetryConfig := serviceConfig.GetTelemetryInfo()
 
-	var interval time.Duration
-	var err error
-
 	if telemetryConfig.Interval == "" {
-		lc.Infof("0 specified for metrics reporting interval. Setting to max duration to effectively disable reporting.")
-		interval = math.MaxInt64
-	}else{
-		interval, err = time.ParseDuration(telemetryConfig.Interval)
-		if err != nil {
-			lc.Errorf("Telemetry interval is invalid time duration: %s", err.Error())
-			return false
-		}
+		telemetryConfig.Interval = "0s"
+	}
+
+	interval, err := time.ParseDuration(telemetryConfig.Interval)
+	if err != nil {
+		lc.Errorf("Telemetry interval is invalid time duration: %s", err.Error())
+		return false
 	}
 
 	if interval == 0 {
