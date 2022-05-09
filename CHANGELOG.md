@@ -3,6 +3,26 @@
 ## Bootstrap Module (in Go)
 [Github repository](https://github.com/edgexfoundry/go-mod-bootstrap)
 
+## [v2.2.0] - 2022-05-11
+
+### Features ✨
+
+- Add RequestLimitMiddleware for Service.MaxRequestSize config ([#321](https://github.com/edgexfoundry/go-mod-bootstrap/issues/321)) ([#42b690d](https://github.com/edgexfoundry/go-mod-bootstrap/commits/42b690d))
+- Implement service metrics bootstrap and common capability ([#313](https://github.com/edgexfoundry/go-mod-bootstrap/issues/313)) ([#8132711](https://github.com/edgexfoundry/go-mod-bootstrap/commits/8132711))
+- Location of client service obtained from the registry ([#305](https://github.com/edgexfoundry/go-mod-bootstrap/issues/305)) ([#78c5fc9](https://github.com/edgexfoundry/go-mod-bootstrap/commits/78c5fc9))
+- **security:** Use go-mod-secrets version that includes the capability of using non_delayedstart go build tags ([#317](https://github.com/edgexfoundry/go-mod-bootstrap/issues/317)) ([#2a6ac6a](https://github.com/edgexfoundry/go-mod-bootstrap/commits/2a6ac6a))
+- **security:** Integrate runtime spiffe token provider client from go-mod-secrets ([#4bf6376](https://github.com/edgexfoundry/go-mod-bootstrap/commits/4bf6376))
+
+### Bug Fixes 🐛
+
+- Generate proper Consul basepath on Windows ([#0cfe34c](https://github.com/edgexfoundry/go-mod-bootstrap/commits/0cfe34c))
+- **config:** ignore first change notification in ListenForCustomConfigChanges ([#315](https://github.com/edgexfoundry/go-mod-bootstrap/issues/315)) ([#6332299](https://github.com/edgexfoundry/go-mod-bootstrap/commits/6332299))
+
+### Build 👷
+
+- Added "make lint" target and added to "make test" target  ([#302](https://github.com/edgexfoundry/go-mod-bootstrap/issues/302)) ([#d813076](https://github.com/edgexfoundry/go-mod-bootstrap/commits/d813076))
+
+<a name="v2.1.0"></a>
 ## [v2.1.0] - 2021-11-17
 
 ### Features ✨
