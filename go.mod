@@ -5,16 +5,17 @@ require (
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0
 	github.com/edgexfoundry/go-mod-registry/v2 v2.2.0
-	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0
+	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.1-dev.1
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pelletier/go-toml v1.9.5
-	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.7.1
 )
 
 require (
+	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -48,7 +49,7 @@ require (
 	github.com/pebbe/zmq4 v1.2.7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.0.0 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.1.0 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/errs v1.2.2 // indirect
@@ -57,8 +58,8 @@ require (
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.42.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/grpc v1.46.0 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
