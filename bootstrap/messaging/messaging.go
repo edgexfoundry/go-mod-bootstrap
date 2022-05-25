@@ -96,7 +96,9 @@ func SetOptionsAuthData(messageBusInfo *config.MessageBusInfo, lc logger.Logging
 	case AuthModeCert:
 		messageBusInfo.Optional[OptionsCertPEMBlockKey] = string(secretData.CertPemBlock)
 		messageBusInfo.Optional[OptionsKeyPEMBlockKey] = string(secretData.KeyPemBlock)
-	case AuthModeCA:
+	}
+
+	if len(secretData.CaPemBlock) > 0 {
 		messageBusInfo.Optional[OptionsCaPEMBlockKey] = string(secretData.CaPemBlock)
 	}
 
