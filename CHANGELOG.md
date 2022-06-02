@@ -3,6 +3,12 @@
 ## Bootstrap Module (in Go)
 [Github repository](https://github.com/edgexfoundry/go-mod-bootstrap)
 
+## [v2.1.1] - 2022-06-08
+
+- **config:** (jakarta) ignore first change notification for custom config ([#340](https://github.com/edgexfoundry/go-mod-bootstrap/issues/340)) ([#6af216a](https://github.com/edgexfoundry/go-mod-bootstrap/commits/6af216a))
+### Build 👷
+- Update go-mods for those that changed for the v2.1.1 patch ([#341](https://github.com/edgexfoundry/go-mod-bootstrap/issues/341)) ([#04d4e8d](https://github.com/edgexfoundry/go-mod-bootstrap/commits/04d4e8d))
+
 ## [v2.1.0] - 2021-11-17
 
 ### Features ✨
