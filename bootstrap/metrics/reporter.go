@@ -48,6 +48,12 @@ const (
 	timerMaxName          = "timer-max"
 	timerStddevName       = "timer-stddev"
 	timerVarianceName     = "timer-variance"
+	histogramCountName    = "histogram-count"
+	histogramMeanName     = "histogram-mean"
+	histogramMinName      = "histogram-min"
+	histogramMaxName      = "histogram-max"
+	histogramStddevName   = "histogram-stddev"
+	histogramVarianceName = "histogram-variance"
 )
 
 type messageBusReporter struct {
@@ -137,6 +143,18 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 				{Name: timerMeanName, Value: snapshot.Mean()},
 				{Name: timerStddevName, Value: snapshot.StdDev()},
 				{Name: timerVarianceName, Value: snapshot.Variance()},
+			}
+			nextMetric, err = dtos.NewMetric(name, fields, tags)
+
+		case gometrics.Histogram:
+			snapshot := metric.Snapshot()
+			fields := []dtos.MetricField{
+				{Name: histogramCountName, Value: snapshot.Count()},
+				{Name: histogramMinName, Value: snapshot.Min()},
+				{Name: histogramMaxName, Value: snapshot.Max()},
+				{Name: histogramMeanName, Value: snapshot.Mean()},
+				{Name: histogramStddevName, Value: snapshot.StdDev()},
+				{Name: histogramVarianceName, Value: snapshot.Variance()},
 			}
 			nextMetric, err = dtos.NewMetric(name, fields, tags)
 
