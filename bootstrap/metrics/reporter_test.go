@@ -164,6 +164,24 @@ func TestMessageBusReporter_Report(t *testing.T) {
 		}...)
 	timer := gometrics.NewTimer()
 
+	expectedHistogramMetric := expectedCounterMetric
+	copy(expectedHistogramMetric.Fields, expectedCounterMetric.Fields)
+	expectedHistogramMetric.Fields = []dtos.MetricField{
+		{
+			Name:  histogramCountName,
+			Value: float64(0),
+		}}
+	expectedHistogramMetric.Fields[0].Value = float64(0)
+	expectedHistogramMetric.Fields = append(expectedHistogramMetric.Fields,
+		[]dtos.MetricField{
+			{Name: histogramMinName, Value: float64(0)},
+			{Name: histogramMaxName, Value: float64(0)},
+			{Name: histogramMeanName, Value: float64(0)},
+			{Name: histogramStddevName, Value: float64(0)},
+			{Name: histogramVarianceName, Value: float64(0)},
+		}...)
+	histogram := gometrics.NewHistogram(gometrics.NewUniformSample(1028))
+
 	tests := []struct {
 		Name           string
 		Metric         interface{}
@@ -174,6 +192,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 		{"Happy path - Gauge", gauge, &expectedGaugeMetric, false},
 		{"Happy path - GaugeFloat64", gaugeFloat64, &expectedGaugeFloat64Metric, false},
 		{"Happy path - Timer", timer, &expectedTimerMetric, false},
+		{"Happy path - Histogram", histogram, &expectedHistogramMetric, false},
 		{"No Metrics", nil, nil, false},
 		{"Unsupported Metric", gometrics.NewMeter(), nil, true},
 	}
