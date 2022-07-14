@@ -181,7 +181,7 @@ func Run(
 	useSecretProvider bool,
 	handlers []interfaces.BootstrapHandler) {
 
-	wg, deferred, _ := RunAndReturnWaitGroup(
+	wg, deferred, success := RunAndReturnWaitGroup(
 		ctx,
 		cancel,
 		commonFlags,
@@ -194,6 +194,11 @@ func Run(
 		useSecretProvider,
 		handlers,
 	)
+
+	if !success {
+		cancel()
+		os.Exit(1)
+	}
 
 	defer deferred()
 
