@@ -141,7 +141,7 @@ func (b *HttpServer) BootstrapHandler(
 		b.isRunning = true
 		err := server.ListenAndServe()
 		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
-		if err != nil && err.Error() != "http: Server closed" {
+		if err != nil && err != http.ErrServerClosed {
 			// Other errors occur during bootstrapping, like port bind fails, are considered fatal
 			lc.Errorf("Web server failed: %v", err)
 			cancel := container.CancelFuncFrom(dic.Get)
