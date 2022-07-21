@@ -150,7 +150,7 @@ func (b *HttpServer) BootstrapHandler(
 			cancel()
 
 			// Wait for all long-running go functions to stop before exiting.
-			wg.Done()
+			wg.Done() // Must do this to account for this go func's wg.Add above otherwise wait will block indefinitely
 			wg.Wait()
 			os.Exit(1)
 		} else {
