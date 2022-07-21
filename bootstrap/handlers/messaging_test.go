@@ -9,6 +9,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
@@ -38,7 +39,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestBootstrapHandler(t *testing.T) {
-	validCreateClient := config.MessageBusInfo{
+	validCreateClientSecure := config.MessageBusInfo{
 		Type:               messaging.Redis,
 		Protocol:           "redis",
 		Host:               "localhost",
@@ -47,6 +48,9 @@ func TestBootstrapHandler(t *testing.T) {
 		AuthMode:           boostrapMessaging.AuthModeUsernamePassword,
 		SecretName:         "redisdb",
 	}
+
+	validCreateClientNonSecure := validCreateClientSecure
+	validCreateClientNonSecure.AuthMode = boostrapMessaging.AuthModeNone
 
 	invalidSecrets := config.MessageBusInfo{
 		AuthMode:   boostrapMessaging.AuthModeCert,
@@ -65,18 +69,20 @@ func TestBootstrapHandler(t *testing.T) {
 	tests := []struct {
 		Name           string
 		MessageQueue   config.MessageBusInfo
+		Secure         bool
 		ExpectedResult bool
 		ExpectClient   bool
 	}{
-		{"Valid - creates client", validCreateClient, true, true},
-		{"Invalid - secrets error", invalidSecrets, false, false},
-		{"Invalid - can't connect", invalidNoConnect, false, false},
+		{"Valid secure - creates client", validCreateClientSecure, true, true, true},
+		{"Valid non-secure - creates client", validCreateClientNonSecure, false, true, true},
+		{"Invalid - secrets error", invalidSecrets, false, false, false},
+		{"Invalid - can't connect", invalidNoConnect, true, false, false},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			provider := &mocks.SecretProvider{}
-			provider.On("GetSecret", test.MessageQueue.SecretName).Return(usernameSecretData, nil)
+			providerMock := &mocks.SecretProvider{}
+			providerMock.On("GetSecret", test.MessageQueue.SecretName).Return(usernameSecretData, nil)
 			configMock := &mocks.Configuration{}
 			configMock.On("GetBootstrap").Return(config.BootstrapConfiguration{
 				MessageQueue: test.MessageQueue,
@@ -87,7 +93,7 @@ func TestBootstrapHandler(t *testing.T) {
 					return configMock
 				},
 				container.SecretProviderName: func(get di.Get) interface{} {
-					return provider
+					return providerMock
 				},
 				container.MessagingClientName: func(get di.Get) interface{} {
 					return nil
@@ -101,6 +107,12 @@ func TestBootstrapHandler(t *testing.T) {
 				assert.NotNil(t, container.MessagingClientFrom(dic.Get))
 			} else {
 				assert.Nil(t, container.MessagingClientFrom(dic.Get))
+			}
+
+			if test.Secure {
+				providerMock.AssertCalled(t, "GetSecret", mock.Anything)
+			} else {
+				providerMock.AssertNotCalled(t, "GetSecret", mock.Anything)
 			}
 		})
 	}
