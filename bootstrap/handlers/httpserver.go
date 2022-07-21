@@ -19,13 +19,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
@@ -123,7 +125,6 @@ func (b *HttpServer) BootstrapHandler(
 		defer wg.Done()
 
 		<-ctx.Done()
-		lc.Info("Web server shutting down")
 		_ = server.Shutdown(context.Background())
 		lc.Info("Web server shut down")
 	}()
@@ -139,10 +140,19 @@ func (b *HttpServer) BootstrapHandler(
 
 		b.isRunning = true
 		err := server.ListenAndServe()
-		if err != nil {
+		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
+		if err != nil && err != http.ErrServerClosed {
+			// Other errors occur during bootstrapping, like port bind fails, are considered fatal
 			lc.Errorf("Web server failed: %v", err)
+
+			// Allow any long-running go functions that may have started to stop before exiting
 			cancel := container.CancelFuncFrom(dic.Get)
-			cancel() // this will caused the service to stop
+			cancel()
+
+			// Wait for all long-running go functions to stop before exiting.
+			wg.Done() // Must do this to account for this go func's wg.Add above otherwise wait will block indefinitely
+			wg.Wait()
+			os.Exit(1)
 		} else {
 			lc.Info("Web server stopped")
 		}

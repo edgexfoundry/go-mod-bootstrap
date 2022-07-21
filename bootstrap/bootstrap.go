@@ -181,7 +181,7 @@ func Run(
 	useSecretProvider bool,
 	handlers []interfaces.BootstrapHandler) {
 
-	wg, deferred, _ := RunAndReturnWaitGroup(
+	wg, deferred, success := RunAndReturnWaitGroup(
 		ctx,
 		cancel,
 		commonFlags,
@@ -194,6 +194,13 @@ func Run(
 		useSecretProvider,
 		handlers,
 	)
+
+	if !success {
+		// This only occurs when a bootstrap handler has fail.
+		// The handler will have logged an error, so not need to log a message here.
+		cancel()
+		os.Exit(1)
+	}
 
 	defer deferred()
 
