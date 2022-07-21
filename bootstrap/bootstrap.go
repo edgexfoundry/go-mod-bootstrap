@@ -196,6 +196,8 @@ func Run(
 	)
 
 	if !success {
+		// This only occurs when a bootstrap handler has fail.
+		// The handler will have logged an error, so not need to log a message here.
 		cancel()
 		os.Exit(1)
 	}

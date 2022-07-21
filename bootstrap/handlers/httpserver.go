@@ -144,10 +144,14 @@ func (b *HttpServer) BootstrapHandler(
 		if err != nil && err != http.ErrServerClosed {
 			// Other errors occur during bootstrapping, like port bind fails, are considered fatal
 			lc.Errorf("Web server failed: %v", err)
+
+			// Allow any long-running go functions that may have started to stop before exiting
 			cancel := container.CancelFuncFrom(dic.Get)
-			cancel() // this will clean up any long-running go functions that may have started
-			// Give time for clean up to occur before exiting.
-			time.Sleep(1 * time.Millisecond)
+			cancel()
+
+			// Wait for all long-running go functions to stop before exiting.
+			wg.Done()
+			wg.Wait()
 			os.Exit(1)
 		} else {
 			lc.Info("Web server stopped")
