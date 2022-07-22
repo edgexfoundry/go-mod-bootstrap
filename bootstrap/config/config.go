@@ -468,7 +468,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 				return
 
 			case ex := <-errorStream:
-				lc.Error(ex.Error())
+				lc.Errorf("error occurred during listening to the configuration changes: %s", ex.Error())
 
 			case raw, ok := <-updateStream:
 				if !ok {
