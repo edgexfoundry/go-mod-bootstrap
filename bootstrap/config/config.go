@@ -458,7 +458,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 		updateStream := make(chan interface{})
 		defer close(updateStream)
 
-		configClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey)
+		go configClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey)
 
 		for {
 			select {
