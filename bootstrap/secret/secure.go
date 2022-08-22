@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
 	"os"
 	"strings"
 	"sync"
@@ -352,28 +353,10 @@ func prepareSecret(secret ServiceSecret) (string, map[string]string) {
 
 // HasSecret returns true if the service's SecretStore contains a secret at the specified path.
 func (p *SecureProvider) HasSecret(path string) (bool, error) {
-	if cachedSecrets := p.getSecretsCache(path); cachedSecrets != nil {
-		return true, nil
-	}
-
-	if p.secretClient == nil {
-		return false, errors.New("can't get secrets. Secure secret provider is not properly initialized")
-	}
-
-	secureSecrets, err := p.secretClient.GetSecrets(path)
-
-	retry, err := p.reloadTokenOnAuthError(err)
-	if retry {
-		// Retry with potential new token
-		secureSecrets, err = p.secretClient.GetSecrets(path)
-	}
+	_, err := p.GetSecret(path)
 
 	if err != nil {
-		return false, err
-	}
-
-	if secureSecrets == nil {
-		return false, nil
+		return false, pkg.NewErrSecretStore(fmt.Sprintf("Could not retrieve path '%s'. %s", path, err.Error()))
 	}
 
 	return true, nil

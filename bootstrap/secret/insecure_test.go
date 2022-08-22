@@ -138,13 +138,8 @@ func TestInsecureProvider_HasSecrets(t *testing.T) {
 				return
 			}
 
-			if !tc.ExpectResults {
-				assert.Equal(t, false, actual)
-				return
-			}
-
 			require.NoError(t, err)
-			assert.Equal(t, true, actual)
+			assert.Equal(t, tc.ExpectResults, actual)
 		})
 	}
 }
