@@ -96,3 +96,27 @@ func (_m *SecretProvider) StoreSecret(path string, secrets map[string]string) er
 
 	return r0
 }
+
+// HasSecret provides a mock function with given fields: path, keys
+func (_m *SecretProvider) HasSecret(path string) (bool, error) {
+	var _ca []interface{}
+	_ca = append(_ca, path)
+	ret := _m.Called(_ca...)
+
+	if _, ok := ret.Get(0).(func(string, ...string) map[string]string); ok {
+		return true, nil
+	} else {
+		if ret.Get(0) != nil {
+			return true, nil
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, ...string) error); ok {
+		r1 = rf(path)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return false, r1
+}

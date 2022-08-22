@@ -93,3 +93,58 @@ func TestInsecureProvider_GetAccessToken(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, actualToken, 0)
 }
+
+func TestInsecureProvider_HasSecrets(t *testing.T) {
+	configAllSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"DB": {
+				Path:    expectedPath,
+				Secrets: expectedSecrets,
+			},
+		},
+	}
+
+	configMissingSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"DB": {
+				Path: "redis",
+			},
+		},
+	}
+
+	configNoSecrets := TestConfig{}
+
+	tests := []struct {
+		Name          string
+		Path          string
+		Keys          []string
+		Config        TestConfig
+		ExpectError   bool
+		ExpectResults bool
+	}{
+		{"Valid", expectedPath, []string{"username", "password"}, configAllSecrets, false, true},
+		{"Valid just path", expectedPath, nil, configAllSecrets, false, true},
+		{"Invalid - No secrets", expectedPath, []string{"username", "password"}, configMissingSecrets, false, false},
+		{"Invalid - Bad Path", "bogus", []string{"username", "password"}, configAllSecrets, false, false},
+		{"Invalid - No Config", "bogus", []string{"username", "password"}, configNoSecrets, true, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
+			actual, err := target.HasSecret(tc.Path)
+			if tc.ExpectError {
+				require.Error(t, err)
+				return
+			}
+
+			if !tc.ExpectResults {
+				assert.Equal(t, false, actual)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, true, actual)
+		})
+	}
+}

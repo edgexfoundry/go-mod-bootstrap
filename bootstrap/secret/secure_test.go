@@ -348,3 +348,59 @@ func TestSecureProvider_seedSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestSecureProvider_HasSecrets(t *testing.T) {
+	expected := map[string]string{"username": "admin", "password": "sam123!"}
+
+	mock := &mocks.SecretClient{}
+	notfound := []string{"username", "password"}
+	mock.On("GetSecrets", "redis", "username", "password").Return(expected, nil)
+	mock.On("GetSecrets", "redis").Return(expected, nil)
+	mock.On("GetSecrets", "missing").Return(nil, pkg.NewErrSecretsNotFound(notfound))
+	mock.On("GetSecrets", "postgres").Return(nil, nil)
+
+	tests := []struct {
+		Name           string
+		Path           string
+		Config         TestConfig
+		Client         secrets.SecretClient
+		ExpectError    bool
+		ExpectResult   bool
+		ExpectedResult bool
+	}{
+		{"Valid Secure", "redis", TestConfig{}, mock, false, true, true},
+		{"Invalid Secure", "missing", TestConfig{}, mock, true, false, false},
+		{"Invalid No Client", "redis", TestConfig{}, nil, true, false, false},
+		{"Invalid No Secret", "postgres", TestConfig{}, mock, false, true, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewSecureProvider(context.Background(), tc.Config, logger.MockLogger{}, nil, nil, "testService")
+			target.SetClient(tc.Client)
+			actual, err := target.HasSecret(tc.Path)
+			if tc.ExpectError {
+				require.Error(t, err)
+				return
+			}
+
+			if tc.ExpectResult {
+				assert.Equal(t, tc.ExpectedResult, actual)
+				return
+			}
+
+			if tc.ExpectError == false && tc.ExpectResult == true {
+				assert.Equal(t, tc.ExpectedResult, actual)
+				return
+			}
+
+			if tc.ExpectError == false && tc.ExpectResult == true {
+				assert.Equal(t, tc.ExpectedResult, actual)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, expected, actual)
+		})
+	}
+}
