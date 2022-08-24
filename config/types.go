@@ -219,6 +219,9 @@ type MessageBusInfo struct {
 	Optional map[string]string
 	// SubscribeEnabled indicates whether enable the subscription to the Message Queue
 	SubscribeEnabled bool
+	// Topics allows MessageBusInfo to be more flexible with respect to topics.
+	// TODO: move PublishTopicPrefix and SubscribeTopic to Topics in EdgeX 3.0
+	Topics map[string]string
 }
 
 // URL constructs a URL from the protocol, host and port and returns that as a string.
