@@ -188,6 +188,7 @@ type BootstrapConfiguration struct {
 	Registry     RegistryInfo
 	SecretStore  SecretStoreInfo
 	MessageQueue MessageBusInfo
+	ExternalMQTT ExternalMQTTInfo
 }
 
 // MessageBusInfo provides parameters related to connecting to a message bus as a publisher
@@ -222,6 +223,41 @@ type MessageBusInfo struct {
 	// Topics allows MessageBusInfo to be more flexible with respect to topics.
 	// TODO: move PublishTopicPrefix and SubscribeTopic to Topics in EdgeX 3.0
 	Topics map[string]string
+}
+
+type ExternalMQTTInfo struct {
+	// Url contains the fully qualified URL to connect to the MQTT broker
+	Url string
+	// SubscribeTopics is a comma separated list of topics in which to subscribe
+	SubscribeTopics string
+	// PublishTopic is the topic to publish pipeline output (if any)
+	PublishTopic string
+	// Topics allows ExternalMQTTInfo to be more flexible with respect to topics.
+	// TODO: move PublishTopic and SubscribeTopics to Topics in EdgeX 3.0
+	Topics map[string]string
+	// ClientId to connect to the broker with.
+	ClientId string
+	// ConnectTimeout is a time duration indicating how long to wait timing out on the broker connection
+	ConnectTimeout string
+	// AutoReconnect indicated whether to retry connection if disconnected
+	AutoReconnect bool
+	// KeepAlive is seconds between client ping when no active data flowing to avoid client being disconnected
+	KeepAlive int64
+	// QoS for MQTT Connection
+	QoS byte
+	// Retain setting for MQTT Connection
+	Retain bool
+	// SkipCertVerify indicates if the certificate verification should be skipped
+	SkipCertVerify bool
+	// SecretPath is the name of the path in secret provider to retrieve your secrets
+	SecretPath string
+	// AuthMode indicates what to use when connecting to the broker. Options are "none", "cacert" , "usernamepassword", "clientcert".
+	// If a CA Cert exists in the SecretPath then it will be used for all modes except "none".
+	AuthMode string
+	// RetryDuration indicates how long (in seconds) to wait timing out on the MQTT client creation
+	RetryDuration int
+	// RetryInterval indicates the time (in seconds) that will be waited between attempts to create MQTT client
+	RetryInterval int
 }
 
 // URL constructs a URL from the protocol, host and port and returns that as a string.
