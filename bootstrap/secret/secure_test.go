@@ -360,17 +360,16 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 	mock.On("GetSecrets", "error").Return(nil, errors.New("no key"))
 
 	tests := []struct {
-		Name           string
-		Path           string
-		Client         secrets.SecretClient
-		ExpectError    bool
-		ExpectResult   bool
-		ExpectedResult bool
+		Name         string
+		Path         string
+		Client       secrets.SecretClient
+		ExpectError  bool
+		ExpectResult bool
 	}{
-		{"Valid Secure", "redis", mock, false, true, true},
-		{"Invalid Secure", "missing", mock, false, false, false},
-		{"Invalid No Client", "redis", nil, true, false, false},
-		{"Invalid Error", "error", mock, true, false, false},
+		{"Valid Secure", "redis", mock, false, true},
+		{"Invalid Secure", "missing", mock, false, false},
+		{"Invalid No Client", "redis", nil, true, false},
+		{"Invalid Error", "error", mock, true, false},
 	}
 
 	for _, tc := range tests {
@@ -378,26 +377,13 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 			target := NewSecureProvider(context.Background(), TestConfig{}, logger.MockLogger{}, nil, nil, "testService")
 			target.SetClient(tc.Client)
 			actual, err := target.HasSecret(tc.Path)
+
 			if tc.ExpectError {
 				require.Error(t, err)
 				return
 			}
 
-			if tc.ExpectResult {
-				assert.Equal(t, tc.ExpectedResult, actual)
-				return
-			}
-
-			if tc.ExpectError == false && tc.ExpectResult == true {
-				assert.Equal(t, tc.ExpectedResult, actual)
-				return
-			}
-
-			if tc.ExpectError == false && tc.ExpectResult == true {
-				assert.Equal(t, tc.ExpectedResult, actual)
-				return
-			}
-
+			assert.Equal(t, tc.ExpectResult, actual)
 			require.NoError(t, err)
 		})
 	}
