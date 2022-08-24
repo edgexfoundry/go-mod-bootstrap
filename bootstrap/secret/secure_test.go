@@ -357,6 +357,7 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 	mock.On("GetSecrets", "redis", "username", "password").Return(expected, nil)
 	mock.On("GetSecrets", "redis").Return(expected, nil)
 	mock.On("GetSecrets", "missing").Return(nil, pkg.NewErrSecretStore(errorMessage))
+	mock.On("GetSecrets", "error").Return(nil, errors.New("no key"))
 
 	tests := []struct {
 		Name           string
@@ -367,8 +368,9 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 		ExpectedResult bool
 	}{
 		{"Valid Secure", "redis", mock, false, true, true},
-		{"Invalid Secure", "missing", mock, true, false, false},
+		{"Invalid Secure", "missing", mock, false, false, false},
 		{"Invalid No Client", "redis", nil, true, false, false},
+		{"Invalid Error", "error", mock, true, false, false},
 	}
 
 	for _, tc := range tests {
@@ -397,7 +399,6 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, expected, actual)
 		})
 	}
 }

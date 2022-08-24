@@ -18,8 +18,6 @@ package secret
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"path"
 	"strings"
 
@@ -106,13 +104,10 @@ func NewSecretProvider(
 					if err != nil {
 						return nil, err
 					}
-
-					r, e := secureProvider.HasSecret("redisdb")
-					log.Println("Has the secure secret: ", r, e)
 					break
 				}
 			}
-			os.Exit(3)
+
 			lc.Warn(fmt.Sprintf("Retryable failure while creating SecretClient: %s", err.Error()))
 			startupTimer.SleepForInterval()
 		}
@@ -123,8 +118,6 @@ func NewSecretProvider(
 
 	case false:
 		provider = NewInsecureProvider(configuration, lc)
-		r, e := provider.HasSecret("redisdb")
-		log.Println("Has the secret: ", r, e)
 	}
 
 	dic.Update(di.ServiceConstructorMap{
