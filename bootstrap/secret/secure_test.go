@@ -348,3 +348,43 @@ func TestSecureProvider_seedSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestSecureProvider_HasSecrets(t *testing.T) {
+	expected := map[string]string{"username": "admin", "password": "sam123!"}
+
+	mock := &mocks.SecretClient{}
+	errorMessage := "Received a '404' response from the secret store"
+	mock.On("GetSecrets", "redis", "username", "password").Return(expected, nil)
+	mock.On("GetSecrets", "redis").Return(expected, nil)
+	mock.On("GetSecrets", "missing").Return(nil, pkg.NewErrPathNotFound(errorMessage))
+	mock.On("GetSecrets", "error").Return(nil, errors.New("no key"))
+
+	tests := []struct {
+		Name         string
+		Path         string
+		Client       secrets.SecretClient
+		ExpectError  bool
+		ExpectResult bool
+	}{
+		{"Valid - found", "redis", mock, false, true},
+		{"Valid - not found", "missing", mock, false, false},
+		{"Invalid No Client", "redis", nil, true, false},
+		{"Invalid Error", "error", mock, true, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewSecureProvider(context.Background(), TestConfig{}, logger.MockLogger{}, nil, nil, "testService")
+			target.SetClient(tc.Client)
+			actual, err := target.HasSecret(tc.Path)
+
+			if tc.ExpectError {
+				require.Error(t, err)
+				return
+			}
+
+			assert.Equal(t, tc.ExpectResult, actual)
+			require.NoError(t, err)
+		})
+	}
+}
