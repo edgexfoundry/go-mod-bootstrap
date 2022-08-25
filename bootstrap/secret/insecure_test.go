@@ -124,8 +124,8 @@ func TestInsecureProvider_HasSecrets(t *testing.T) {
 	}{
 		{"Valid", expectedPath, []string{"username", "password"}, configAllSecrets, false, true},
 		{"Valid just path", expectedPath, nil, configAllSecrets, false, true},
-		{"Invalid - No secrets", expectedPath, []string{"username", "password"}, configMissingSecrets, false, false},
-		{"Invalid - Bad Path", "bogus", []string{"username", "password"}, configAllSecrets, false, false},
+		{"Valid - No secrets", expectedPath, []string{"username", "password"}, configMissingSecrets, false, false},
+		{"Valid - Bad Path", "bogus", []string{"username", "password"}, configAllSecrets, false, false},
 		{"Invalid - No Config", "bogus", []string{"username", "password"}, configNoSecrets, true, false},
 	}
 

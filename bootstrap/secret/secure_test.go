@@ -356,7 +356,7 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 	errorMessage := "Received a '404' response from the secret store"
 	mock.On("GetSecrets", "redis", "username", "password").Return(expected, nil)
 	mock.On("GetSecrets", "redis").Return(expected, nil)
-	mock.On("GetSecrets", "missing").Return(nil, pkg.NewErrSecretStore(errorMessage))
+	mock.On("GetSecrets", "missing").Return(nil, pkg.NewErrPathNotFound(errorMessage))
 	mock.On("GetSecrets", "error").Return(nil, errors.New("no key"))
 
 	tests := []struct {
@@ -366,8 +366,8 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 		ExpectError  bool
 		ExpectResult bool
 	}{
-		{"Valid Secure", "redis", mock, false, true},
-		{"Invalid Secure", "missing", mock, false, false},
+		{"Valid - found", "redis", mock, false, true},
+		{"Valid - not found", "missing", mock, false, false},
 		{"Invalid No Client", "redis", nil, true, false},
 		{"Invalid Error", "error", mock, true, false},
 	}

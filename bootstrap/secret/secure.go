@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
 	"os"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -42,7 +41,6 @@ import (
 const (
 	TokenTypeConsul      = "consul"
 	AccessTokenAuthError = "HTTP response with status code 403"
-	PathNotFoundError    = "Received a 404' response from the secret store"
 	//nolint: gosec
 	SecretsAuthError = "Received a '403' response"
 )
@@ -107,10 +105,6 @@ func (p *SecureProvider) GetSecret(path string, keys ...string) (map[string]stri
 	}
 
 	if err != nil {
-		if strings.Contains(err.Error(), PathNotFoundError) {
-			return nil, pkg.NewErrSecretStore(fmt.Sprintf("Could not retrieve path '%s'. %s", path, err.Error()))
-		}
-
 		return nil, err
 	}
 
@@ -362,8 +356,8 @@ func (p *SecureProvider) HasSecret(path string) (bool, error) {
 	_, err := p.GetSecret(path)
 
 	if err != nil {
-		actualErrorType := reflect.TypeOf(err)
-		if actualErrorType.AssignableTo(reflect.TypeOf(pkg.NewErrSecretStore(""))) {
+		_, ok := err.(pkg.ErrPathNotFound)
+		if ok {
 			return false, nil
 		}
 
