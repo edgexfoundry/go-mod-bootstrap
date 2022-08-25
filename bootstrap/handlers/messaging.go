@@ -80,7 +80,7 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 		default:
 			err = msgClient.Connect()
 			if err != nil {
-				lc.Warnf("Unable to connect MessageBus: %w", err)
+				lc.Warnf("Unable to connect MessageBus: %s", err.Error())
 				startupTimer.SleepForInterval()
 				continue
 			}
