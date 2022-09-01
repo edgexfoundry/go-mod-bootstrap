@@ -53,7 +53,7 @@ const (
 	// Examples:
 	//			Matches: Writable.InsecureSecrets.credentials001.Secrets.password
 	//	 Does Not Match: Writable.InsecureSecrets.credentials001.Path
-	insecureSecretsRegexStr = "^Writable\\.InsecureSecrets\\.[^.]+\\.Secrets\\..+$"
+	insecureSecretsRegexStr = "^Writable\\.InsecureSecrets\\.[^.]+\\.Secrets\\..+$" //#nosec G101 -- This is a false positive
 	// redactedStr is the value to print for redacted variable values
 	redactedStr = "<redacted>"
 )
