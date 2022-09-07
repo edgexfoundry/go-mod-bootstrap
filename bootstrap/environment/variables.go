@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -46,16 +47,29 @@ const (
 	tomlPathSeparator = "."
 	tomlNameSeparator = "-"
 	envNameSeparator  = "_"
+
+	// insecureSecretsRegexStr is a regex to look for toml keys that are under the Secrets sub-key of values within the
+	// Writable.InsecureSecrets topology.
+	// Examples:
+	//			Matches: Writable.InsecureSecrets.credentials001.Secrets.password
+	//	 Does Not Match: Writable.InsecureSecrets.credentials001.Path
+	insecureSecretsRegexStr = "^Writable\\.InsecureSecrets\\.[^.]+\\.Secrets\\..+$" //#nosec G101 -- This is a false positive
+	// redactedStr is the value to print for redacted variable values
+	redactedStr = "<redacted>"
 )
 
-// Variables is receiver that holds Variables variables and encapsulates toml.Tree-based configuration field
+var (
+	insecureSecretsRegex = regexp.MustCompile(insecureSecretsRegexStr)
+)
+
+// Variables is a receiver that holds Variables variables and encapsulates toml.Tree-based configuration field
 // overrides.  Assumes "_" embedded in Variables variable key separates sub-structs; e.g. foo_bar_baz might refer to
 //
-// 		type foo struct {
-// 			bar struct {
-//          	baz string
-//  		}
-//		}
+//			type foo struct {
+//				bar struct {
+//	         		baz string
+//	 			}
+//			}
 type Variables struct {
 	variables map[string]string
 	lc        logger.LoggingClient
@@ -291,7 +305,7 @@ func GetStartupInfo(serviceKey string) StartupInfo {
 	return startup
 }
 
-// GetConfDir get the config directory value from an Variables variable value (if it exists)
+// GetConfDir get the config directory value from a Variables variable value (if it exists)
 // or uses passed in value or default if previous result in blank.
 func GetConfDir(lc logger.LoggingClient, configDir string) string {
 	envValue := os.Getenv(envConfDir)
@@ -307,7 +321,7 @@ func GetConfDir(lc logger.LoggingClient, configDir string) string {
 	return configDir
 }
 
-// GetProfileDir get the profile directory value from an Variables variable value (if it exists)
+// GetProfileDir get the profile directory value from a Variables variable value (if it exists)
 // or uses passed in value or default if previous result in blank.
 func GetProfileDir(lc logger.LoggingClient, profileDir string) string {
 	envValue := os.Getenv(envProfile)
@@ -323,7 +337,7 @@ func GetProfileDir(lc logger.LoggingClient, profileDir string) string {
 	return profileDir
 }
 
-// GetConfigFileName gets the configuration filename value from an Variables variable value (if it exists)
+// GetConfigFileName gets the configuration filename value from a Variables variable value (if it exists)
 // or uses passed in value.
 func GetConfigFileName(lc logger.LoggingClient, configFileName string) string {
 	envValue := os.Getenv(envFile)
@@ -348,6 +362,11 @@ func parseCommaSeparatedSlice(value string) (values []interface{}) {
 }
 
 // logEnvironmentOverride logs that an option or configuration has been override by an environment variable.
+// If the key belongs to a Secret within Writable.InsecureSecrets, the value is redacted when printing it.
 func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, value string) {
-	lc.Info(fmt.Sprintf("Variables override of '%s' by environment variable: %s=%s", name, key, value))
+	valueStr := value
+	if insecureSecretsRegex.MatchString(name) {
+		valueStr = redactedStr
+	}
+	lc.Infof("Variables override of '%s' by environment variable: %s=%s", name, key, valueStr)
 }

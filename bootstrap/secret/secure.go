@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
 	"os"
 	"strings"
 	"sync"
@@ -348,6 +349,22 @@ func prepareSecret(secret ServiceSecret) (string, map[string]string) {
 	path := strings.TrimSpace(secret.Path)
 
 	return path, secretsKV
+}
+
+// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
+func (p *SecureProvider) HasSecret(path string) (bool, error) {
+	_, err := p.GetSecret(path)
+
+	if err != nil {
+		_, ok := err.(pkg.ErrPathNotFound)
+		if ok {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
 }
 
 // ListSecretsAtPath retrieves a list of secret keys from a secure secrets secret store.

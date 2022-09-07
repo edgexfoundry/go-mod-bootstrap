@@ -113,6 +113,23 @@ func (p *InsecureProvider) GetAccessToken(_ string, _ string) (string, error) {
 	return "", nil
 }
 
+// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
+func (p *InsecureProvider) HasSecret(path string) (bool, error) {
+	insecureSecrets := p.configuration.GetInsecureSecrets()
+	if insecureSecrets == nil {
+		err := fmt.Errorf("InsecureSecret missing from configuration")
+		return false, err
+	}
+
+	for _, insecureSecret := range insecureSecrets {
+		if insecureSecret.Path == path {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // ListSecretsAtPath retrieves a list of secret keys from an insecure secrets secret store.
 // Path specifies the type or location of the secrets to retrieve.
 // If no path is provided then all keys at the specified path will be returned.

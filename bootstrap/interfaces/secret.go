@@ -25,4 +25,7 @@ type SecretProvider interface {
 
 	// ListSecretsAtPath returns a list of secret keys from an insecure/secure secrets secret store.
 	ListSecretsAtPath(path string) ([]string, error)
+
+	// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
+	HasSecret(path string) (bool, error)
 }

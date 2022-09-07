@@ -17,8 +17,11 @@ package environment
 
 import (
 	"fmt"
+	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
+	"github.com/stretchr/testify/mock"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
@@ -453,4 +456,63 @@ func TestOverrideConfigurationWithEqualInValue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedOverrideCount, actualCount)
 	assert.Equal(t, expectedAuthToken, serviceConfig.SecretStore.Authentication.AuthToken)
+}
+
+func TestLogEnvironmentOverride(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		value    string
+		redacted bool
+	}{
+		{
+			name:     "basic variable - not redacted",
+			path:     "Writable.LogLevel",
+			value:    "DEBUG",
+			redacted: false,
+		},
+		{
+			name:     "insecure secret value - redacted",
+			path:     "Writable.InsecureSecrets.credentials001.Secrets.password",
+			value:    "HelloWorld!",
+			redacted: true,
+		},
+		{
+			name:     "insecure secret value - redacted 2",
+			path:     "Writable.InsecureSecrets.credentials001.Secrets.username",
+			value:    "admin",
+			redacted: true,
+		},
+		{
+			name:     "insecure secret path - not redacted",
+			path:     "Writable.InsecureSecrets.credentials001.Path",
+			value:    "credentials001",
+			redacted: false,
+		},
+	}
+
+	mockLogger := &loggerMocks.LoggingClient{}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			key := strings.ReplaceAll(strings.ToUpper(test.path), ".", "_")
+
+			// specifically expect the method to be called with the values we pass in plus the format string
+			// and any value (can be redacted or not)
+			mockLogger.On("Infof", mock.AnythingOfType("string"),
+				test.path, key, mock.AnythingOfType("string")).Return().Once()
+
+			logEnvironmentOverride(mockLogger, test.path, key, test.value)
+
+			mockLogger.AssertExpectations(t)
+			if test.redacted {
+				// make sure it was called with the redacted placeholder string.
+				mockLogger.AssertCalled(t, "Infof", mock.AnythingOfType("string"), test.path, key, redactedStr)
+			} else {
+				// make sure the original value was logged.
+				mockLogger.AssertCalled(t, "Infof", mock.AnythingOfType("string"), test.path, key, test.value)
+			}
+		})
+	}
 }
