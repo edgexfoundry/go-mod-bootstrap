@@ -112,3 +112,34 @@ func (p *InsecureProvider) SecretsLastUpdated() time.Time {
 func (p *InsecureProvider) GetAccessToken(_ string, _ string) (string, error) {
 	return "", nil
 }
+
+// ListSecretsAtPath retrieves a list of secret keys from an insecure secrets secret store.
+// Path specifies the type or location of the secrets to retrieve.
+// If no path is provided then all keys at the specified path will be returned.
+func (p *InsecureProvider) ListSecretsAtPath(path string) ([]string, error) {
+	var results []string
+	pathExists := false
+
+	insecureSecrets := p.configuration.GetInsecureSecrets()
+	if insecureSecrets == nil {
+		err := fmt.Errorf("InsecureSecrets missing from configuration")
+		return nil, err
+	}
+
+	for _, insecureSecret := range insecureSecrets {
+		if insecureSecret.Path == path {
+			pathExists = true
+			for k, _ := range insecureSecret.Secrets {
+				results = append(results, k)
+			}
+		}
+	}
+
+	if !pathExists {
+		// if path is not in secret store
+		err := fmt.Errorf("Error, path (%v) doesn't exist in secret store", path)
+		return nil, err
+	}
+
+	return results, nil
+}

@@ -348,3 +348,38 @@ func TestSecureProvider_seedSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestSecureProvider_ListSecretPathsSecrets(t *testing.T) {
+	expectedKeys := []string{"username", "password", "config/"}
+	mock := &mocks.SecretClient{}
+	mock.On("GetKeys", "mysql").Return(expectedKeys, nil)
+	notfound := []string{"username", "password"}
+	mock.On("GetKeys", "missing").Return(nil, pkg.NewErrSecretsNotFound(notfound))
+
+	tests := []struct {
+		Name        string
+		Path        string
+		Config      TestConfig
+		Client      secrets.SecretClient
+		ExpectError bool
+	}{
+		{"Valid Secure", "mysql", TestConfig{}, mock, false},
+		{"Invalid Secure", "missing", TestConfig{}, mock, true},
+		{"Invalid No Client", "mysql", TestConfig{}, nil, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewSecureProvider(context.Background(), tc.Config, logger.MockLogger{}, nil, nil, "testService")
+			target.SetClient(tc.Client)
+			actual, err := target.ListSecretsAtPath(tc.Path)
+			if tc.ExpectError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, expectedKeys, actual)
+		})
+	}
+}

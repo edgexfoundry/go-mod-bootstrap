@@ -22,4 +22,7 @@ type SecretProvider interface {
 	// GetAccessToken return an access token for the specified token type and service key.
 	// Service key is use as the access token role which must have be previously setup.
 	GetAccessToken(tokenType string, serviceKey string) (string, error)
+
+	// ListSecretsAtPath returns a list of secret keys from an insecure/secure secrets secret store.
+	ListSecretsAtPath(path string) ([]string, error)
 }

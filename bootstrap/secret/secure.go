@@ -349,3 +349,27 @@ func prepareSecret(secret ServiceSecret) (string, map[string]string) {
 
 	return path, secretsKV
 }
+
+// ListSecretsAtPath retrieves a list of secret keys from a secure secrets secret store.
+// Path specifies the type or location of the secrets to retrieve.
+// If no path is provided then all keys at the specified path will be returned.
+func (p *SecureProvider) ListSecretsAtPath(path string) ([]string, error) {
+
+	if p.secretClient == nil {
+		return nil, errors.New("can't get secrets. Secure secret provider is not properly initialized")
+	}
+
+	secureSecrets, err := p.secretClient.GetKeys(path)
+
+	retry, err := p.reloadTokenOnAuthError(err)
+	if retry {
+		// Retry with potential new token
+		secureSecrets, err = p.secretClient.GetKeys(path)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return secureSecrets, nil
+}
