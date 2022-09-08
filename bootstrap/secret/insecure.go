@@ -135,7 +135,6 @@ func (p *InsecureProvider) HasSecret(path string) (bool, error) {
 // If no path is provided then all keys at the specified path will be returned.
 func (p *InsecureProvider) ListSecretsAtPath(path string) ([]string, error) {
 	var results []string
-	pathExists := false
 
 	insecureSecrets := p.configuration.GetInsecureSecrets()
 	if insecureSecrets == nil {
@@ -144,18 +143,7 @@ func (p *InsecureProvider) ListSecretsAtPath(path string) ([]string, error) {
 	}
 
 	for _, insecureSecret := range insecureSecrets {
-		if insecureSecret.Path == path {
-			pathExists = true
-			for k := range insecureSecret.Secrets {
-				results = append(results, k)
-			}
-		}
-	}
-
-	if !pathExists {
-		// if path is not in secret store
-		err := fmt.Errorf("Error, path (%v) doesn't exist in secret store", path)
-		return nil, err
+		results = append(results, insecureSecret.Path)
 	}
 
 	return results, nil
