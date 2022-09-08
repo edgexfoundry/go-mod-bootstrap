@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var expectedSecretsKeys = []string{UsernameKey, PasswordKey}
+var expectedSecretsKeys = []string{UsernameKey, PasswordKey, UsernameKey, PasswordKey}
 
 func TestInsecureProvider_GetSecrets(t *testing.T) {
 	configAllSecrets := TestConfig{
@@ -100,6 +100,10 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 	configAllSecrets := TestConfig{
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
+				Path:    expectedPath,
+				Secrets: expectedSecrets,
+			},
+			"REDIS": {
 				Path:    expectedPath,
 				Secrets: expectedSecrets,
 			},

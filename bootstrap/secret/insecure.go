@@ -146,7 +146,7 @@ func (p *InsecureProvider) ListSecretsAtPath(path string) ([]string, error) {
 	for _, insecureSecret := range insecureSecrets {
 		if insecureSecret.Path == path {
 			pathExists = true
-			for k, _ := range insecureSecret.Secrets {
+			for k := range insecureSecret.Secrets {
 				results = append(results, k)
 			}
 		}
