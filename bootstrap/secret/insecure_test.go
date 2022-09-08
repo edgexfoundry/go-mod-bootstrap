@@ -118,6 +118,10 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 		},
 	}
 
+	configNoPaths := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{},
+	}
+
 	tests := []struct {
 		Name         string
 		Path         string
@@ -126,8 +130,8 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 		ExpectError  bool
 	}{
 		{"Valid", expectedPath, expectedSecretsKeys, configAllSecrets, false},
-		{"Invalid - No secrets", expectedPath, nil, configMissingSecrets, false},
-		{"Invalid - Bad Path", "bogus", nil, configAllSecrets, true},
+		{"Invalid - No secrets", expectedPath, []string{"/redisdb"}, configMissingSecrets, false},
+		{"Invalid - Bad Path", "bogus", nil, configNoPaths, false},
 	}
 
 	for _, tc := range tests {
