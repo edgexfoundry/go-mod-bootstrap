@@ -64,17 +64,15 @@ func (_m *SecretProvider) GetSecret(path string, keys ...string) (map[string]str
 	return r0, r1
 }
 
-// ListSecretsAtPath provides a mock function with given fields: path
-func (_m *SecretProvider) ListSecretsAtPath(path string) ([]string, error) {
+// HasSecret provides a mock function with given fields: path
+func (_m *SecretProvider) HasSecret(path string) (bool, error) {
 	ret := _m.Called(path)
 
-	var r0 []string
-	if rf, ok := ret.Get(0).(func(string) []string); ok {
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
 		r0 = rf(path)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
-		}
+		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
@@ -87,15 +85,17 @@ func (_m *SecretProvider) ListSecretsAtPath(path string) ([]string, error) {
 	return r0, r1
 }
 
-// HasSecret provides a mock function with given fields: path
-func (_m *SecretProvider) HasSecret(path string) (bool, error) {
+// ListSecretPaths provides a mock function with given fields: path
+func (_m *SecretProvider) ListSecretPaths(path string) ([]string, error) {
 	ret := _m.Called(path)
 
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
 		r0 = rf(path)
 	} else {
-		r0 = ret.Get(0).(bool)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
 	}
 
 	var r1 error
