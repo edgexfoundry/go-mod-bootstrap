@@ -412,7 +412,7 @@ func TestSecureProvider_ListSecretPathsSecrets(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewSecureProvider(context.Background(), tc.Config, logger.MockLogger{}, nil, nil, "testService")
 			target.SetClient(tc.Client)
-			actual, err := target.ListSecretsAtPath(tc.Path)
+			actual, err := target.ListSecretPaths(tc.Path)
 			if tc.ExpectError {
 				require.Error(t, err)
 				return

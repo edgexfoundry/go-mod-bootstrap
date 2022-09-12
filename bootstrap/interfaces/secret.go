@@ -23,8 +23,8 @@ type SecretProvider interface {
 	// Service key is use as the access token role which must have be previously setup.
 	GetAccessToken(tokenType string, serviceKey string) (string, error)
 
-	// ListSecretsAtPath returns a list of secret keys from an insecure/secure secrets secret store.
-	ListSecretsAtPath(path string) ([]string, error)
+	// ListSecretPaths returns a list of secret keys from an insecure/secure secrets secret store.
+	ListSecretPaths(path string) ([]string, error)
 
 	// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
 	HasSecret(path string) (bool, error)

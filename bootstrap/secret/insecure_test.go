@@ -137,7 +137,7 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
-			actual, err := target.ListSecretsAtPath(tc.Path)
+			actual, err := target.ListSecretPaths(tc.Path)
 			if tc.ExpectError {
 				require.Error(t, err)
 				return
