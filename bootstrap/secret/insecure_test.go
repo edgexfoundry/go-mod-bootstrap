@@ -118,26 +118,20 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 		},
 	}
 
-	configNoPaths := TestConfig{
-		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{},
-	}
-
 	tests := []struct {
 		Name         string
-		Path         string
 		ExpectedKeys []string
 		Config       TestConfig
 		ExpectError  bool
 	}{
-		{"Valid", expectedPath, expectedSecretsKeys, configAllSecrets, false},
-		{"Invalid - No secrets", expectedPath, []string{"/redisdb"}, configMissingSecrets, false},
-		{"Invalid - Bad Path", "bogus", nil, configNoPaths, false},
+		{"Valid", expectedSecretsKeys, configAllSecrets, false},
+		{"Invalid - No secrets", []string{"/redisdb"}, configMissingSecrets, false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
-			actual, err := target.ListSecretPaths(tc.Path)
+			actual, err := target.ListSecretPaths()
 			if tc.ExpectError {
 				require.Error(t, err)
 				return

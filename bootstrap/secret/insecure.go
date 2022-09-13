@@ -130,10 +130,8 @@ func (p *InsecureProvider) HasSecret(path string) (bool, error) {
 	return false, nil
 }
 
-// ListSecretPaths retrieves a list of secret keys from an insecure secrets secret store.
-// Path specifies the type or location of the secrets to retrieve.
-// If no path is provided then all keys at the specified path will be returned.
-func (p *InsecureProvider) ListSecretPaths(path string) ([]string, error) {
+// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
+func (p *InsecureProvider) ListSecretPaths() ([]string, error) {
 	var results []string
 
 	insecureSecrets := p.configuration.GetInsecureSecrets()
