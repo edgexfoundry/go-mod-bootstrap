@@ -371,7 +371,7 @@ func (p *SecureProvider) HasSecret(path string) (bool, error) {
 func (p *SecureProvider) ListSecretPaths() ([]string, error) {
 
 	if p.secretClient == nil {
-		return nil, errors.New("can't get secrets. Secure secret provider is not properly initialized")
+		return nil, errors.New("can't get secret paths. Secure secret provider is not properly initialized")
 	}
 
 	secureSecrets, err := p.secretClient.GetKeys("")
@@ -383,7 +383,7 @@ func (p *SecureProvider) ListSecretPaths() ([]string, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get secret paths: %v", err)
 	}
 
 	return secureSecrets, nil
