@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var expectedSecretsKeys = []string{"/redisdb", "/kongdb"}
+var expectedSecretsKeys = []string{"redisdb", "kongdb"}
 
 func TestInsecureProvider_GetSecrets(t *testing.T) {
 	configAllSecrets := TestConfig{
@@ -100,11 +100,11 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 	configAllSecrets := TestConfig{
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"REDIS": {
-				Path:    expectedPath,
+				Path:    "redisdb",
 				Secrets: expectedSecrets,
 			},
 			"KONG": {
-				Path:    "/kongdb",
+				Path:    "kongdb",
 				Secrets: expectedSecrets,
 			},
 		},
@@ -113,7 +113,7 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 	configMissingSecrets := TestConfig{
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
-				Path: expectedPath,
+				Path: "redisdb",
 			},
 		},
 	}
@@ -125,7 +125,7 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 		ExpectError  bool
 	}{
 		{"Valid", expectedSecretsKeys, configAllSecrets, false},
-		{"Invalid - No secrets", []string{"/redisdb"}, configMissingSecrets, false},
+		{"Invalid - No secrets", []string{"redisdb"}, configMissingSecrets, false},
 	}
 
 	for _, tc := range tests {

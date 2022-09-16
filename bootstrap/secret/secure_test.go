@@ -390,7 +390,7 @@ func TestSecureProvider_HasSecrets(t *testing.T) {
 }
 
 func TestSecureProvider_ListSecretPathsSecrets(t *testing.T) {
-	expectedKeys := []string{"username", "password", "config/"}
+	expectedKeys := []string{"username", "password", "config"}
 	mock := &mocks.SecretClient{}
 	mock.On("GetKeys", "").Return(expectedKeys, nil)
 
