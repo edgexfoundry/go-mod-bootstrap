@@ -366,3 +366,25 @@ func (p *SecureProvider) HasSecret(path string) (bool, error) {
 
 	return true, nil
 }
+
+// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
+func (p *SecureProvider) ListSecretPaths() ([]string, error) {
+
+	if p.secretClient == nil {
+		return nil, errors.New("can't get secret paths. Secure secret provider is not properly initialized")
+	}
+
+	secureSecrets, err := p.secretClient.GetKeys("")
+
+	retry, err := p.reloadTokenOnAuthError(err)
+	if retry {
+		// Retry with potential new token
+		secureSecrets, err = p.secretClient.GetKeys("")
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to get secret paths: %v", err)
+	}
+
+	return secureSecrets, nil
+}

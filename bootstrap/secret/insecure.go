@@ -129,3 +129,20 @@ func (p *InsecureProvider) HasSecret(path string) (bool, error) {
 
 	return false, nil
 }
+
+// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
+func (p *InsecureProvider) ListSecretPaths() ([]string, error) {
+	var results []string
+
+	insecureSecrets := p.configuration.GetInsecureSecrets()
+	if insecureSecrets == nil {
+		err := fmt.Errorf("InsecureSecrets missing from configuration")
+		return nil, err
+	}
+
+	for _, insecureSecret := range insecureSecrets {
+		results = append(results, insecureSecret.Path)
+	}
+
+	return results, nil
+}

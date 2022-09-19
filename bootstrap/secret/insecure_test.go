@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var expectedSecretsKeys = []string{"redisdb", "kongdb"}
+
 func TestInsecureProvider_GetSecrets(t *testing.T) {
 	configAllSecrets := TestConfig{
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
@@ -92,6 +94,53 @@ func TestInsecureProvider_GetAccessToken(t *testing.T) {
 	actualToken, err := target.GetAccessToken(TokenTypeConsul, "my-service-key")
 	require.NoError(t, err)
 	assert.Len(t, actualToken, 0)
+}
+
+func TestInsecureProvider_ListPaths(t *testing.T) {
+	configAllSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"REDIS": {
+				Path:    "redisdb",
+				Secrets: expectedSecrets,
+			},
+			"KONG": {
+				Path:    "kongdb",
+				Secrets: expectedSecrets,
+			},
+		},
+	}
+
+	configMissingSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"DB": {
+				Path: "redisdb",
+			},
+		},
+	}
+
+	tests := []struct {
+		Name         string
+		ExpectedKeys []string
+		Config       TestConfig
+		ExpectError  bool
+	}{
+		{"Valid", expectedSecretsKeys, configAllSecrets, false},
+		{"Invalid - No secrets", []string{"redisdb"}, configMissingSecrets, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
+			actual, err := target.ListSecretPaths()
+			if tc.ExpectError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.ExpectedKeys, actual)
+		})
+	}
 }
 
 func TestInsecureProvider_HasSecrets(t *testing.T) {
