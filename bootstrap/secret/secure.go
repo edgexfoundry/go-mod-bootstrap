@@ -51,13 +51,14 @@ type SecureProvider struct {
 	lc           logger.LoggingClient
 	loader       authtokenloader.AuthTokenLoader
 	// runtimeTokenProvider is for delayed start services
-	runtimeTokenProvider runtimetokenprovider.RuntimeTokenProvider
-	serviceKey           string
-	configuration        interfaces.Configuration
-	secretsCache         map[string]map[string]string // secret's path, key, value
-	cacheMutex           *sync.RWMutex
-	lastUpdated          time.Time
-	ctx                  context.Context
+	runtimeTokenProvider      runtimetokenprovider.RuntimeTokenProvider
+	serviceKey                string
+	configuration             interfaces.Configuration
+	secretsCache              map[string]map[string]string // secret's path, key, value
+	cacheMutex                *sync.RWMutex
+	lastUpdated               time.Time
+	ctx                       context.Context
+	registeredSecretCallbacks map[string]func(path string)
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -176,6 +177,9 @@ func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) err
 	if err != nil {
 		return err
 	}
+
+	// Execute Callbacks on registered secret paths.
+	p.SecretsUpdatedWithPath(path)
 
 	// Synchronize cache access before clearing
 	p.cacheMutex.Lock()
@@ -365,4 +369,26 @@ func (p *SecureProvider) HasSecret(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// RegisteredSecretUpdateCallback registers a callback for a secret.
+func (p *SecureProvider) RegisteredSecretUpdateCallback(path string, callback func(path string)) {
+	p.registeredSecretCallbacks[path] = callback
+}
+
+// SecretsUpdatedWithPath performs a callback for a secret.
+func (p *SecureProvider) SecretsUpdatedWithPath(path string) {
+	p.lastUpdated = time.Now()
+
+	if p.registeredSecretCallbacks != nil {
+		// Execute Callback for provided path.
+		for k, v := range p.registeredSecretCallbacks {
+			if k == path {
+				v(path)
+				return
+			}
+		}
+	}
+
+	p.lc.Infof("no callback registered for path: '%s'", path)
 }

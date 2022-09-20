@@ -25,4 +25,10 @@ type SecretProvider interface {
 
 	// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
 	HasSecret(path string) (bool, error)
+
+	// RegisteredSecretUpdateCallback registers a callback for a secret.
+	RegisteredSecretUpdateCallback(path string, callback func(path string))
+
+	// SecretsUpdatedWithPath .
+	SecretsUpdatedWithPath(path string)
 }

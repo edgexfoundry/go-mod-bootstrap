@@ -85,6 +85,11 @@ func (_m *SecretProvider) HasSecret(path string) (bool, error) {
 	return r0, r1
 }
 
+// RegisteredSecretUpdateCallback provides a mock function with given fields: path, callback
+func (_m *SecretProvider) RegisteredSecretUpdateCallback(path string, callback func(string)) {
+	_m.Called(path, callback)
+}
+
 // SecretsLastUpdated provides a mock function with given fields:
 func (_m *SecretProvider) SecretsLastUpdated() time.Time {
 	ret := _m.Called()
@@ -102,6 +107,11 @@ func (_m *SecretProvider) SecretsLastUpdated() time.Time {
 // SecretsUpdated provides a mock function with given fields:
 func (_m *SecretProvider) SecretsUpdated() {
 	_m.Called()
+}
+
+// SecretsUpdatedWithPath provides a mock function with given fields: path
+func (_m *SecretProvider) SecretsUpdatedWithPath(path string) {
+	_m.Called(path)
 }
 
 // StoreSecret provides a mock function with given fields: path, secrets

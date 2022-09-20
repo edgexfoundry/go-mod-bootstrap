@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"io/ioutil"
 	"math"
 	"reflect"
@@ -511,7 +512,11 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					lc.Info("Insecure Secrets have been updated")
 					secretProvider := container.SecretProviderFrom(cp.dic.Get)
 					if secretProvider != nil {
-						secretProvider.SecretsUpdated()
+						// Find the updated secret's path and perform call backs.
+						updatedSecrets := getMapDiff(previousInsecureSecrets, currentInsecureSecrets)
+						for _, v := range updatedSecrets {
+							secretProvider.SecretsUpdatedWithPath(v)
+						}
 					}
 
 				case currentTelemetryInterval != previousTelemetryInterval:
@@ -549,4 +554,20 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 // logConfigInfo logs the config info message with number over overrides that occurred.
 func (cp *Processor) logConfigInfo(message string, overrideCount int) {
 	cp.lc.Infof("%s (%d envVars overrides applied)", message, overrideCount)
+}
+
+func getMapDiff(m1 config.InsecureSecrets, m2 config.InsecureSecrets) []string {
+	var updatedPaths []string
+	for key1, val1 := range m1 {
+		if val1.Path == m2[key1].Path {
+			for k, v := range val1.Secrets {
+				// Checking for changed secret.
+				if m2[key1].Secrets[k] != v {
+					updatedPaths = append(updatedPaths, val1.Path)
+				}
+			}
+		}
+	}
+
+	return updatedPaths
 }

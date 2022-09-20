@@ -27,9 +27,10 @@ import (
 
 // InsecureProvider implements the SecretProvider interface for insecure secrets
 type InsecureProvider struct {
-	lc            logger.LoggingClient
-	configuration interfaces.Configuration
-	lastUpdated   time.Time
+	lc                        logger.LoggingClient
+	configuration             interfaces.Configuration
+	lastUpdated               time.Time
+	registeredSecretCallbacks map[string]func(path string)
 }
 
 // NewInsecureProvider creates, initializes Provider for insecure secrets.
@@ -128,4 +129,26 @@ func (p *InsecureProvider) HasSecret(path string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// RegisteredSecretUpdateCallback registers a callback for a secret.
+func (p *InsecureProvider) RegisteredSecretUpdateCallback(path string, callback func(path string)) {
+	p.registeredSecretCallbacks[path] = callback
+}
+
+// SecretsUpdatedWithPath performs updates for an updated secret.
+func (p *InsecureProvider) SecretsUpdatedWithPath(path string) {
+	p.lastUpdated = time.Now()
+
+	if p.registeredSecretCallbacks != nil {
+		// Execute Callback for provided path.
+		for k, v := range p.registeredSecretCallbacks {
+			if k == path {
+				v(path)
+				return
+			}
+		}
+	}
+
+	p.lc.Infof("no callback registered for path: '%s'", path)
 }
