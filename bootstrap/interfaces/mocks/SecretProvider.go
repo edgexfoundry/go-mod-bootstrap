@@ -13,6 +13,11 @@ type SecretProvider struct {
 	mock.Mock
 }
 
+// DeregisterSecretUpdatedCallback provides a mock function with given fields: path
+func (_m *SecretProvider) DeregisterSecretUpdatedCallback(path string) {
+	_m.Called(path)
+}
+
 // GetAccessToken provides a mock function with given fields: tokenType, serviceKey
 func (_m *SecretProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
 	ret := _m.Called(tokenType, serviceKey)
@@ -85,9 +90,46 @@ func (_m *SecretProvider) HasSecret(path string) (bool, error) {
 	return r0, r1
 }
 
-// RegisteredSecretUpdateCallback provides a mock function with given fields: path, callback
-func (_m *SecretProvider) RegisteredSecretUpdateCallback(path string, callback func(string)) {
-	_m.Called(path, callback)
+// ListSecretPaths provides a mock function with given fields:
+func (_m *SecretProvider) ListSecretPaths() ([]string, error) {
+	ret := _m.Called()
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func() []string); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// RegisteredSecretUpdatedCallback provides a mock function with given fields: path, callback
+func (_m *SecretProvider) RegisteredSecretUpdatedCallback(path string, callback func(string)) error {
+	ret := _m.Called(path, callback)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, func(string)) error); ok {
+		r0 = rf(path, callback)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SecretUpdatedAtPath provides a mock function with given fields: path
+func (_m *SecretProvider) SecretUpdatedAtPath(path string) {
+	_m.Called(path)
 }
 
 // SecretsLastUpdated provides a mock function with given fields:
@@ -107,11 +149,6 @@ func (_m *SecretProvider) SecretsLastUpdated() time.Time {
 // SecretsUpdated provides a mock function with given fields:
 func (_m *SecretProvider) SecretsUpdated() {
 	_m.Called()
-}
-
-// SecretsUpdatedWithPath provides a mock function with given fields: path
-func (_m *SecretProvider) SecretsUpdatedWithPath(path string) {
-	_m.Called(path)
 }
 
 // StoreSecret provides a mock function with given fields: path, secrets

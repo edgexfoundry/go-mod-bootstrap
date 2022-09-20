@@ -36,9 +36,10 @@ type InsecureProvider struct {
 // NewInsecureProvider creates, initializes Provider for insecure secrets.
 func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClient) *InsecureProvider {
 	return &InsecureProvider{
-		configuration: config,
-		lc:            lc,
-		lastUpdated:   time.Now(),
+		configuration:             config,
+		lc:                        lc,
+		lastUpdated:               time.Now(),
+		registeredSecretCallbacks: make(map[string]func(path string)),
 	}
 }
 
@@ -131,24 +132,52 @@ func (p *InsecureProvider) HasSecret(path string) (bool, error) {
 	return false, nil
 }
 
-// RegisteredSecretUpdateCallback registers a callback for a secret.
-func (p *InsecureProvider) RegisteredSecretUpdateCallback(path string, callback func(path string)) {
-	p.registeredSecretCallbacks[path] = callback
+// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
+func (p *InsecureProvider) ListSecretPaths() ([]string, error) {
+	var results []string
+
+	insecureSecrets := p.configuration.GetInsecureSecrets()
+	if insecureSecrets == nil {
+		err := fmt.Errorf("InsecureSecrets missing from configuration")
+		return nil, err
+	}
+
+	for _, insecureSecret := range insecureSecrets {
+		results = append(results, insecureSecret.Path)
+	}
+
+	return results, nil
 }
 
-// SecretsUpdatedWithPath performs updates for an updated secret.
-func (p *InsecureProvider) SecretsUpdatedWithPath(path string) {
-	p.lastUpdated = time.Now()
+// RegisteredSecretUpdatedCallback registers a callback for a secret.
+func (p *InsecureProvider) RegisteredSecretUpdatedCallback(path string, callback func(path string)) error {
+	if _, ok := p.registeredSecretCallbacks[path]; ok {
+		return fmt.Errorf("there is a callback already registered for path '%v'", path)
+	}
 
+	// Register new call back for path.
+	p.registeredSecretCallbacks[path] = callback
+
+	return nil
+}
+
+// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
+func (p *InsecureProvider) SecretUpdatedAtPath(path string) {
+	p.lastUpdated = time.Now()
 	if p.registeredSecretCallbacks != nil {
 		// Execute Callback for provided path.
 		for k, v := range p.registeredSecretCallbacks {
 			if k == path {
+				p.lc.Debugf("invoking callback registered for path: '%s'", path)
 				v(path)
 				return
 			}
 		}
 	}
+}
 
-	p.lc.Infof("no callback registered for path: '%s'", path)
+// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
+func (p *InsecureProvider) DeregisterSecretUpdatedCallback(path string) {
+	// Remove path from map.
+	delete(p.registeredSecretCallbacks, path)
 }

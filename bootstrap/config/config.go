@@ -513,9 +513,9 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					secretProvider := container.SecretProviderFrom(cp.dic.Get)
 					if secretProvider != nil {
 						// Find the updated secret's path and perform call backs.
-						updatedSecrets := getMapDiff(previousInsecureSecrets, currentInsecureSecrets)
+						updatedSecrets := getSecretPathsChanged(previousInsecureSecrets, currentInsecureSecrets)
 						for _, v := range updatedSecrets {
-							secretProvider.SecretsUpdatedWithPath(v)
+							secretProvider.SecretUpdatedAtPath(v)
 						}
 					}
 
@@ -556,16 +556,33 @@ func (cp *Processor) logConfigInfo(message string, overrideCount int) {
 	cp.lc.Infof("%s (%d envVars overrides applied)", message, overrideCount)
 }
 
-func getMapDiff(m1 config.InsecureSecrets, m2 config.InsecureSecrets) []string {
+// getSecretPathsChanged returns a slice of paths that have changed secrets or are new.
+func getSecretPathsChanged(prevVals config.InsecureSecrets, curVals config.InsecureSecrets) []string {
 	var updatedPaths []string
-	for key1, val1 := range m1 {
-		if val1.Path == m2[key1].Path {
-			for k, v := range val1.Secrets {
-				// Checking for changed secret.
-				if m2[key1].Secrets[k] != v {
-					updatedPaths = append(updatedPaths, val1.Path)
-				}
+	for key, prevVal := range prevVals {
+		curVal := curVals[key]
+
+		// Catches removed secrets
+		if curVal.Secrets == nil {
+			updatedPaths = append(updatedPaths, prevVal.Path)
+			continue
+		}
+
+		// Catches changes to secret data or to the path name
+		if !reflect.DeepEqual(prevVal, curVal) {
+			updatedPaths = append(updatedPaths, curVal.Path)
+
+			// Catches path name changes, so also include the previous path
+			if prevVal.Path != curVal.Path {
+				updatedPaths = append(updatedPaths, prevVal.Path)
 			}
+		}
+	}
+
+	for key, curVal := range curVals {
+		// Catches new secrets added
+		if prevVals[key].Secrets == nil {
+			updatedPaths = append(updatedPaths, curVal.Path)
 		}
 	}
 

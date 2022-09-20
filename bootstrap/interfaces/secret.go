@@ -23,12 +23,18 @@ type SecretProvider interface {
 	// Service key is use as the access token role which must have be previously setup.
 	GetAccessToken(tokenType string, serviceKey string) (string, error)
 
+	// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
+	ListSecretPaths() ([]string, error)
+
 	// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
 	HasSecret(path string) (bool, error)
 
-	// RegisteredSecretUpdateCallback registers a callback for a secret.
-	RegisteredSecretUpdateCallback(path string, callback func(path string))
+	// RegisteredSecretUpdatedCallback registers a callback for a secret.
+	RegisteredSecretUpdatedCallback(path string, callback func(path string)) error
 
-	// SecretsUpdatedWithPath .
-	SecretsUpdatedWithPath(path string)
+	// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
+	SecretUpdatedAtPath(path string)
+
+	// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
+	DeregisterSecretUpdatedCallback(path string)
 }

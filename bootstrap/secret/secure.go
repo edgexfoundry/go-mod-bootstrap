@@ -66,15 +66,16 @@ func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc 
 	loader authtokenloader.AuthTokenLoader, runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
 	serviceKey string) *SecureProvider {
 	provider := &SecureProvider{
-		configuration:        config,
-		lc:                   lc,
-		loader:               loader,
-		runtimeTokenProvider: runtimeTokenLoader,
-		serviceKey:           serviceKey,
-		secretsCache:         make(map[string]map[string]string),
-		cacheMutex:           &sync.RWMutex{},
-		lastUpdated:          time.Now(),
-		ctx:                  ctx,
+		configuration:             config,
+		lc:                        lc,
+		loader:                    loader,
+		runtimeTokenProvider:      runtimeTokenLoader,
+		serviceKey:                serviceKey,
+		secretsCache:              make(map[string]map[string]string),
+		cacheMutex:                &sync.RWMutex{},
+		lastUpdated:               time.Now(),
+		ctx:                       ctx,
+		registeredSecretCallbacks: make(map[string]func(path string)),
 	}
 	return provider
 }
@@ -179,7 +180,7 @@ func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) err
 	}
 
 	// Execute Callbacks on registered secret paths.
-	p.SecretsUpdatedWithPath(path)
+	p.SecretUpdatedAtPath(path)
 
 	// Synchronize cache access before clearing
 	p.cacheMutex.Lock()
@@ -371,24 +372,57 @@ func (p *SecureProvider) HasSecret(path string) (bool, error) {
 	return true, nil
 }
 
-// RegisteredSecretUpdateCallback registers a callback for a secret.
-func (p *SecureProvider) RegisteredSecretUpdateCallback(path string, callback func(path string)) {
-	p.registeredSecretCallbacks[path] = callback
+// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
+func (p *SecureProvider) ListSecretPaths() ([]string, error) {
+
+	if p.secretClient == nil {
+		return nil, errors.New("can't get secret paths. Secure secret provider is not properly initialized")
+	}
+
+	secureSecrets, err := p.secretClient.GetKeys("")
+
+	retry, err := p.reloadTokenOnAuthError(err)
+	if retry {
+		// Retry with potential new token
+		secureSecrets, err = p.secretClient.GetKeys("")
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to get secret paths: %v", err)
+	}
+
+	return secureSecrets, nil
 }
 
-// SecretsUpdatedWithPath performs a callback for a secret.
-func (p *SecureProvider) SecretsUpdatedWithPath(path string) {
-	p.lastUpdated = time.Now()
+// RegisteredSecretUpdatedCallback registers a callback for a secret.
+func (p *SecureProvider) RegisteredSecretUpdatedCallback(path string, callback func(path string)) error {
+	if _, ok := p.registeredSecretCallbacks[path]; ok {
+		return fmt.Errorf("there is a callback already registered for path '%v'", path)
+	}
 
+	// Register new call back for path.
+	p.registeredSecretCallbacks[path] = callback
+
+	return nil
+}
+
+// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
+func (p *SecureProvider) SecretUpdatedAtPath(path string) {
+	p.lastUpdated = time.Now()
 	if p.registeredSecretCallbacks != nil {
 		// Execute Callback for provided path.
 		for k, v := range p.registeredSecretCallbacks {
 			if k == path {
+				p.lc.Debugf("invoking callback registered for path: '%s'", path)
 				v(path)
 				return
 			}
 		}
 	}
+}
 
-	p.lc.Infof("no callback registered for path: '%s'", path)
+// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
+func (p *SecureProvider) DeregisterSecretUpdatedCallback(path string) {
+	// Remove path from map.
+	delete(p.registeredSecretCallbacks, path)
 }
