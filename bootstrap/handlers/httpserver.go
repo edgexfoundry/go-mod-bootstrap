@@ -116,8 +116,9 @@ func (b *HttpServer) BootstrapHandler(
 	}).HandlerFunc(HandlePreflight(bootstrapConfig.Service.CORSConfiguration))
 
 	server := &http.Server{
-		Addr:    addr,
-		Handler: b.router,
+		Addr:              addr,
+		Handler:           b.router,
+		ReadHeaderTimeout: 5 * time.Second, // G112: A configured ReadHeaderTimeout in the http.Server averts a potential Slowloris Attack
 	}
 
 	wg.Add(1)

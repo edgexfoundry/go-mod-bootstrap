@@ -419,3 +419,85 @@ func TestSecureProvider_ListSecretPathsSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestSecureProvider_SecretUpdatedAtPath(t *testing.T) {
+	callbackCalled := false
+	callback := func(path string) {
+		callbackCalled = true
+	}
+
+	tests := []struct {
+		Name     string
+		Config   TestConfig
+		Path     string
+		Callback func(path string)
+	}{
+		{"Valid Secure", TestConfig{}, expectedPath, callback},
+		{"Valid No Callbacks", TestConfig{}, expectedPath, nil},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			callbackCalled = false
+			target := NewSecureProvider(context.Background(), tc.Config, logger.NewMockClient(), nil, nil, "testService")
+
+			if tc.Callback != nil {
+				target.registeredSecretCallbacks[tc.Path] = tc.Callback
+			}
+
+			target.SecretUpdatedAtPath(tc.Path)
+			assert.Equal(t, tc.Callback != nil, callbackCalled)
+		})
+	}
+}
+
+func TestSecureProvider_RegisteredSecretUpdatedCallback(t *testing.T) {
+	tests := []struct {
+		Name     string
+		Config   TestConfig
+		Path     string
+		Callback func(path string)
+	}{
+		{"Valid Secure", TestConfig{}, expectedPath, func(path string) {}},
+		{"Valid No Callbacks", TestConfig{}, expectedPath, nil},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewSecureProvider(context.Background(), tc.Config, logger.NewMockClient(), nil, nil, "testService")
+			err := target.RegisteredSecretUpdatedCallback(tc.Path, tc.Callback)
+			assert.NoError(t, err)
+
+			if tc.Callback != nil {
+				assert.NotEmpty(t, target.registeredSecretCallbacks[tc.Path])
+			} else {
+				assert.Nil(t, target.registeredSecretCallbacks[tc.Path])
+			}
+		})
+	}
+}
+
+func TestSecureProvider_DeregisterSecretUpdatedCallback(t *testing.T) {
+	tests := []struct {
+		Name     string
+		Config   TestConfig
+		Path     string
+		Callback func(path string)
+	}{
+		{"Valid Secure", TestConfig{}, expectedPath, func(path string) {}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewSecureProvider(context.Background(), tc.Config, logger.NewMockClient(), nil, nil, "testService")
+
+			// Register a path.
+			err := target.RegisteredSecretUpdatedCallback(tc.Path, tc.Callback)
+			assert.NoError(t, err)
+
+			// Deregister a path.
+			target.DeregisterSecretUpdatedCallback(tc.Path)
+			assert.Empty(t, target.registeredSecretCallbacks)
+		})
+	}
+}

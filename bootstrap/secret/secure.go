@@ -51,13 +51,14 @@ type SecureProvider struct {
 	lc           logger.LoggingClient
 	loader       authtokenloader.AuthTokenLoader
 	// runtimeTokenProvider is for delayed start services
-	runtimeTokenProvider runtimetokenprovider.RuntimeTokenProvider
-	serviceKey           string
-	configuration        interfaces.Configuration
-	secretsCache         map[string]map[string]string // secret's path, key, value
-	cacheMutex           *sync.RWMutex
-	lastUpdated          time.Time
-	ctx                  context.Context
+	runtimeTokenProvider      runtimetokenprovider.RuntimeTokenProvider
+	serviceKey                string
+	configuration             interfaces.Configuration
+	secretsCache              map[string]map[string]string // secret's path, key, value
+	cacheMutex                *sync.RWMutex
+	lastUpdated               time.Time
+	ctx                       context.Context
+	registeredSecretCallbacks map[string]func(path string)
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -65,15 +66,16 @@ func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc 
 	loader authtokenloader.AuthTokenLoader, runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
 	serviceKey string) *SecureProvider {
 	provider := &SecureProvider{
-		configuration:        config,
-		lc:                   lc,
-		loader:               loader,
-		runtimeTokenProvider: runtimeTokenLoader,
-		serviceKey:           serviceKey,
-		secretsCache:         make(map[string]map[string]string),
-		cacheMutex:           &sync.RWMutex{},
-		lastUpdated:          time.Now(),
-		ctx:                  ctx,
+		configuration:             config,
+		lc:                        lc,
+		loader:                    loader,
+		runtimeTokenProvider:      runtimeTokenLoader,
+		serviceKey:                serviceKey,
+		secretsCache:              make(map[string]map[string]string),
+		cacheMutex:                &sync.RWMutex{},
+		lastUpdated:               time.Now(),
+		ctx:                       ctx,
+		registeredSecretCallbacks: make(map[string]func(path string)),
 	}
 	return provider
 }
@@ -176,6 +178,9 @@ func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) err
 	if err != nil {
 		return err
 	}
+
+	// Execute Callbacks on registered secret paths.
+	p.SecretUpdatedAtPath(path)
 
 	// Synchronize cache access before clearing
 	p.cacheMutex.Lock()
@@ -387,4 +392,37 @@ func (p *SecureProvider) ListSecretPaths() ([]string, error) {
 	}
 
 	return secureSecrets, nil
+}
+
+// RegisteredSecretUpdatedCallback registers a callback for a secret.
+func (p *SecureProvider) RegisteredSecretUpdatedCallback(path string, callback func(path string)) error {
+	if _, ok := p.registeredSecretCallbacks[path]; ok {
+		return fmt.Errorf("there is a callback already registered for path '%v'", path)
+	}
+
+	// Register new call back for path.
+	p.registeredSecretCallbacks[path] = callback
+
+	return nil
+}
+
+// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
+func (p *SecureProvider) SecretUpdatedAtPath(path string) {
+	p.lastUpdated = time.Now()
+	if p.registeredSecretCallbacks != nil {
+		// Execute Callback for provided path.
+		for k, v := range p.registeredSecretCallbacks {
+			if k == path {
+				p.lc.Debugf("invoking callback registered for path: '%s'", path)
+				v(path)
+				return
+			}
+		}
+	}
+}
+
+// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
+func (p *SecureProvider) DeregisterSecretUpdatedCallback(path string) {
+	// Remove path from map.
+	delete(p.registeredSecretCallbacks, path)
 }

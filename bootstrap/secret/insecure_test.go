@@ -15,6 +15,8 @@
 package secret
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -138,7 +140,12 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tc.ExpectedKeys, actual)
+
+			// Sorting slices for comparison.
+			sort.Strings(actual)
+			sort.Strings(tc.ExpectedKeys)
+
+			assert.True(t, reflect.DeepEqual(tc.ExpectedKeys, actual))
 		})
 	}
 }
@@ -189,6 +196,113 @@ func TestInsecureProvider_HasSecrets(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.ExpectResults, actual)
+		})
+	}
+}
+
+func TestInsecureProvider_SecretUpdatedAtPath(t *testing.T) {
+	configAllSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"DB": {
+				Path:    expectedPath,
+				Secrets: expectedSecrets,
+			},
+		},
+	}
+
+	callbackCalled := false
+	callback := func(path string) {
+		callbackCalled = true
+	}
+
+	tests := []struct {
+		Name     string
+		Path     string
+		Callback func(path string)
+		Config   TestConfig
+	}{
+		{"Valid", expectedPath, callback, configAllSecrets},
+		{"Valid no callback", expectedPath, nil, configAllSecrets},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			callbackCalled = false
+			target := NewInsecureProvider(tc.Config, logger.NewMockClient())
+
+			if tc.Callback != nil {
+				target.registeredSecretCallbacks[tc.Path] = tc.Callback
+			}
+
+			target.SecretUpdatedAtPath(tc.Path)
+			assert.Equal(t, tc.Callback != nil, callbackCalled)
+		})
+	}
+}
+
+func TestInsecureProvider_RegisteredSecretUpdatedCallback(t *testing.T) {
+	configAllSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"DB": {
+				Path:    expectedPath,
+				Secrets: expectedSecrets,
+			},
+		},
+	}
+
+	tests := []struct {
+		Name     string
+		Path     string
+		Callback func(path string)
+		Config   TestConfig
+	}{
+		{"Valid", expectedPath, func(path string) {}, configAllSecrets},
+		{"Valid no callback", expectedPath, nil, configAllSecrets},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
+			err := target.RegisteredSecretUpdatedCallback(tc.Path, tc.Callback)
+			assert.NoError(t, err)
+
+			if tc.Callback != nil {
+				assert.NotEmpty(t, target.registeredSecretCallbacks[tc.Path])
+			} else {
+				assert.Nil(t, target.registeredSecretCallbacks[tc.Path])
+			}
+		})
+	}
+}
+
+func TestInsecureProvider_DeregisterSecretUpdatedCallback(t *testing.T) {
+	configAllSecrets := TestConfig{
+		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
+			"DB": {
+				Path:    expectedPath,
+				Secrets: expectedSecrets,
+			},
+		},
+	}
+
+	tests := []struct {
+		Name     string
+		Path     string
+		Callback func(path string)
+		Config   TestConfig
+	}{
+		{"Valid", expectedPath, func(path string) {}, configAllSecrets},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := NewInsecureProvider(tc.Config, logger.MockLogger{})
+			err := target.RegisteredSecretUpdatedCallback(tc.Path, tc.Callback)
+			assert.NoError(t, err)
+
+			// Deregister a secret path.
+			target.DeregisterSecretUpdatedCallback(tc.Path)
+			assert.Empty(t, target.registeredSecretCallbacks)
 		})
 	}
 }

@@ -27,17 +27,19 @@ import (
 
 // InsecureProvider implements the SecretProvider interface for insecure secrets
 type InsecureProvider struct {
-	lc            logger.LoggingClient
-	configuration interfaces.Configuration
-	lastUpdated   time.Time
+	lc                        logger.LoggingClient
+	configuration             interfaces.Configuration
+	lastUpdated               time.Time
+	registeredSecretCallbacks map[string]func(path string)
 }
 
 // NewInsecureProvider creates, initializes Provider for insecure secrets.
 func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClient) *InsecureProvider {
 	return &InsecureProvider{
-		configuration: config,
-		lc:            lc,
-		lastUpdated:   time.Now(),
+		configuration:             config,
+		lc:                        lc,
+		lastUpdated:               time.Now(),
+		registeredSecretCallbacks: make(map[string]func(path string)),
 	}
 }
 
@@ -145,4 +147,37 @@ func (p *InsecureProvider) ListSecretPaths() ([]string, error) {
 	}
 
 	return results, nil
+}
+
+// RegisteredSecretUpdatedCallback registers a callback for a secret.
+func (p *InsecureProvider) RegisteredSecretUpdatedCallback(path string, callback func(path string)) error {
+	if _, ok := p.registeredSecretCallbacks[path]; ok {
+		return fmt.Errorf("there is a callback already registered for path '%v'", path)
+	}
+
+	// Register new call back for path.
+	p.registeredSecretCallbacks[path] = callback
+
+	return nil
+}
+
+// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
+func (p *InsecureProvider) SecretUpdatedAtPath(path string) {
+	p.lastUpdated = time.Now()
+	if p.registeredSecretCallbacks != nil {
+		// Execute Callback for provided path.
+		for k, v := range p.registeredSecretCallbacks {
+			if k == path {
+				p.lc.Debugf("invoking callback registered for path: '%s'", path)
+				v(path)
+				return
+			}
+		}
+	}
+}
+
+// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
+func (p *InsecureProvider) DeregisterSecretUpdatedCallback(path string) {
+	// Remove path from map.
+	delete(p.registeredSecretCallbacks, path)
 }

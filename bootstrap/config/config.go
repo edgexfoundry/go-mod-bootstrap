@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"io/ioutil"
 	"math"
 	"reflect"
@@ -511,7 +512,11 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					lc.Info("Insecure Secrets have been updated")
 					secretProvider := container.SecretProviderFrom(cp.dic.Get)
 					if secretProvider != nil {
-						secretProvider.SecretsUpdated()
+						// Find the updated secret's path and perform call backs.
+						updatedSecrets := getSecretPathsChanged(previousInsecureSecrets, currentInsecureSecrets)
+						for _, v := range updatedSecrets {
+							secretProvider.SecretUpdatedAtPath(v)
+						}
 					}
 
 				case currentTelemetryInterval != previousTelemetryInterval:
@@ -549,4 +554,37 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 // logConfigInfo logs the config info message with number over overrides that occurred.
 func (cp *Processor) logConfigInfo(message string, overrideCount int) {
 	cp.lc.Infof("%s (%d envVars overrides applied)", message, overrideCount)
+}
+
+// getSecretPathsChanged returns a slice of paths that have changed secrets or are new.
+func getSecretPathsChanged(prevVals config.InsecureSecrets, curVals config.InsecureSecrets) []string {
+	var updatedPaths []string
+	for key, prevVal := range prevVals {
+		curVal := curVals[key]
+
+		// Catches removed secrets
+		if curVal.Secrets == nil {
+			updatedPaths = append(updatedPaths, prevVal.Path)
+			continue
+		}
+
+		// Catches changes to secret data or to the path name
+		if !reflect.DeepEqual(prevVal, curVal) {
+			updatedPaths = append(updatedPaths, curVal.Path)
+
+			// Catches path name changes, so also include the previous path
+			if prevVal.Path != curVal.Path {
+				updatedPaths = append(updatedPaths, prevVal.Path)
+			}
+		}
+	}
+
+	for key, curVal := range curVals {
+		// Catches new secrets added
+		if prevVals[key].Secrets == nil {
+			updatedPaths = append(updatedPaths, curVal.Path)
+		}
+	}
+
+	return updatedPaths
 }
