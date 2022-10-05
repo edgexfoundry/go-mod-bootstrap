@@ -113,6 +113,11 @@ func (_m *SecretProvider) ListSecretPaths() ([]string, error) {
 	return r0, r1
 }
 
+// RegisterMetrics provides a mock function with given fields: registerCallback
+func (_m *SecretProvider) RegisterMetrics(registerCallback func(map[string]interface{})) {
+	_m.Called(registerCallback)
+}
+
 // RegisteredSecretUpdatedCallback provides a mock function with given fields: path, callback
 func (_m *SecretProvider) RegisteredSecretUpdatedCallback(path string, callback func(string)) error {
 	ret := _m.Called(path, callback)
