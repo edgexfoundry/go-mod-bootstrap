@@ -162,6 +162,22 @@ func RunAndReturnWaitGroup(
 		}
 	}
 
+	// Have to delay registering the general common service metrics until all bootstrap handler have run so that there is
+	// opportunity for the MetricsManager to have been created.
+	metricsManager := container.MetricsManagerFrom(dic.Get)
+	if metricsManager != nil {
+		secretProvider := container.SecretProviderFrom(dic.Get)
+		if secretProvider != nil {
+			secretProvider.RegisterMetrics(func(metrics map[string]interface{}) {
+				registerMetrics(metricsManager, metrics, lc)
+			})
+
+			// TODO: use this same approach to register future service metric controlled by other components
+		}
+	} else {
+		lc.Warn("MetricsManager not available. General common service metrics will not be reported. ")
+	}
+
 	return &wg, deferred, startedSuccessfully
 }
 
@@ -206,4 +222,16 @@ func Run(
 
 	// wait for go routines to stop executing.
 	wg.Wait()
+}
+
+func registerMetrics(metricsManager interfaces.MetricsManager, metrics map[string]interface{}, lc logger.LoggingClient) {
+	for metricName, metric := range metrics {
+		err := metricsManager.Register(metricName, metric, nil)
+		if err != nil {
+			lc.Warnf("Unable to register %s metric for reporting: %v", metricName, err)
+			continue
+		}
+
+		lc.Infof("%s metric registered and will be reported (if enabled)", metricName)
+	}
 }

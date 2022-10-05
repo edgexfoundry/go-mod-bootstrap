@@ -19,11 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-secrets/v2/pkg"
+	gometrics "github.com/rcrowley/go-metrics"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/hashicorp/go-multierror"
@@ -59,6 +61,8 @@ type SecureProvider struct {
 	lastUpdated               time.Time
 	ctx                       context.Context
 	registeredSecretCallbacks map[string]func(path string)
+	securitySecretsRequested  gometrics.Counter
+	securitySecretsStored     gometrics.Counter
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -76,6 +80,8 @@ func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc 
 		lastUpdated:               time.Now(),
 		ctx:                       ctx,
 		registeredSecretCallbacks: make(map[string]func(path string)),
+		securitySecretsRequested:  gometrics.NewCounter(),
+		securitySecretsStored:     gometrics.NewCounter(),
 	}
 	return provider
 }
@@ -90,6 +96,8 @@ func (p *SecureProvider) SetClient(client secrets.SecretClient) {
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
 func (p *SecureProvider) GetSecret(path string, keys ...string) (map[string]string, error) {
+	p.securitySecretsRequested.Inc(1)
+
 	if cachedSecrets := p.getSecretsCache(path, keys...); cachedSecrets != nil {
 		return cachedSecrets, nil
 	}
@@ -163,6 +171,8 @@ func (p *SecureProvider) updateSecretsCache(path string, secrets map[string]stri
 // path specifies the type or location of the secrets to store
 // secrets map specifies the "key": "value" pairs of secrets to store
 func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) error {
+	p.securitySecretsStored.Inc(1)
+
 	if p.secretClient == nil {
 		return errors.New("can't store secrets. Secure secret provider is not properly initialized")
 	}
@@ -425,4 +435,12 @@ func (p *SecureProvider) SecretUpdatedAtPath(path string) {
 func (p *SecureProvider) DeregisterSecretUpdatedCallback(path string) {
 	// Remove path from map.
 	delete(p.registeredSecretCallbacks, path)
+}
+
+// RegisterMetrics registers all SecureProvider metric objects using the passed in registerCallback.
+func (p *SecureProvider) RegisterMetrics(registerCallback func(metrics map[string]interface{})) {
+	registerCallback(map[string]interface{}{
+		interfaces.SecretsRequestedMetricName: p.securitySecretsRequested,
+		interfaces.SecretsStoredMetricName:    p.securitySecretsStored,
+	})
 }

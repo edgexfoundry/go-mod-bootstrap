@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	gometrics "github.com/rcrowley/go-metrics"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
@@ -31,6 +32,8 @@ type InsecureProvider struct {
 	configuration             interfaces.Configuration
 	lastUpdated               time.Time
 	registeredSecretCallbacks map[string]func(path string)
+	securitySecretsRequested  gometrics.Counter
+	securitySecretsStored     gometrics.Counter
 }
 
 // NewInsecureProvider creates, initializes Provider for insecure secrets.
@@ -40,6 +43,8 @@ func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClien
 		lc:                        lc,
 		lastUpdated:               time.Now(),
 		registeredSecretCallbacks: make(map[string]func(path string)),
+		securitySecretsRequested:  gometrics.NewCounter(),
+		securitySecretsStored:     gometrics.NewCounter(),
 	}
 }
 
@@ -48,6 +53,8 @@ func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClien
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
 func (p *InsecureProvider) GetSecret(path string, keys ...string) (map[string]string, error) {
+	p.securitySecretsRequested.Inc(1)
+
 	results := make(map[string]string)
 	pathExists := false
 	var missingKeys []string
@@ -163,6 +170,8 @@ func (p *InsecureProvider) RegisteredSecretUpdatedCallback(path string, callback
 
 // SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
 func (p *InsecureProvider) SecretUpdatedAtPath(path string) {
+	p.securitySecretsStored.Inc(1)
+
 	p.lastUpdated = time.Now()
 	if p.registeredSecretCallbacks != nil {
 		// Execute Callback for provided path.
@@ -180,4 +189,12 @@ func (p *InsecureProvider) SecretUpdatedAtPath(path string) {
 func (p *InsecureProvider) DeregisterSecretUpdatedCallback(path string) {
 	// Remove path from map.
 	delete(p.registeredSecretCallbacks, path)
+}
+
+// RegisterMetrics registers all InsecureProvider metric objects using the registerCallback in callback.
+func (p *InsecureProvider) RegisterMetrics(registerCallback func(metrics map[string]interface{})) {
+	registerCallback(map[string]interface{}{
+		interfaces.SecretsRequestedMetricName: p.securitySecretsRequested,
+		interfaces.SecretsStoredMetricName:    p.securitySecretsStored,
+	})
 }
