@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
  * Copyright 2022 Intel Inc.
- * Copyright 2021 IOTech Ltd.
+ * Copyright 2021-2022 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -258,6 +258,8 @@ type ExternalMQTTInfo struct {
 	RetryDuration int
 	// RetryInterval indicates the time (in seconds) that will be waited between attempts to create MQTT client
 	RetryInterval int
+	// Enabled determines whether the service needs to connect to the external MQTT broker
+	Enabled bool
 }
 
 // URL constructs a URL from the protocol, host and port and returns that as a string.
