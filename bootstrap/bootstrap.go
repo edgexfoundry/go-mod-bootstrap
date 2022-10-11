@@ -162,20 +162,24 @@ func RunAndReturnWaitGroup(
 		}
 	}
 
-	// Have to delay registering the general common service metrics until all bootstrap handler have run so that there is
-	// opportunity for the MetricsManager to have been created.
-	metricsManager := container.MetricsManagerFrom(dic.Get)
-	if metricsManager != nil {
-		secretProvider := container.SecretProviderFrom(dic.Get)
-		if secretProvider != nil {
-			secretProvider.RegisterMetrics(func(metrics map[string]interface{}) {
-				registerMetrics(metricsManager, metrics, lc)
-			})
+	// Service that don't use the Security Provider also will not collect metrics. These are the security services that
+	// run during bootstrapping of the secure deployment
+	if useSecretProvider && startedSuccessfully {
+		// Have to delay registering the general common service metrics until all bootstrap handlers have run so that there is
+		// opportunity for the MetricsManager to have been created.
+		metricsManager := container.MetricsManagerFrom(dic.Get)
+		if metricsManager != nil {
+			secretProvider := container.SecretProviderFrom(dic.Get)
+			if secretProvider != nil {
+				secretProvider.RegisterMetrics(func(metrics map[string]interface{}) {
+					registerMetrics(metricsManager, metrics, lc)
+				})
 
-			// TODO: use this same approach to register future service metric controlled by other components
+				// TODO: use this same approach to register future service metric controlled by other components
+			}
+		} else {
+			lc.Warn("MetricsManager not available. General common service metrics will not be reported. ")
 		}
-	} else {
-		lc.Warn("MetricsManager not available. General common service metrics will not be reported. ")
 	}
 
 	return &wg, deferred, startedSuccessfully
