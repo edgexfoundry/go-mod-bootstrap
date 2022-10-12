@@ -81,7 +81,7 @@ func TestOverrideConfigProviderInfo(t *testing.T) {
 func TestOverrideConfigProviderInfo_none(t *testing.T) {
 	providerConfig, lc := initializeTest()
 
-	err := os.Setenv(envKeyConfigUrl, "none")
+	err := os.Setenv(envKeyConfigUrl, noConfigProviderValue)
 	require.NoError(t, err)
 
 	env := NewVariables(lc)
