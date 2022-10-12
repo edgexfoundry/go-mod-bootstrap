@@ -44,6 +44,8 @@ const (
 	envProfile            = "EDGEX_PROFILE"
 	envFile               = "EDGEX_CONFIG_FILE"
 
+	NoConfigProviderValue = "none"
+
 	tomlPathSeparator = "."
 	tomlNameSeparator = "-"
 	envNameSeparator  = "_"
@@ -203,6 +205,10 @@ func (e *Variables) OverrideConfigProviderInfo(configProviderInfo types.ServiceC
 	url := os.Getenv(envKeyConfigUrl)
 	if len(url) > 0 {
 		logEnvironmentOverride(e.lc, "Configuration Provider Information", envKeyConfigUrl, url)
+
+		if url == NoConfigProviderValue {
+			return types.ServiceConfig{}, nil
+		}
 
 		if err := configProviderInfo.PopulateFromUrl(url); err != nil {
 			return types.ServiceConfig{}, err
