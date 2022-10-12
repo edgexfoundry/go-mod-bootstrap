@@ -17,12 +17,13 @@ package environment
 
 import (
 	"fmt"
-	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
-	"github.com/stretchr/testify/mock"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+
+	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
@@ -75,6 +76,22 @@ func TestOverrideConfigProviderInfo(t *testing.T) {
 	assert.Equal(t, providerConfig.Port, expectedPortValue)
 	assert.Equal(t, providerConfig.Type, expectedTypeValue)
 	assert.Equal(t, providerConfig.Protocol, expectedProtocolValue)
+}
+
+func TestOverrideConfigProviderInfo_none(t *testing.T) {
+	providerConfig, lc := initializeTest()
+
+	err := os.Setenv(envKeyConfigUrl, noConfigProviderValue)
+	require.NoError(t, err)
+
+	env := NewVariables(lc)
+	providerConfig, err = env.OverrideConfigProviderInfo(providerConfig)
+
+	assert.NoError(t, err)
+	assert.Empty(t, providerConfig.Host)
+	assert.Empty(t, providerConfig.Port)
+	assert.Empty(t, providerConfig.Type)
+	assert.Empty(t, providerConfig.Protocol)
 }
 
 func TestOverrideConfigProviderInfo_NoEnvVariables(t *testing.T) {
