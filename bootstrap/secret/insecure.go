@@ -191,10 +191,10 @@ func (p *InsecureProvider) DeregisterSecretUpdatedCallback(path string) {
 	delete(p.registeredSecretCallbacks, path)
 }
 
-// RegisterMetrics registers all InsecureProvider metric objects using the registerCallback in callback.
-func (p *InsecureProvider) RegisterMetrics(registerCallback func(metrics map[string]interface{})) {
-	registerCallback(map[string]interface{}{
-		interfaces.SecretsRequestedMetricName: p.securitySecretsRequested,
-		interfaces.SecretsStoredMetricName:    p.securitySecretsStored,
-	})
+// GetMetricsToRegister returns all metric objects that needs to be registered.
+func (p *InsecureProvider) GetMetricsToRegister() map[string]interface{} {
+	return map[string]interface{}{
+		secretsRequestedMetricName: p.securitySecretsRequested,
+		secretsStoredMetricName:    p.securitySecretsStored,
+	}
 }

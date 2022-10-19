@@ -36,6 +36,14 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/runtimetokenprovider"
 )
 
+// secret service Metric Names
+const (
+	secretsRequestedMetricName        = "SecuritySecretsRequested"
+	secretsStoredMetricName           = "SecuritySecretsStored"
+	securityConsulTokensRequestedName = "SecurityConsulTokensRequested"
+	securityConsulTokenDurationName   = "SecurityConsulTokenDuration"
+)
+
 // NewSecretProvider creates a new fully initialized the Secret Provider.
 func NewSecretProvider(
 	configuration interfaces.Configuration,
