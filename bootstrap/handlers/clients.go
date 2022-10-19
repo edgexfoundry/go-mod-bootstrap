@@ -18,10 +18,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	clientsMessaging "github.com/edgexfoundry/go-mod-messaging/v2/clients"
 	"github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
@@ -55,10 +58,15 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	cb.registry = container.RegistryFrom(dic.Get)
 
 	for serviceKey, serviceInfo := range config.GetBootstrap().Clients {
-		url, err := cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, lc)
-		if err != nil {
-			lc.Error(err.Error())
-			return false
+		var url string
+		var err error
+
+		if !serviceInfo.UseMessageBus {
+			url, err = cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, lc)
+			if err != nil {
+				lc.Error(err.Error())
+				return false
+			}
 		}
 
 		switch serviceKey {
@@ -85,9 +93,34 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			})
 
 		case common.CoreCommandServiceKey:
+			var client interfaces.CommandClient
+
+			if serviceInfo.UseMessageBus {
+				// TODO: Move following outside loop when multiple messaging based clients exist
+				messageClient := container.MessagingClientFrom(dic.Get)
+				if messageClient == nil {
+					lc.Errorf("Unable to create Command client using MessageBus: %s", "MessageBus Client was not created")
+					return false
+				}
+
+				// TODO: Move following outside loop when multiple messaging based clients exist
+				timeout, err := time.ParseDuration(config.GetBootstrap().Service.RequestTimeout)
+				if err != nil {
+					lc.Errorf("Unable to parse Service.RequestTimeout as a time duration: %v", err)
+					return false
+				}
+
+				// Note that NewCommandClient never returns an error
+				client, _ = clientsMessaging.NewCommandClient(messageClient, serviceInfo.Topics, timeout)
+
+				lc.Infof("Using messaging for '%s' clients", serviceKey)
+			} else {
+				client = clients.NewCommandClient(url)
+			}
+
 			dic.Update(di.ServiceConstructorMap{
 				container.CommandClientName: func(get di.Get) interface{} {
-					return clients.NewCommandClient(url)
+					return client
 				},
 			})
 
@@ -121,7 +154,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, lc logger.LoggingClient) (string, error) {
 	if cb.registry == nil {
-		lc.Infof("Using configuration for URL for '%s': %s", serviceKey, defaultUrl)
+		lc.Infof("Using REST for '%s' clients @ %s", serviceKey, defaultUrl)
 		return defaultUrl, nil
 	}
 

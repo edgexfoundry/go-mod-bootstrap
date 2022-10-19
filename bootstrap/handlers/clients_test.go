@@ -22,10 +22,14 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
+	messagingMocks "github.com/edgexfoundry/go-mod-messaging/v2/messaging/mocks"
 	"github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	registryMocks "github.com/edgexfoundry/go-mod-registry/v2/registry/mocks"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
@@ -52,10 +56,20 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Protocol: "http",
 	}
 
-	commandClientInfo := config.ClientInfo{
+	commandHttpClientInfo := config.ClientInfo{
 		Host:     "localhost",
 		Port:     59882,
 		Protocol: "http",
+	}
+
+	commandMessagingClientInfo := config.ClientInfo{
+		UseMessageBus: true,
+		Topics: map[string]string{
+			"QueryRequestTopic":         "queryRequest",
+			"QueryResponseTopic":        "queryResponse",
+			"CommandRequestTopicPrefix": "commandRequest",
+			"CommandResponseTopic":      "commandResponse",
+		},
 	}
 
 	notificationClientInfo := config.ClientInfo{
@@ -95,7 +109,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		{
 			Name:                   "All ClientsBootstrap",
 			CoreDataClientInfo:     &coreDataClientInfo,
-			CommandClientInfo:      &commandClientInfo,
+			CommandClientInfo:      &commandHttpClientInfo,
 			MetadataClientInfo:     &metadataClientInfo,
 			NotificationClientInfo: &notificationClientInfo,
 			SchedulerClientInfo:    &subscriberClientInfo,
@@ -105,7 +119,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		{
 			Name:                   "All ClientsBootstrap using registry",
 			CoreDataClientInfo:     &coreDataClientInfo,
-			CommandClientInfo:      &commandClientInfo,
+			CommandClientInfo:      &commandHttpClientInfo,
 			MetadataClientInfo:     &metadataClientInfo,
 			NotificationClientInfo: &notificationClientInfo,
 			SchedulerClientInfo:    &subscriberClientInfo,
@@ -152,6 +166,16 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			Registry:               nil,
 			ExpectedResult:         true,
 		},
+		{
+			Name:                   "Only Messaging based Command ClientsBootstrap",
+			CoreDataClientInfo:     nil,
+			CommandClientInfo:      &commandMessagingClientInfo,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
+			SchedulerClientInfo:    nil,
+			Registry:               nil,
+			ExpectedResult:         true,
+		},
 	}
 
 	for _, test := range tests {
@@ -159,31 +183,37 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			clients := make(map[string]config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
-				clients[common.CoreDataServiceKey] = coreDataClientInfo
+				clients[common.CoreDataServiceKey] = *test.CoreDataClientInfo
 			}
 
 			if test.CommandClientInfo != nil {
-				clients[common.CoreCommandServiceKey] = commandClientInfo
+				clients[common.CoreCommandServiceKey] = *test.CommandClientInfo
 			}
 
 			if test.MetadataClientInfo != nil {
-				clients[common.CoreMetaDataServiceKey] = metadataClientInfo
+				clients[common.CoreMetaDataServiceKey] = *test.MetadataClientInfo
 			}
 
 			if test.NotificationClientInfo != nil {
-				clients[common.SupportNotificationsServiceKey] = notificationClientInfo
+				clients[common.SupportNotificationsServiceKey] = *test.NotificationClientInfo
 			}
 
 			if test.SchedulerClientInfo != nil {
-				clients[common.SupportSchedulerServiceKey] = subscriberClientInfo
+				clients[common.SupportSchedulerServiceKey] = *test.SchedulerClientInfo
 			}
 
 			bootstrapConfig := config.BootstrapConfiguration{
+				Service: config.ServiceInfo{
+					RequestTimeout: "30s",
+				},
 				Clients: clients,
 			}
 
 			configMock := &mocks.Configuration{}
 			configMock.On("GetBootstrap").Return(bootstrapConfig)
+
+			messageClient := &messagingMocks.MessageClient{}
+			messageClient.On("Subscribe", mock.Anything, mock.Anything).Return(nil)
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
@@ -194,6 +224,9 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				},
 				container.ConfigurationInterfaceName: func(get di.Get) interface{} {
 					return configMock
+				},
+				container.MessagingClientName: func(get di.Get) interface{} {
+					return messageClient
 				},
 			})
 
@@ -257,6 +290,74 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			if test.Registry != nil {
 				registryMock.AssertExpectations(t)
 			}
+		})
+	}
+}
+
+func TestCommandMessagingClientErrors(t *testing.T) {
+	validDuration := "30s"
+	invalidDuration := "xyz"
+
+	validTopics := map[string]string{
+		"QueryRequestTopic":         "queryRequest",
+		"QueryResponseTopic":        "queryResponse",
+		"CommandRequestTopicPrefix": "commandRequest",
+		"CommandResponseTopic":      "commandResponse",
+	}
+
+	tests := []struct {
+		Name                   string
+		MessagingClientPresent bool
+		TimeoutDuration        string
+	}{
+		{"Missing Messaging Client", false, validDuration},
+		{"Bad Timeout duration", true, invalidDuration},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			mockLogger := &loggerMocks.LoggingClient{}
+			mockLogger.On("Errorf", mock.Anything)
+			mockLogger.On("Errorf", mock.Anything, mock.Anything)
+
+			var mockMessaging messaging.MessageClient = nil
+			if test.MessagingClientPresent {
+				mockMessaging = &messagingMocks.MessageClient{}
+			}
+
+			clients := make(map[string]config.ClientInfo)
+			clients[common.CoreCommandServiceKey] = config.ClientInfo{
+				UseMessageBus: true,
+				Topics:        validTopics,
+			}
+
+			bootstrapConfig := config.BootstrapConfiguration{
+				Service: config.ServiceInfo{
+					RequestTimeout: test.TimeoutDuration,
+				},
+				Clients: clients,
+			}
+
+			configMock := &mocks.Configuration{}
+			configMock.On("GetBootstrap").Return(bootstrapConfig)
+
+			dic := di.NewContainer(di.ServiceConstructorMap{
+				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
+					return mockLogger
+				},
+				container.ConfigurationInterfaceName: func(get di.Get) interface{} {
+					return configMock
+				},
+				container.MessagingClientName: func(get di.Get) interface{} {
+					return mockMessaging
+				},
+			})
+
+			startupTimer := startup.NewTimer(1, 1)
+			actualResult := NewClientsBootstrap().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			require.False(t, actualResult)
+
+			mockLogger.AssertNumberOfCalls(t, "Errorf", 1)
 		})
 	}
 }
