@@ -171,9 +171,8 @@ func RunAndReturnWaitGroup(
 		if metricsManager != nil {
 			secretProvider := container.SecretProviderFrom(dic.Get)
 			if secretProvider != nil {
-				secretProvider.RegisterMetrics(func(metrics map[string]interface{}) {
-					registerMetrics(metricsManager, metrics, lc)
-				})
+				metrics := secretProvider.GetMetricsToRegister()
+				registerMetrics(metricsManager, metrics, lc)
 
 				// TODO: use this same approach to register future service metric controlled by other components
 			}

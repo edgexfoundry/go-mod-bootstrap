@@ -4,12 +4,6 @@ import (
 	"time"
 )
 
-// Service Metric Names
-const (
-	SecretsRequestedMetricName = "SecuritySecretsRequested"
-	SecretsStoredMetricName    = "SecuritySecretsStored"
-)
-
 // SecretProvider defines the contract for secret provider implementations that
 // allow secrets to be retrieved/stored from/to a services Secret Store.
 type SecretProvider interface {
@@ -44,6 +38,6 @@ type SecretProvider interface {
 	// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
 	DeregisterSecretUpdatedCallback(path string)
 
-	// RegisterMetrics registers all metric objects using the passed in registerCallback.
-	RegisterMetrics(registerCallback func(metrics map[string]interface{}))
+	// GetMetricsToRegister returns all metric objects that needs to be registered.
+	GetMetricsToRegister() map[string]interface{}
 }
