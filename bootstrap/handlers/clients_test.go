@@ -24,7 +24,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	messagingMocks "github.com/edgexfoundry/go-mod-messaging/v2/messaging/mocks"
 	"github.com/edgexfoundry/go-mod-registry/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
@@ -309,9 +308,11 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 		Name                   string
 		MessagingClientPresent bool
 		TimeoutDuration        string
+		SubscribeError         bool
 	}{
-		{"Missing Messaging Client", false, validDuration},
-		{"Bad Timeout duration", true, invalidDuration},
+		{"Missing Messaging Client", false, validDuration, false},
+		{"Error creating Messaging Client", true, validDuration, true},
+		{"Bad Timeout duration", true, invalidDuration, false},
 	}
 
 	for _, test := range tests {
@@ -320,9 +321,11 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 			mockLogger.On("Errorf", mock.Anything)
 			mockLogger.On("Errorf", mock.Anything, mock.Anything)
 
-			var mockMessaging messaging.MessageClient = nil
-			if test.MessagingClientPresent {
-				mockMessaging = &messagingMocks.MessageClient{}
+			mockMessaging := &messagingMocks.MessageClient{}
+			if test.SubscribeError {
+				mockMessaging.On("Subscribe", mock.Anything, mock.Anything).Return(errors.New("failed"))
+			} else {
+				mockMessaging.On("Subscribe", mock.Anything, mock.Anything).Return(nil)
 			}
 
 			clients := make(map[string]config.ClientInfo)
@@ -349,7 +352,11 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 					return configMock
 				},
 				container.MessagingClientName: func(get di.Get) interface{} {
-					return mockMessaging
+					if test.MessagingClientPresent {
+						return mockMessaging
+					} else {
+						return nil
+					}
 				},
 			})
 

@@ -110,8 +110,11 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 					return false
 				}
 
-				// Note that NewCommandClient never returns an error
-				client, _ = clientsMessaging.NewCommandClient(messageClient, serviceInfo.Topics, timeout)
+				client, err = clientsMessaging.NewCommandClient(messageClient, serviceInfo.Topics, timeout)
+				if err != nil {
+					lc.Errorf("Unable to create messaging based Command Client: %v", err)
+					return false
+				}
 
 				lc.Infof("Using messaging for '%s' clients", serviceKey)
 			} else {
