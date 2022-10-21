@@ -121,6 +121,10 @@ type ClientInfo struct {
 	Port int
 	// Protocol indicates the protocol to use when accessing a given service
 	Protocol string
+	// UseMessageBus indicates weather to use Messaging version of client
+	UseMessageBus bool
+	// Topics holds the MessageBus topics used by the client to communicate to the service
+	Topics map[string]string
 }
 
 func (c ClientInfo) Url() string {
