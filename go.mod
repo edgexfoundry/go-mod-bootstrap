@@ -6,7 +6,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.1
 	github.com/edgexfoundry/go-mod-configuration/v2 v2.3.0-dev.15
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.3.0-dev.19
-	github.com/edgexfoundry/go-mod-messaging/v2 v2.3.0-dev.24
+	github.com/edgexfoundry/go-mod-messaging/v2 v2.3.0-dev.25
 	github.com/edgexfoundry/go-mod-registry/v2 v2.3.0-dev.11
 	github.com/edgexfoundry/go-mod-secrets/v2 v2.3.0-dev.10
 	github.com/google/uuid v1.3.0
