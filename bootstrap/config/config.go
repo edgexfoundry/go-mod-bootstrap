@@ -43,8 +43,7 @@ import (
 )
 
 const (
-	writableKey   = "/Writable"
-	ConfigVersion = "2.0"
+	writableKey = "/Writable"
 )
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
@@ -355,7 +354,7 @@ func (cp *Processor) createProviderClient(
 	}
 
 	// Note: Can't use filepath.Join as it uses `\` on Windows which Consul doesn't recognize as a path separator.
-	providerConfig.BasePath = fmt.Sprintf("%s%s/%s", configStem, ConfigVersion, serviceKey)
+	providerConfig.BasePath = fmt.Sprintf("%s%s", configStem, serviceKey)
 	if getAccessToken != nil {
 		providerConfig.AccessToken, err = getAccessToken()
 		if err != nil {
