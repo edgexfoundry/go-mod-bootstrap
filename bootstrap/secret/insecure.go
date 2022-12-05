@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 Intel Inc.
+ * Copyright 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -197,4 +197,17 @@ func (p *InsecureProvider) GetMetricsToRegister() map[string]interface{} {
 		secretsRequestedMetricName: p.securitySecretsRequested,
 		secretsStoredMetricName:    p.securitySecretsStored,
 	}
+}
+
+// GetSelfJWT returns an encoded JWT for the current identity-based secret store token
+func (p *InsecureProvider) GetSelfJWT() (string, error) {
+	// If security is disabled, return an empty string
+	// It is presumed HTTP invokers will not add an
+	// authorization token that is empty to outbound requests.
+	return "", nil
+}
+
+// IsJWTValid evaluates a given JWT and returns a true/false if the JWT is valid (i.e. belongs to us and current) or not
+func (p *InsecureProvider) IsJWTValid(jwt string) (bool, error) {
+	return true, nil
 }

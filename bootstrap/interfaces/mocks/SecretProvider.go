@@ -85,6 +85,27 @@ func (_m *SecretProvider) GetSecret(path string, keys ...string) (map[string]str
 	return r0, r1
 }
 
+// GetSelfJWT provides a mock function with given fields:
+func (_m *SecretProvider) GetSelfJWT() (string, error) {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // HasSecret provides a mock function with given fields: path
 func (_m *SecretProvider) HasSecret(path string) (bool, error) {
 	ret := _m.Called(path)
@@ -99,6 +120,27 @@ func (_m *SecretProvider) HasSecret(path string) (bool, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(path)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// IsJWTValid provides a mock function with given fields: jwt
+func (_m *SecretProvider) IsJWTValid(jwt string) (bool, error) {
+	ret := _m.Called(jwt)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(jwt)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(jwt)
 	} else {
 		r1 = ret.Error(1)
 	}
