@@ -6,17 +6,17 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/v3/messaging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
-	boostrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	boostrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/messaging"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 var lc logger.LoggingClient

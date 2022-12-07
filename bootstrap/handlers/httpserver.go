@@ -25,13 +25,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
 	"github.com/gorilla/mux"
 )

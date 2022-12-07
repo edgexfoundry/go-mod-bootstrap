@@ -14,9 +14,9 @@
 package config
 
 import (
-	"github.com/edgexfoundry/go-mod-configuration/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-configuration/v3/pkg/types"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 )
 
 // ProviderInfo encapsulates the usage of the Configuration Provider information

@@ -24,15 +24,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging/mocks"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
+	"github.com/edgexfoundry/go-mod-messaging/v3/pkg/types"
 )
 
 func TestNewMessageBusReporter(t *testing.T) {

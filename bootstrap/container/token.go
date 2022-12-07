@@ -15,9 +15,9 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 //// FileIoPerformerInterfaceName contains the name of the fileioperformer.FileIoPerformer implementation in the DIC.

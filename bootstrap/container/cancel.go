@@ -17,7 +17,7 @@ package container
 import (
 	"context"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 // CancelFuncName contains the name of the context.CancelFunc in the DIC.

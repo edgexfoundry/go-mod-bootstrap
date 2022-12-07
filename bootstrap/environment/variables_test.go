@@ -22,14 +22,14 @@ import (
 	"strings"
 	"testing"
 
-	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger/mocks"
+	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
-	"github.com/edgexfoundry/go-mod-configuration/v2/pkg/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	secretsTypes "github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-configuration/v3/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	secretsTypes "github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 )
 
 const (

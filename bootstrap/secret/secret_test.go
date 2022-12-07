@@ -24,17 +24,17 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/authtokenloader/mocks"
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/v2/secrets"
+	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader/mocks"
+	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,7 +46,7 @@ const (
 	expectedPath     = "/redisdb"
 )
 
-//nolint: gosec
+// nolint: gosec
 var testTokenResponse = `{"auth":{"accessor":"9OvxnrjgV0JTYMeBreak7YJ9","client_token":"s.oPJ8uuJCkTRb2RDdcNova8wg","entity_id":"","lease_duration":3600,"metadata":{"edgex-service-name":"edgex-core-data"},"orphan":true,"policies":["default","edgex-service-edgex-core-data"],"renewable":true,"token_policies":["default","edgex-service-edgex-core-data"],"token_type":"service"},"data":null,"lease_duration":0,"lease_id":"","renewable":false,"request_id":"ee749ee1-c8bf-6fa9-3ed5-644181fc25b0","warnings":null,"wrap_info":null}`
 var expectedSecrets = map[string]string{UsernameKey: expectedUsername, PasswordKey: expectedPassword}
 

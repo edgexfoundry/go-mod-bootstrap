@@ -18,8 +18,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 // httpServer defines the contract used to determine whether or not the http httpServer is running.
