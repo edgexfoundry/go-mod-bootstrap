@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	validation "github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	validation "github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/hashicorp/go-multierror"
 )
 

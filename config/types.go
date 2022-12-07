@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
 )
 
 const DefaultHttpProtocol = "http"
@@ -169,7 +169,7 @@ type Credentials struct {
 	Password string
 }
 
-//CertKeyPair encapsulates public certificate/private key pair for an SSL certificate
+// CertKeyPair encapsulates public certificate/private key pair for an SSL certificate
 type CertKeyPair struct {
 	Cert string
 	Key  string

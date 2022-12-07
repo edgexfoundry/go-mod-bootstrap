@@ -15,10 +15,10 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-configuration/v2/configuration"
+	"github.com/edgexfoundry/go-mod-configuration/v3/configuration"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 // ConfigurationInterfaceName contains the name of the interfaces.Configuration implementation in the DIC.

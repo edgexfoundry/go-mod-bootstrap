@@ -15,9 +15,9 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-secrets/v2/pkg/token/runtimetokenprovider"
+	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/runtimetokenprovider"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 // RuntimeTokenProviderInterfaceName contains the name of the runtimetokenprovider.RuntimeTokenProvider implementation in the DIC.
