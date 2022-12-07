@@ -36,11 +36,11 @@ const (
 	bootRetrySecondsDefault   = 1
 	defaultConfDirValue       = "./res"
 
-	envKeyConfigUrl       = "EDGEX_CONFIGURATION_PROVIDER"
+	envKeyConfigUrl       = "EDGEX_CONFIG_PROVIDER"
 	envKeyUseRegistry     = "EDGEX_USE_REGISTRY"
 	envKeyStartupDuration = "EDGEX_STARTUP_DURATION"
 	envKeyStartupInterval = "EDGEX_STARTUP_INTERVAL"
-	envConfDir            = "EDGEX_CONF_DIR"
+	envConfDir            = "EDGEX_CONFIG_DIR"
 	envProfile            = "EDGEX_PROFILE"
 	envFile               = "EDGEX_CONFIG_FILE"
 
