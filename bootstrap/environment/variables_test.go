@@ -152,7 +152,7 @@ func TestGetStartupInfo(t *testing.T) {
 	}
 }
 
-func TestGetConfDir(t *testing.T) {
+func TestGetConfigDir(t *testing.T) {
 	_, lc := initializeTest()
 
 	testCases := []struct {
@@ -175,7 +175,7 @@ func TestGetConfDir(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			actual := GetConfDir(lc, test.PassedInName)
+			actual := GetConfigDir(lc, test.PassedInName)
 			assert.Equal(t, test.ExpectedName, actual)
 		})
 	}
