@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	envKeyConfigUrl = "EDGEX_CONFIGURATION_PROVIDER"
+	envKeyConfigUrl = "EDGEX_CONFIG_PROVIDER"
 	goodUrlValue    = "consul.http://localhost:8500"
 	badUrlValue     = "Not a url"
 

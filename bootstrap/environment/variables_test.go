@@ -161,9 +161,9 @@ func TestGetConfDir(t *testing.T) {
 		PassedInName string
 		ExpectedName string
 	}{
-		{"With Env Var", envConfDir, "res", "myres"},
+		{"With Env Var", envConfigDir, "res", "myres"},
 		{"With No Env Var", "", "res", "res"},
-		{"With No Env Var and no passed in", "", "", defaultConfDirValue},
+		{"With No Env Var and no passed in", "", "", defaultConfigDirValue},
 	}
 
 	for _, test := range testCases {
@@ -220,7 +220,7 @@ func TestGetConfigFileName(t *testing.T) {
 		PassedInName string
 		ExpectedName string
 	}{
-		{"With Env Var", envFile, "configuration.toml", "config.toml"},
+		{"With Env Var", envConfigFile, "configuration.toml", "config.toml"},
 		{"With No Env Var", "", "configuration.toml", "configuration.toml"},
 		{"With No Env Var and no passed in", "", "", ""},
 	}

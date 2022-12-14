@@ -34,15 +34,15 @@ import (
 const (
 	bootTimeoutSecondsDefault = 60
 	bootRetrySecondsDefault   = 1
-	defaultConfDirValue       = "./res"
+	defaultConfigDirValue     = "./res"
 
-	envKeyConfigUrl       = "EDGEX_CONFIGURATION_PROVIDER"
+	envKeyConfigUrl       = "EDGEX_CONFIG_PROVIDER"
 	envKeyUseRegistry     = "EDGEX_USE_REGISTRY"
 	envKeyStartupDuration = "EDGEX_STARTUP_DURATION"
 	envKeyStartupInterval = "EDGEX_STARTUP_INTERVAL"
-	envConfDir            = "EDGEX_CONF_DIR"
+	envConfigDir          = "EDGEX_CONFIG_DIR"
 	envProfile            = "EDGEX_PROFILE"
-	envFile               = "EDGEX_CONFIG_FILE"
+	envConfigFile         = "EDGEX_CONFIG_FILE"
 
 	noConfigProviderValue = "none"
 
@@ -314,14 +314,14 @@ func GetStartupInfo(serviceKey string) StartupInfo {
 // GetConfDir get the config directory value from a Variables variable value (if it exists)
 // or uses passed in value or default if previous result in blank.
 func GetConfDir(lc logger.LoggingClient, configDir string) string {
-	envValue := os.Getenv(envConfDir)
+	envValue := os.Getenv(envConfigDir)
 	if len(envValue) > 0 {
 		configDir = envValue
-		logEnvironmentOverride(lc, "-c/-confdir", envConfDir, envValue)
+		logEnvironmentOverride(lc, "-c/-confdir", envConfigDir, envValue)
 	}
 
 	if len(configDir) == 0 {
-		configDir = defaultConfDirValue
+		configDir = defaultConfigDirValue
 	}
 
 	return configDir
@@ -346,10 +346,10 @@ func GetProfileDir(lc logger.LoggingClient, profileDir string) string {
 // GetConfigFileName gets the configuration filename value from a Variables variable value (if it exists)
 // or uses passed in value.
 func GetConfigFileName(lc logger.LoggingClient, configFileName string) string {
-	envValue := os.Getenv(envFile)
+	envValue := os.Getenv(envConfigFile)
 	if len(envValue) > 0 {
 		configFileName = envValue
-		logEnvironmentOverride(lc, "-f/-file", envFile, envValue)
+		logEnvironmentOverride(lc, "-f/-file", envConfigFile, envValue)
 	}
 
 	return configFileName
