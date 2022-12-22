@@ -24,18 +24,16 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
 	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader/mocks"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,7 +79,7 @@ func TestNewSecretProvider(t *testing.T) {
 					case "/v1/auth/token/lookup-self":
 						w.WriteHeader(http.StatusOK)
 						_, _ = w.Write([]byte(testTokenResponse))
-					case "/redisdb":
+					case "/v1/secret/edgex/testServiceKey//redisdb":
 						w.WriteHeader(http.StatusOK)
 						data := make(map[string]interface{})
 						data["data"] = expectedSecrets
@@ -94,26 +92,30 @@ func TestNewSecretProvider(t *testing.T) {
 				defer testServer.Close()
 
 				serverUrl, _ := url.Parse(testServer.URL)
-				port, _ := strconv.Atoi(serverUrl.Port())
-				configuration = NewTestConfig(port, nil)
+				err := os.Setenv("SECRETSTORE_PORT", serverUrl.Port())
+				require.NoError(t, err)
 
 				mockTokenLoader := &mocks.AuthTokenLoader{}
-				mockTokenLoader.On("Load", "token.json").Return("Test Token", nil)
+				mockTokenLoader.On("Load", "/tmp/edgex/secrets/testServiceKey/secrets-token.json").Return("Test Token", nil)
 				dic.Update(di.ServiceConstructorMap{
 					container.AuthTokenLoaderInterfaceName: func(get di.Get) interface{} {
 						return mockTokenLoader
 					},
 				})
 			} else {
-				configuration = NewTestConfig(0, map[string]bootstrapConfig.InsecureSecretsInfo{
-					"DB": {
-						Path:    expectedPath,
-						Secrets: expectedSecrets,
+				configuration = TestConfig{
+					map[string]bootstrapConfig.InsecureSecretsInfo{
+						"DB": {
+							Path:    expectedPath,
+							Secrets: expectedSecrets,
+						},
 					},
-				})
+				}
 			}
 
-			actual, err := NewSecretProvider(configuration, context.Background(), timer, dic, "testServiceKey")
+			envVars := environment.NewVariables(logger.NewMockClient())
+
+			actual, err := NewSecretProvider(configuration, envVars, context.Background(), timer, dic, "testServiceKey")
 			require.NoError(t, err)
 			require.NotNil(t, actual)
 			actualProvider := container.SecretProviderFrom(dic.Get)
@@ -125,63 +127,6 @@ func TestNewSecretProvider(t *testing.T) {
 			assert.Equal(t, expectedPassword, actualSecrets[PasswordKey])
 		})
 	}
-}
-
-type TestConfig struct {
-	InsecureSecrets bootstrapConfig.InsecureSecrets
-	SecretStore     bootstrapConfig.SecretStoreInfo
-}
-
-func NewTestConfig(port int, insecureSecrets bootstrapConfig.InsecureSecrets) TestConfig {
-	return TestConfig{
-		InsecureSecrets: insecureSecrets,
-		SecretStore: bootstrapConfig.SecretStoreInfo{
-			Type:       secrets.Vault,
-			Host:       "localhost",
-			Port:       port,
-			Protocol:   "http",
-			ServerName: "localhost",
-			TokenFile:  "token.json",
-			Authentication: types.AuthenticationInfo{
-				AuthType:  "Dummy-Token",
-				AuthToken: "myToken",
-			},
-		},
-	}
-}
-
-func (t TestConfig) UpdateFromRaw(_ interface{}) bool {
-	panic("implement me")
-}
-
-func (t TestConfig) EmptyWritablePtr() interface{} {
-	panic("implement me")
-}
-
-func (t TestConfig) UpdateWritableFromRaw(_ interface{}) bool {
-	panic("implement me")
-}
-
-func (t TestConfig) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
-	return bootstrapConfig.BootstrapConfiguration{
-		SecretStore: t.SecretStore,
-	}
-}
-
-func (t TestConfig) GetLogLevel() string {
-	panic("implement me")
-}
-
-func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
-	panic("implement me")
-}
-
-func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
-	return t.InsecureSecrets
-}
-
-func (t TestConfig) GetTelemetryInfo() *bootstrapConfig.TelemetryInfo {
-	panic("implement me")
 }
 
 func TestAddPrefix(t *testing.T) {
@@ -203,4 +148,34 @@ func TestAddPrefix(t *testing.T) {
 			require.Equal(t, test.expectedFullPath, actualSecretFullPath)
 		})
 	}
+}
+
+func TestBuildSecretStoreConfig(t *testing.T) {
+	expectedServiceKey := "unit-test"
+	expectedHost := "edgex-vault"
+	expectedPort := 8201
+	expectedTokenFile := "/token.json"
+	expectedRuntimeTokenProviderEnabled := true
+	expectedRuntimeTokenProviderHost := "edgex-security-spiffe-token-provider"
+	expectedRuntimeTokenProviderRequiredSecrets := "mqtt-bus"
+	os.Setenv("SECRETSTORE_HOST", expectedHost)
+	os.Setenv("SECRETSTORE_PORT", strconv.FormatInt(int64(expectedPort), 10))
+	os.Setenv("SECRETSTORE_TOKENFILE", expectedTokenFile)
+	os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_ENABLED", strconv.FormatBool(expectedRuntimeTokenProviderEnabled))
+	os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_HOST", expectedRuntimeTokenProviderHost)
+	os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_REQUIREDSECRETS", expectedRuntimeTokenProviderRequiredSecrets)
+
+	lc := logger.NewMockClient()
+	target, err := BuildSecretStoreConfig(expectedServiceKey, environment.NewVariables(lc), lc)
+	require.NoError(t, err)
+
+	require.NotEqual(t, bootstrapConfig.SecretStoreInfo{}, target)
+	assert.Equal(t, expectedServiceKey, target.Path)
+	assert.Equal(t, expectedHost, target.Host)
+	assert.Equal(t, expectedPort, target.Port)
+	assert.Equal(t, expectedTokenFile, target.TokenFile)
+	assert.Equal(t, expectedRuntimeTokenProviderEnabled, target.RuntimeTokenProvider.Enabled)
+	assert.Equal(t, expectedRuntimeTokenProviderHost, target.RuntimeTokenProvider.Host)
+	assert.Equal(t, expectedRuntimeTokenProviderHost, target.RuntimeTokenProvider.Host)
+	assert.Equal(t, expectedRuntimeTokenProviderRequiredSecrets, target.RuntimeTokenProvider.RequiredSecrets)
 }

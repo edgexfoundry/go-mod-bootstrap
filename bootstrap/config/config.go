@@ -19,18 +19,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"io/ioutil"
 	"math"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
@@ -50,15 +50,16 @@ const (
 type UpdatedStream chan struct{}
 
 type Processor struct {
-	lc              logger.LoggingClient
-	flags           flags.Common
-	envVars         *environment.Variables
-	startupTimer    startup.Timer
-	ctx             context.Context
-	wg              *sync.WaitGroup
-	configUpdated   UpdatedStream
-	dic             *di.Container
-	overwriteConfig bool
+	lc                logger.LoggingClient
+	flags             flags.Common
+	envVars           *environment.Variables
+	startupTimer      startup.Timer
+	ctx               context.Context
+	wg                *sync.WaitGroup
+	configUpdated     UpdatedStream
+	dic               *di.Container
+	overwriteConfig   bool
+	providerHasConfig bool
 }
 
 // NewProcessor creates a new configuration Processor
@@ -101,37 +102,9 @@ func (cp *Processor) Process(
 	serviceKey string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
-	useSecretProvider bool) error {
-
-	// Create some shorthand for frequently used items
-	envVars := cp.envVars
+	secretProvider interfaces.SecretProvider) error {
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
-
-	// Local configuration must be loaded first in case need registry config info and/or
-	// need to push it to the Configuration Provider.
-	if err := cp.loadFromFile(serviceConfig, "service"); err != nil {
-		return err
-	}
-
-	// Override file-based configuration with envVars variables.
-	// Variables variable overrides have precedence over all others,
-	// so make sure they are applied before config is used for anything.
-	overrideCount, err := envVars.OverrideConfiguration(serviceConfig)
-	if err != nil {
-		return err
-	}
-
-	// Now that configuration has been loaded from file and overrides applied,
-	// the Secret Provider can be initialized and added to the DIC, but only if it is configured to be used.
-	var secretProvider interfaces.SecretProvider
-	if useSecretProvider {
-		secretProvider, err = secret.NewSecretProvider(serviceConfig, cp.ctx, cp.startupTimer, cp.dic, serviceKey)
-		if err != nil {
-			return fmt.Errorf("failed to create SecretProvider: %s", err.Error())
-		}
-	}
-
 	configProviderUrl := cp.flags.ConfigProviderUrl()
 
 	// Create new ProviderInfo and initialize it from command-line flag or Variables
@@ -140,8 +113,12 @@ func (cp *Processor) Process(
 		return err
 	}
 
-	switch configProviderInfo.UseProvider() {
-	case true:
+	useProvider := configProviderInfo.UseProvider()
+
+	var overrideCount int
+	var configClient configuration.Client
+
+	if useProvider {
 		var accessToken string
 		var getAccessToken types.GetAccessTokenCallback
 
@@ -165,37 +142,65 @@ func (cp *Processor) Process(
 			cp.lc.Info("Not configured to use Config Provider access token")
 		}
 
-		configClient, err := cp.createProviderClient(serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		configClient, err = cp.createProviderClient(serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
 		}
-
-		for cp.startupTimer.HasNotElapsed() {
-			if err := cp.processWithProvider(
-				configClient,
-				serviceConfig,
-				overrideCount,
-			); err != nil {
-				cp.lc.Error(err.Error())
-				select {
-				case <-cp.ctx.Done():
-					return errors.New("aborted Updating to/from Configuration Provider")
-				default:
-					cp.startupTimer.SleepForInterval()
-					continue
-				}
-			}
-
-			break
-		}
-
-		cp.listenForChanges(serviceConfig, configClient)
 
 		cp.dic.Update(di.ServiceConstructorMap{
 			container.ConfigClientInterfaceName: func(get di.Get) interface{} {
 				return configClient
 			},
 		})
+
+		// Wait for configuration provider to be available
+		isAlive := false
+		for cp.startupTimer.HasNotElapsed() {
+			if configClient.IsAlive() {
+				isAlive = true
+				break
+			}
+
+			cp.lc.Warnf("Waiting for configuration provider to be available")
+
+			select {
+			case <-cp.ctx.Done():
+				return errors.New("aborted waiting Configuration Provider to be available")
+			default:
+				cp.startupTimer.SleepForInterval()
+				continue
+			}
+		}
+
+		if !isAlive {
+			return errors.New("configuration provider is not available")
+		}
+
+		cp.providerHasConfig, err = configClient.HasConfiguration()
+		if err != nil {
+			return fmt.Errorf("failed check for Configuration Provider has configiuration: %s", err.Error())
+		}
+	}
+
+	// Now must load configuration from local file if any of these conditions are true
+	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
+		if err := cp.loadFromFile(serviceConfig, "service"); err != nil {
+			return err
+		}
+
+		overrideCount, err = cp.envVars.OverrideConfiguration(serviceConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	switch useProvider {
+	case true:
+		if err = cp.processWithProvider(configClient, serviceConfig, overrideCount); err != nil {
+			return err
+		}
+
+		cp.listenForChanges(serviceConfig, configClient)
 
 	case false:
 		cp.logConfigInfo("Using local configuration from file", overrideCount)
@@ -401,19 +406,10 @@ func (cp *Processor) processWithProvider(
 	serviceConfig interfaces.Configuration,
 	overrideCount int) error {
 
-	if !configClient.IsAlive() {
-		return errors.New("configuration provider is not available")
-	}
-
-	hasConfig, err := configClient.HasConfiguration()
-	if err != nil {
-		return fmt.Errorf("could not determine if Configuration provider has configuration: %s", err.Error())
-	}
-
-	if !hasConfig || cp.overwriteConfig {
+	if !cp.providerHasConfig || cp.overwriteConfig {
 		// Variables overrides already applied previously so just push to Configuration Provider
 		// Note that serviceConfig is a pointer, so we have to use reflection to dereference it.
-		err = configClient.PutConfiguration(reflect.ValueOf(serviceConfig).Elem().Interface(), true)
+		err := configClient.PutConfiguration(reflect.ValueOf(serviceConfig).Elem().Interface(), true)
 		if err != nil {
 			return fmt.Errorf("could not push configuration into Configuration Provider: %s", err.Error())
 		}
