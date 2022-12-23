@@ -37,8 +37,8 @@ func TestNewAllFlags(t *testing.T) {
 			"-o",
 			"-r",
 			"-p=" + expectedProfile,
-			"-c=" + expectedConfigDirectory,
-			"-f=" + expectedFileName,
+			"-cd=" + expectedConfigDirectory,
+			"-cf=" + expectedFileName,
 		},
 	)
 
@@ -90,23 +90,23 @@ func TestNewOverrideConfigProvider(t *testing.T) {
 
 func TestDashR(t *testing.T) {
 	expectedConfigDirectory := "/foo/ba-r/"
-	actual := newSUT([]string{"-confdir", "/foo/ba-r/"})
+	actual := newSUT([]string{"-configDir", "/foo/ba-r/"})
 
 	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
 }
 
-func TestConfDirEquals(t *testing.T) {
+func TestConfigDirEquals(t *testing.T) {
 	expectedConfigDirectory := "/foo/ba-r/"
-	actual := newSUT([]string{"-confdir=/foo/ba-r/"})
+	actual := newSUT([]string{"-configDir=/foo/ba-r/"})
 
 	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
 }
 
-func TestConfCommonScenario(t *testing.T) {
+func TestConfigCommonScenario(t *testing.T) {
 	expectedConfigProviderUrl := "consul.http://edgex-core-consul:8500"
 	expectedConfigDirectory := "/res"
 
-	actual := newSUT([]string{"-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"})
+	actual := newSUT([]string{"-cp=consul.http://edgex-core-consul:8500", "--registry", "--configDir=/res"})
 
 	assert.Equal(t, expectedConfigProviderUrl, actual.ConfigProviderUrl())
 	assert.True(t, actual.UseRegistry())

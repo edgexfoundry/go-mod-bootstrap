@@ -85,12 +85,12 @@ func (d *Default) Parse(arguments []string) {
 	d.FlagSet.StringVar(&d.configProviderUrl, "cp", "", "")
 	d.FlagSet.BoolVar(&d.overwriteConfig, "overwrite", false, "")
 	d.FlagSet.BoolVar(&d.overwriteConfig, "o", false, "")
-	d.FlagSet.StringVar(&d.configFileName, "f", DefaultConfigFile, "")
-	d.FlagSet.StringVar(&d.configFileName, "file", DefaultConfigFile, "")
+	d.FlagSet.StringVar(&d.configFileName, "cf", DefaultConfigFile, "")
+	d.FlagSet.StringVar(&d.configFileName, "configFile", DefaultConfigFile, "")
 	d.FlagSet.StringVar(&d.profile, "profile", "", "")
 	d.FlagSet.StringVar(&d.profile, "p", "", ".")
-	d.FlagSet.StringVar(&d.configDir, "confdir", "", "")
-	d.FlagSet.StringVar(&d.configDir, "c", "", "")
+	d.FlagSet.StringVar(&d.configDir, "configDir", "", "")
+	d.FlagSet.StringVar(&d.configDir, "cd", "", "")
 	d.FlagSet.BoolVar(&d.useRegistry, "registry", false, "")
 	d.FlagSet.BoolVar(&d.useRegistry, "r", false, "")
 
@@ -148,9 +148,9 @@ func (d *Default) helpCallback() {
 			"    -o, --overwrite                 Overwrite configuration in provider with local configuration\n"+
 			"                                    *** Use with cation *** Use will clobber existing settings in provider,\n"+
 			"                                    problematic if those settings were edited by hand intentionally\n"+
-			"    -f, --file <name>               Indicates name of the local configuration file. Defaults to configuration.toml\n"+
+			"    -cf, --configFile <name>        Indicates name of the local configuration file. Defaults to configuration.toml\n"+
 			"    -p, --profile <name>            Indicate configuration profile other than default\n"+
-			"    -c, --confdir                   Specify local configuration directory\n"+
+			"    -cd, --configDir                Specify local configuration directory\n"+
 			"    -r, --registry                  Indicates service should use Registry.\n"+
 			"%s\n"+
 			"Common Options:\n"+

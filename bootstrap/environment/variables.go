@@ -311,13 +311,13 @@ func GetStartupInfo(serviceKey string) StartupInfo {
 	return startup
 }
 
-// GetConfDir get the config directory value from a Variables variable value (if it exists)
+// GetConfigDir get the config directory value from a Variables variable value (if it exists)
 // or uses passed in value or default if previous result in blank.
-func GetConfDir(lc logger.LoggingClient, configDir string) string {
+func GetConfigDir(lc logger.LoggingClient, configDir string) string {
 	envValue := os.Getenv(envConfigDir)
 	if len(envValue) > 0 {
 		configDir = envValue
-		logEnvironmentOverride(lc, "-c/-confdir", envConfigDir, envValue)
+		logEnvironmentOverride(lc, "-cd/-configDir", envConfigDir, envValue)
 	}
 
 	if len(configDir) == 0 {
@@ -349,7 +349,7 @@ func GetConfigFileName(lc logger.LoggingClient, configFileName string) string {
 	envValue := os.Getenv(envConfigFile)
 	if len(envValue) > 0 {
 		configFileName = envValue
-		logEnvironmentOverride(lc, "-f/-file", envConfigFile, envValue)
+		logEnvironmentOverride(lc, "-cf/--configFile", envConfigFile, envValue)
 	}
 
 	return configFileName

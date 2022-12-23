@@ -374,7 +374,7 @@ func (cp *Processor) createProviderClient(
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
 func (cp *Processor) loadFromFile(config interface{}, configType string) error {
-	configDir := environment.GetConfDir(cp.lc, cp.flags.ConfigDirectory())
+	configDir := environment.GetConfigDir(cp.lc, cp.flags.ConfigDirectory())
 	profileDir := environment.GetProfileDir(cp.lc, cp.flags.Profile())
 	configFileName := environment.GetConfigFileName(cp.lc, cp.flags.ConfigFileName())
 
