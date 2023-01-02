@@ -54,12 +54,7 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 
 	msgClient, err := messaging.NewMessageClient(
 		types.MessageBusConfig{
-			PublishHost: types.HostInfo{
-				Host:     messageBusInfo.Host,
-				Port:     messageBusInfo.Port,
-				Protocol: messageBusInfo.Protocol,
-			},
-			SubscribeHost: types.HostInfo{
+			Broker: types.HostInfo{
 				Host:     messageBusInfo.Host,
 				Port:     messageBusInfo.Port,
 				Protocol: messageBusInfo.Protocol,
