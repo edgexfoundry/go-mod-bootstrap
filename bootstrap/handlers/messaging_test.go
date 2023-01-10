@@ -40,13 +40,15 @@ func TestMain(m *testing.M) {
 
 func TestBootstrapHandler(t *testing.T) {
 	validCreateClientSecure := config.MessageBusInfo{
-		Type:               messaging.Redis,
-		Protocol:           "redis",
-		Host:               "localhost",
-		Port:               6379,
-		PublishTopicPrefix: "edgex/events/#",
-		AuthMode:           boostrapMessaging.AuthModeUsernamePassword,
-		SecretName:         "redisdb",
+		Type:     messaging.Redis,
+		Protocol: "redis",
+		Host:     "localhost",
+		Port:     6379,
+		Topics: map[string]string{
+			config.MessageBusPublishTopicPrefix: "edgex/events/#",
+		},
+		AuthMode:   boostrapMessaging.AuthModeUsernamePassword,
+		SecretName: "redisdb",
 	}
 
 	validCreateClientNonSecure := validCreateClientSecure
@@ -68,7 +70,7 @@ func TestBootstrapHandler(t *testing.T) {
 
 	tests := []struct {
 		Name           string
-		MessageQueue   config.MessageBusInfo
+		MessageBus     config.MessageBusInfo
 		Secure         bool
 		ExpectedResult bool
 		ExpectClient   bool
@@ -82,10 +84,10 @@ func TestBootstrapHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			providerMock := &mocks.SecretProvider{}
-			providerMock.On("GetSecret", test.MessageQueue.SecretName).Return(usernameSecretData, nil)
+			providerMock.On("GetSecret", test.MessageBus.SecretName).Return(usernameSecretData, nil)
 			configMock := &mocks.Configuration{}
 			configMock.On("GetBootstrap").Return(config.BootstrapConfiguration{
-				MessageQueue: test.MessageQueue,
+				MessageBus: test.MessageBus,
 			})
 
 			dic.Update(di.ServiceConstructorMap{
@@ -102,7 +104,7 @@ func TestBootstrapHandler(t *testing.T) {
 
 			actual := MessagingBootstrapHandler(context.Background(), &sync.WaitGroup{}, startup.NewTimer(1, 1), dic)
 			assert.Equal(t, test.ExpectedResult, actual)
-			assert.Empty(t, test.MessageQueue.Optional)
+			assert.Empty(t, test.MessageBus.Optional)
 			if test.ExpectClient {
 				assert.NotNil(t, container.MessagingClientFrom(dic.Get))
 			} else {

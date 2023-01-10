@@ -35,14 +35,19 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 	lc := container.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
 
-	messageQueue := configuration.GetBootstrap().MessageQueue
-	if len(messageQueue.Host) == 0 {
-		lc.Error("MessageQueue configuration not set or missing from service's GetBootstrap() implementation")
+	messageBus := configuration.GetBootstrap().MessageBus
+	if messageBus.Disabled {
+		lc.Info("MessageBus is disabled in configuration, skipping setup.")
+		return true
+	}
+
+	if len(messageBus.Host) == 0 {
+		lc.Error("MessageBus configuration not set or missing from service's GetBootstrap() implementation")
 		return false
 	}
 
 	// Make sure the MessageBus password is not leaked into the Service Config that can be retrieved via the /config endpoint
-	messageBusInfo := deepCopy(messageQueue)
+	messageBusInfo := deepCopy(messageBus)
 
 	if len(messageBusInfo.AuthMode) > 0 &&
 		!strings.EqualFold(strings.TrimSpace(messageBusInfo.AuthMode), boostrapMessaging.AuthModeNone) {
@@ -97,12 +102,12 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 			})
 
 			lc.Infof(
-				"Connected to %s Message Bus @ %s://%s:%d publishing on '%s' prefix topic with AuthMode='%s'",
+				"Connected to %s Message Bus @ %s://%s:%d using topics [%v] with AuthMode='%s'",
 				messageBusInfo.Type,
 				messageBusInfo.Protocol,
 				messageBusInfo.Host,
 				messageBusInfo.Port,
-				messageBusInfo.PublishTopicPrefix,
+				messageBusInfo.Topics,
 				messageBusInfo.AuthMode)
 
 			return true
@@ -115,16 +120,20 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 
 func deepCopy(target config.MessageBusInfo) config.MessageBusInfo {
 	result := config.MessageBusInfo{
-		Type:               target.Type,
-		Protocol:           target.Protocol,
-		Host:               target.Host,
-		Port:               target.Port,
-		PublishTopicPrefix: target.PublishTopicPrefix,
-		SubscribeTopic:     target.SubscribeTopic,
-		AuthMode:           target.AuthMode,
-		SecretName:         target.SecretName,
-		SubscribeEnabled:   target.SubscribeEnabled,
+		Disabled:   target.Disabled,
+		Type:       target.Type,
+		Protocol:   target.Protocol,
+		Host:       target.Host,
+		Port:       target.Port,
+		AuthMode:   target.AuthMode,
+		SecretName: target.SecretName,
 	}
+
+	result.Topics = make(map[string]string)
+	for key, value := range target.Topics {
+		result.Topics[key] = value
+	}
+
 	result.Optional = make(map[string]string)
 	for key, value := range target.Optional {
 		result.Optional[key] = value
