@@ -23,7 +23,7 @@ import (
 	"sync"
 	"syscall"
 
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
@@ -85,7 +85,7 @@ func RunAndReturnWaitGroup(
 	serviceKey string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
-	configUpdated bootstrapConfig.UpdatedStream,
+	configUpdated config.UpdatedStream,
 	startupTimer startup.Timer,
 	dic *di.Container,
 	useSecretProvider bool,
@@ -121,7 +121,7 @@ func RunAndReturnWaitGroup(
 	// The SecretProvider is initialized and placed in the DIS as part of processing the configuration due
 	// to the need for it to be used to get Access Token for the Configuration Provider and having to wait to
 	// initialize it until after the configuration is loaded from file.
-	configProcessor := bootstrapConfig.NewProcessor(commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
+	configProcessor := config.NewProcessor(commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
 	if err := configProcessor.Process(serviceKey, configStem, serviceConfig, secretProvider); err != nil {
 		fatalError(err, lc)
 	}
