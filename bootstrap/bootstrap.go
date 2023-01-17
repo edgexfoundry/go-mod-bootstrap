@@ -17,6 +17,7 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -28,6 +29,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/registration"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
@@ -108,11 +110,19 @@ func RunAndReturnWaitGroup(
 
 	envVars := environment.NewVariables(lc)
 
+	var secretProvider interfaces.SecretProvider
+	if useSecretProvider {
+		secretProvider, err = secret.NewSecretProvider(serviceConfig, envVars, ctx, startupTimer, dic, serviceKey)
+		if err != nil {
+			fatalError(fmt.Errorf("failed to create SecretProvider: %s", err.Error()), lc)
+		}
+	}
+
 	// The SecretProvider is initialized and placed in the DIS as part of processing the configuration due
 	// to the need for it to be used to get Access Token for the Configuration Provider and having to wait to
 	// initialize it until after the configuration is loaded from file.
 	configProcessor := config.NewProcessor(commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
-	if err := configProcessor.Process(serviceKey, configStem, serviceConfig, useSecretProvider); err != nil {
+	if err := configProcessor.Process(serviceKey, configStem, serviceConfig, secretProvider); err != nil {
 		fatalError(err, lc)
 	}
 

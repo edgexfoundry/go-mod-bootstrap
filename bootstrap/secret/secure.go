@@ -24,14 +24,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-secrets/v3/pkg"
 	gometrics "github.com/rcrowley/go-metrics"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/hashicorp/go-multierror"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 
@@ -55,7 +53,7 @@ type SecureProvider struct {
 	// runtimeTokenProvider is for delayed start services
 	runtimeTokenProvider          runtimetokenprovider.RuntimeTokenProvider
 	serviceKey                    string
-	configuration                 interfaces.Configuration
+	secretStoreInfo               config.SecretStoreInfo
 	secretsCache                  map[string]map[string]string // secret's path, key, value
 	cacheMutex                    *sync.RWMutex
 	lastUpdated                   time.Time
@@ -68,15 +66,15 @@ type SecureProvider struct {
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
-func NewSecureProvider(ctx context.Context, config interfaces.Configuration, lc logger.LoggingClient,
+func NewSecureProvider(ctx context.Context, secretStoreInfo *config.SecretStoreInfo, lc logger.LoggingClient,
 	loader authtokenloader.AuthTokenLoader, runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
 	serviceKey string) *SecureProvider {
 	provider := &SecureProvider{
-		configuration:                 config,
 		lc:                            lc,
 		loader:                        loader,
 		runtimeTokenProvider:          runtimeTokenLoader,
 		serviceKey:                    serviceKey,
+		secretStoreInfo:               *secretStoreInfo,
 		secretsCache:                  make(map[string]map[string]string),
 		cacheMutex:                    &sync.RWMutex{},
 		lastUpdated:                   time.Now(),
@@ -217,7 +215,7 @@ func (p *SecureProvider) reloadTokenOnAuthError(err error) (bool, error) {
 	}
 
 	// Reload token in case new token was created causing the auth error
-	token, err := p.loader.Load(p.configuration.GetBootstrap().SecretStore.TokenFile)
+	token, err := p.loader.Load(p.secretStoreInfo.TokenFile)
 	if err != nil {
 		return false, err
 	}
@@ -270,7 +268,7 @@ func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (st
 // DefaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
 // It utilizes the tokenFile to re-read the token and enable retry if any update from the expired token
 func (p *SecureProvider) DefaultTokenExpiredCallback(expiredToken string) (replacementToken string, retry bool) {
-	tokenFile := p.configuration.GetBootstrap().SecretStore.TokenFile
+	tokenFile := p.secretStoreInfo.TokenFile
 
 	// during the callback, we want to re-read the token from the disk
 	// specified by tokenFile and set the retry to true if a new token
@@ -300,7 +298,7 @@ func (p *SecureProvider) RuntimeTokenExpiredCallback(expiredToken string) (repla
 }
 
 // LoadServiceSecrets loads the service secrets from the specified file and stores them in the service's SecretStore
-func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig config.SecretStoreInfo) error {
+func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig *config.SecretStoreInfo) error {
 
 	contents, err := os.ReadFile(secretStoreConfig.SecretsFile)
 	if err != nil {

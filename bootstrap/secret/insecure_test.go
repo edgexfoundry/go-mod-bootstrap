@@ -306,3 +306,39 @@ func TestInsecureProvider_DeregisterSecretUpdatedCallback(t *testing.T) {
 		})
 	}
 }
+
+type TestConfig struct {
+	InsecureSecrets bootstrapConfig.InsecureSecrets
+}
+
+func (t TestConfig) UpdateFromRaw(_ interface{}) bool {
+	panic("implement me")
+}
+
+func (t TestConfig) EmptyWritablePtr() interface{} {
+	panic("implement me")
+}
+
+func (t TestConfig) UpdateWritableFromRaw(_ interface{}) bool {
+	panic("implement me")
+}
+
+func (t TestConfig) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
+	return bootstrapConfig.BootstrapConfiguration{}
+}
+
+func (t TestConfig) GetLogLevel() string {
+	panic("implement me")
+}
+
+func (t TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
+	panic("implement me")
+}
+
+func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
+	return t.InsecureSecrets
+}
+
+func (t TestConfig) GetTelemetryInfo() *bootstrapConfig.TelemetryInfo {
+	panic("implement me")
+}

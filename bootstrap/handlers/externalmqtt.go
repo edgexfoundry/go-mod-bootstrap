@@ -39,7 +39,7 @@ func (e *ExternalMQTT) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup,
 	topics := brokerConfig.SubscribeTopics
 	// TODO: remove first check and update error log in EdgeX 3.0
 	if len(strings.TrimSpace(topics)) == 0 && len(brokerConfig.Topics) == 0 {
-		lc.Errorf("missing SubscribeTopics and/or Topics for external MQTT connection. Must be present in [MessageQueue.External] section")
+		lc.Errorf("missing SubscribeTopics and/or Topics for external MQTT connection. Must be present in [ExternalMqtt] section")
 		return false
 	}
 

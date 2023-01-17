@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-
 	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
 )
 
 const (
@@ -159,6 +159,35 @@ type SecretStoreInfo struct {
 	RuntimeTokenProvider types.RuntimeTokenProviderInfo
 }
 
+func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
+	return SecretStoreInfo{
+		Type:                    secrets.Vault,
+		Protocol:                "http",
+		Host:                    "localhost",
+		Port:                    8200,
+		Path:                    serviceKey,
+		TokenFile:               fmt.Sprintf("/tmp/edgex/secrets/%s/secrets-token.json", serviceKey),
+		DisableScrubSecretsFile: false,
+		Namespace:               "",
+		RootCaCertPath:          "",
+		ServerName:              "",
+		SecretsFile:             "",
+		Authentication: types.AuthenticationInfo{
+			AuthType:  "X-Vault-Token",
+			AuthToken: "",
+		},
+		RuntimeTokenProvider: types.RuntimeTokenProviderInfo{
+			Enabled:         false,
+			Protocol:        "https",
+			Host:            "localhost",
+			Port:            59841,
+			TrustDomain:     "edgexfoundry.org",
+			EndpointSocket:  "/tmp/edgex/secrets/spiffe/public/api.sock",
+			RequiredSecrets: "redisdb",
+		},
+	}
+}
+
 type Database struct {
 	Type    string
 	Timeout int
@@ -194,7 +223,6 @@ type BootstrapConfiguration struct {
 	Service      ServiceInfo
 	Config       ConfigProviderInfo
 	Registry     RegistryInfo
-	SecretStore  SecretStoreInfo
 	MessageBus   MessageBusInfo
 	ExternalMQTT ExternalMQTTInfo
 }
