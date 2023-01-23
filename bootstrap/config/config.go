@@ -142,7 +142,7 @@ func (cp *Processor) Process(
 			cp.lc.Info("Not configured to use Config Provider access token")
 		}
 
-		configClient, err = cp.createProviderClient(serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		configClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
 		}
@@ -344,8 +344,9 @@ func (cp *Processor) ListenForCustomConfigChanges(
 	cp.lc.Infof("Watching for custom configuration changes has started for `%s`", sectionName)
 }
 
-// createProviderClient creates and returns a configuration.Client instance and logs Client connection information
-func (cp *Processor) createProviderClient(
+// CreateProviderClient creates and returns a configuration.Client instance and logs Client connection information
+func CreateProviderClient(
+	lc logger.LoggingClient,
 	serviceKey string,
 	configStem string,
 	getAccessToken types.GetAccessTokenCallback,
@@ -368,7 +369,7 @@ func (cp *Processor) createProviderClient(
 		providerConfig.GetAccessToken = getAccessToken
 	}
 
-	cp.lc.Info(fmt.Sprintf(
+	lc.Info(fmt.Sprintf(
 		"Using Configuration provider (%s) from: %s with base path of %s",
 		providerConfig.Type,
 		providerConfig.GetUrl(),
