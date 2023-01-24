@@ -380,11 +380,7 @@ func CreateProviderClient(
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
 func (cp *Processor) loadFromFile(config interface{}, configType string) error {
-	configDir := environment.GetConfigDir(cp.lc, cp.flags.ConfigDirectory())
-	profileDir := environment.GetProfileDir(cp.lc, cp.flags.Profile())
-	configFileName := environment.GetConfigFileName(cp.lc, cp.flags.ConfigFileName())
-
-	filePath := configDir + "/" + profileDir + configFileName
+	filePath := GetConfigLocation(cp.lc, cp.flags)
 
 	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -397,6 +393,15 @@ func (cp *Processor) loadFromFile(config interface{}, configType string) error {
 	cp.lc.Info(fmt.Sprintf("Loaded %s configuration from %s", configType, filePath))
 
 	return nil
+}
+
+// GetConfigLocation uses the environment variables and flags to determine the location of the configuration
+func GetConfigLocation(lc logger.LoggingClient, flags flags.Common) string {
+	configDir := environment.GetConfigDir(lc, flags.ConfigDirectory())
+	profileDir := environment.GetProfileDir(lc, flags.Profile())
+	configFileName := environment.GetConfigFileName(lc, flags.ConfigFileName())
+
+	return configDir + "/" + profileDir + configFileName
 }
 
 // ProcessWithProvider puts configuration if doesnt exist in provider (i.e. self-seed) or
