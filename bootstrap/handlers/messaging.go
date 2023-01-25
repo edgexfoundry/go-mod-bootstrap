@@ -64,8 +64,9 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 				Port:     messageBusInfo.Port,
 				Protocol: messageBusInfo.Protocol,
 			},
-			Type:     messageBusInfo.Type,
-			Optional: messageBusInfo.Optional,
+			Type:                messageBusInfo.Type,
+			ResponseTopicPrefix: messageBusInfo.Topics[boostrapMessaging.ResponseTopicPrefixKey], // OK if it doesn't exist
+			Optional:            messageBusInfo.Optional,
 		})
 
 	if err != nil {

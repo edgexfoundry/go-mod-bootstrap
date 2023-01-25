@@ -2,6 +2,8 @@ module github.com/edgexfoundry/go-mod-bootstrap/v3
 
 go 1.18
 
+replace github.com/edgexfoundry/go-mod-messaging/v3 => ../go-mod-messaging
+
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.2

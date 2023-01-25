@@ -50,6 +50,8 @@ const (
 	OptionsCertPEMBlockKey = "CertPEMBlock"
 	OptionsKeyPEMBlockKey  = "KeyPEMBlock"
 	OptionsCaPEMBlockKey   = "CaPEMBlock"
+
+	ResponseTopicPrefixKey = "ResponseTopicPrefix"
 )
 
 type SecretDataProvider interface {
