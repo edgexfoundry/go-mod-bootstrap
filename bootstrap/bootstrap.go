@@ -89,6 +89,7 @@ func RunAndReturnWaitGroup(
 	startupTimer startup.Timer,
 	dic *di.Container,
 	useSecretProvider bool,
+	serviceType string,
 	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, Deferred, bool) {
 
 	var err error
@@ -122,7 +123,7 @@ func RunAndReturnWaitGroup(
 	// to the need for it to be used to get Access Token for the Configuration Provider and having to wait to
 	// initialize it until after the configuration is loaded from file.
 	configProcessor := config.NewProcessor(commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
-	if err := configProcessor.Process(serviceKey, configStem, serviceConfig, secretProvider); err != nil {
+	if err := configProcessor.Process(serviceKey, serviceType, configStem, serviceConfig, secretProvider); err != nil {
 		fatalError(err, lc)
 	}
 
@@ -208,6 +209,7 @@ func Run(
 	startupTimer startup.Timer,
 	dic *di.Container,
 	useSecretProvider bool,
+	serviceType string,
 	handlers []interfaces.BootstrapHandler) {
 
 	wg, deferred, success := RunAndReturnWaitGroup(
@@ -221,6 +223,7 @@ func Run(
 		startupTimer,
 		dic,
 		useSecretProvider,
+		serviceType,
 		handlers,
 	)
 

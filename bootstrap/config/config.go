@@ -17,11 +17,14 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/mitchellh/copystructure"
 	"math"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
 
@@ -100,6 +103,7 @@ func NewProcessorForCustomConfig(
 
 func (cp *Processor) Process(
 	serviceKey string,
+	serviceType string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
 	secretProvider interfaces.SecretProvider) error {
@@ -115,8 +119,8 @@ func (cp *Processor) Process(
 
 	useProvider := configProviderInfo.UseProvider()
 
-	var overrideCount int
 	var configClient configuration.Client
+	var serviceTypeConfig interfaces.Configuration
 
 	if useProvider {
 		var accessToken string
@@ -176,19 +180,57 @@ func (cp *Processor) Process(
 			return errors.New("configuration provider is not available")
 		}
 
+		// Each loading of configuration below will fill separate configs
+		// - serviceConfig: all services section of the common config
+		// - serviceTypeConfig: if the service is an app or device service, this will have the type specific common config
+		// - tomlTree: the service's private configuration in its toml tree form
+
+		// load the common config
+		err = cp.loadCommonConfig(serviceConfig, "all-services", configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		if err != nil {
+			return fmt.Errorf("failed to load the common configuration for all services: %s", err.Error())
+		}
+
+		// use the service type to determine which additional sections to load into the common configuration
+		switch serviceType {
+		case config.ServiceTypeApp:
+			serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
+			if err != nil {
+				return fmt.Errorf("failed to copy the configuration structure for app services: %s", err.Error())
+			}
+			err = cp.loadCommonConfig(serviceTypeConfig, "app-services", configStem, getAccessToken, configProviderInfo.ServiceConfig())
+			if err != nil {
+				return fmt.Errorf("failed to load the common configuration for app services: %s", err.Error())
+			}
+		case config.ServiceTypeDevice:
+			serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
+			if err != nil {
+				return fmt.Errorf("failed to copy the configuration structure for device services: %s", err.Error())
+			}
+			err = cp.loadCommonConfig(serviceTypeConfig, "device-services", configStem, getAccessToken, configProviderInfo.ServiceConfig())
+			if err != nil {
+				return fmt.Errorf("failed to load the common configuration for device services: %s", err.Error())
+			}
+		default:
+			// this case is covered by the initial call to get the common config for all-services
+		}
+
 		cp.providerHasConfig, err = configClient.HasConfiguration()
 		if err != nil {
-			return fmt.Errorf("failed check for Configuration Provider has configiuration: %s", err.Error())
+			return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
 		}
+	}
+
+	var tomlTree *toml.Tree
+
+	// merge together the common config and the servicetype config
+	if serviceTypeConfig != nil {
+		mergeConfigs(serviceConfig, serviceTypeConfig)
 	}
 
 	// Now must load configuration from local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
-		if err := cp.loadFromFile(serviceConfig, "service"); err != nil {
-			return err
-		}
-
-		overrideCount, err = cp.envVars.OverrideConfiguration(serviceConfig)
+		tomlTree, err = cp.loadFromFile(serviceConfig, "service")
 		if err != nil {
 			return err
 		}
@@ -196,15 +238,23 @@ func (cp *Processor) Process(
 
 	switch useProvider {
 	case true:
-		if err = cp.processWithProvider(configClient, serviceConfig, overrideCount); err != nil {
+		if err = cp.processPrivateConfigFromProvider(configClient, serviceConfig, tomlTree); err != nil {
 			return err
 		}
 
 		cp.listenForChanges(serviceConfig, configClient)
 
 	case false:
-		cp.logConfigInfo("Using local configuration from file", overrideCount)
+		cp.lc.Info("Using local private configuration from file")
 	}
+
+	// apply overrides
+	overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
+	if err != nil {
+		return err
+	}
+
+	cp.lc.Infof("Configuration loaded with %d overrides applied", overrideCount)
 
 	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
 	err = cp.lc.SetLogLevel(serviceConfig.GetLogLevel())
@@ -227,7 +277,9 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 	configClient := container.ConfigClientFrom(cp.dic.Get)
 	if configClient == nil {
 		cp.lc.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
-		if err := cp.loadFromFile(config, "custom"); err != nil {
+		// TODO: fix toml tree returned from LoadFromFile
+		_, err := cp.loadFromFile(config, "custom")
+		if err != nil {
 			return err
 		}
 	} else {
@@ -253,7 +305,8 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 				return fmt.Errorf("unable to update custom configuration from Configuration Provider")
 			}
 		} else {
-			if err := cp.loadFromFile(config, "custom"); err != nil {
+			_, err := cp.loadFromFile(config, "custom")
+			if err != nil {
 				return err
 			}
 
@@ -379,20 +432,29 @@ func CreateProviderClient(
 }
 
 // LoadFromFile attempts to read and unmarshal toml-based configuration into a configuration struct.
-func (cp *Processor) loadFromFile(config interface{}, configType string) error {
+func (cp *Processor) loadFromFile(config interface{}, configType string) (*toml.Tree, error) {
+	// convert the common config passed in to a map[string]any
+	var configMap map[string]any
+	if err := convertInterfaceToMap(config, &configMap); err != nil {
+		return nil, err
+	}
+
+	// pull the private config and convert it to a map[string]any
 	filePath := GetConfigLocation(cp.lc, cp.flags)
-
-	contents, err := ioutil.ReadFile(filePath)
+	contents, err := toml.LoadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("could not load %s configuration file (%s): %s", configType, filePath, err.Error())
+		return nil, fmt.Errorf("could not load %s configuration file (%s): %s", configType, filePath, err.Error())
 	}
-	if err = toml.Unmarshal(contents, config); err != nil {
-		return fmt.Errorf("could not load %s configuration file (%s): %s", configType, filePath, err.Error())
-	}
+	contentsMap := contents.ToMap()
 
+	mergeMaps(configMap, contentsMap)
+
+	if err := convertMapToInterface(configMap, config); err != nil {
+		return nil, err
+	}
 	cp.lc.Info(fmt.Sprintf("Loaded %s configuration from %s", configType, filePath))
 
-	return nil
+	return contents, nil
 }
 
 // GetConfigLocation uses the environment variables and flags to determine the location of the configuration
@@ -404,23 +466,23 @@ func GetConfigLocation(lc logger.LoggingClient, flags flags.Common) string {
 	return configDir + "/" + profileDir + configFileName
 }
 
-// ProcessWithProvider puts configuration if doesnt exist in provider (i.e. self-seed) or
+// ProcessWithProvider puts configuration if doesn't exist in provider (i.e. self-seed) or
 // gets configuration from provider and updates the service's configuration with envVars overrides after receiving
 // them from the provider so that envVars override supersede any changes made in the provider.
-func (cp *Processor) processWithProvider(
+func (cp *Processor) processPrivateConfigFromProvider(
 	configClient configuration.Client,
 	serviceConfig interfaces.Configuration,
-	overrideCount int) error {
+	tomlTree *toml.Tree) error {
 
 	if !cp.providerHasConfig || cp.overwriteConfig {
 		// Variables overrides already applied previously so just push to Configuration Provider
 		// Note that serviceConfig is a pointer, so we have to use reflection to dereference it.
-		err := configClient.PutConfiguration(reflect.ValueOf(serviceConfig).Elem().Interface(), true)
+		err := configClient.PutConfigurationToml(tomlTree, true)
 		if err != nil {
 			return fmt.Errorf("could not push configuration into Configuration Provider: %s", err.Error())
 		}
 
-		cp.logConfigInfo("Configuration has been pushed to into Configuration Provider", overrideCount)
+		cp.lc.Info("Configuration has been pushed to into Configuration Provider")
 	} else {
 		rawConfig, err := configClient.GetConfiguration(serviceConfig)
 		if err != nil {
@@ -430,13 +492,7 @@ func (cp *Processor) processWithProvider(
 		if !serviceConfig.UpdateFromRaw(rawConfig) {
 			return errors.New("configuration from Configuration provider failed type check")
 		}
-
-		overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
-		if err != nil {
-			return err
-		}
-
-		cp.logConfigInfo("Configuration has been pulled from Configuration provider", overrideCount)
+		cp.lc.Info("Configuration has been pulled from Configuration provider")
 	}
 
 	return nil
@@ -552,9 +608,66 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 	}()
 }
 
-// logConfigInfo logs the config info message with number over overrides that occurred.
-func (cp *Processor) logConfigInfo(message string, overrideCount int) {
-	cp.lc.Infof("%s (%d envVars overrides applied)", message, overrideCount)
+// loadCommonConfig verifies the common config exists in the config provider, loads the common config into the config
+// structure, and watches for changes on the common writable
+func (cp *Processor) loadCommonConfig(serviceConfig interfaces.Configuration, serviceTypeKey string, configStem string, getAccessToken types.GetAccessTokenCallback, providerConfig types.ServiceConfig) error {
+
+	cp.lc.Info("loading the common configuration")
+	configReadyClient, err := CreateProviderClient(cp.lc, common.CoreCommonConfigServiceKey, configStem, getAccessToken, providerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create Common Configuration root Provider client: %s", err.Error())
+	}
+	// check if common config is present or wait to see if it appears
+	isAlive := false
+	for cp.startupTimer.HasNotElapsed() {
+		commonConfigReady, err := configReadyClient.GetConfigurationValue(config.CommonConfigDone)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve common config value %s: %s", config.CommonConfigDone, err.Error())
+		}
+		isCommonConfigReady, err := strconv.ParseBool(string(commonConfigReady))
+		if err != nil {
+			return fmt.Errorf("failed to parse common config value %s for key %s: %s", commonConfigReady, config.CommonConfigDone, err.Error())
+		}
+		if isCommonConfigReady {
+			isAlive = true
+			break
+		}
+
+		cp.lc.Warn("waiting for Common Configuration to be available from config provider")
+
+		select {
+		case <-cp.ctx.Done():
+			return errors.New("aborted waiting Common Configuration to be available")
+		default:
+			cp.startupTimer.SleepForInterval()
+			continue
+		}
+	}
+
+	if !isAlive {
+		return errors.New("configuration provider is not available")
+	}
+
+	configClient, err := CreateProviderClient(cp.lc, common.CoreCommonConfigServiceKey+"/"+serviceTypeKey, configStem, getAccessToken, providerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create Common Configuration for type %s Provider client: %s", serviceConfig, err.Error())
+	}
+	cp.lc.Info("created provider client for service type " + serviceTypeKey)
+
+	// pull common config and apply config to service config structure
+	rawConfig, err := configClient.GetConfiguration(serviceConfig)
+	if err != nil {
+		return fmt.Errorf("could not get configuration from Configuration provider: %s", err.Error())
+	}
+
+	// update from raw
+	ok := serviceConfig.UpdateFromRaw(rawConfig)
+	if !ok {
+		return fmt.Errorf("could not update from raw for service type %s", serviceTypeKey)
+	}
+	// TODO: watch for writable
+
+	return nil
 }
 
 // getSecretPathsChanged returns a slice of paths that have changed secrets or are new.
@@ -588,4 +701,113 @@ func getSecretPathsChanged(prevVals config.InsecureSecrets, curVals config.Insec
 	}
 
 	return updatedPaths
+}
+
+// mergeConfigs combines src (zeros removed) with the dest
+func mergeConfigs(dest interface{}, src interface{}) error {
+	// convert the configs to maps
+	var destMap, srcMap map[string]any
+	if err := convertInterfaceToMap(dest, &destMap); err != nil {
+		return fmt.Errorf("could not create map from config: %s", err.Error())
+	}
+
+	if err := convertInterfaceToMap(src, &srcMap); err != nil {
+		return fmt.Errorf("could not create map from config: %s", err.Error())
+	}
+
+	// remove zero values from the source and merge the src with dest
+	removeZeroValues(srcMap)
+	mergeMaps(destMap, srcMap)
+
+	// convert the map back to a config
+	if err := convertMapToInterface(destMap, dest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// mergeMaps combines the src map keys and values with the dest map keys and values if the key exists
+func mergeMaps(dest map[string]any, src map[string]any) {
+
+	var exists bool
+
+	for key, value := range src {
+		_, exists = dest[key]
+		if !exists {
+			dest[key] = value
+			continue
+		}
+
+		destVal, ok := dest[key].(map[string]any)
+		if ok {
+			mergeMaps(destVal, value.(map[string]any))
+			continue
+		}
+
+		dest[key] = value
+	}
+}
+
+// copyConfigurationStruct returns a copy of the passed in configuration interface
+func copyConfigurationStruct(config interfaces.Configuration) (interfaces.Configuration, error) {
+	copy, err := copystructure.Copy(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load copy the configuration: %s", err.Error())
+	}
+	configCopy, ok := copy.(interfaces.Configuration)
+	if !ok {
+		return nil, errors.New("failed to cast the copy of the configuration")
+	}
+	return configCopy, nil
+}
+
+// convertInterfaceToMap uses json to marshal and unmarshal an interface into a map
+func convertInterfaceToMap(config interface{}, m *map[string]any) error {
+	jsonBytes, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("could not marshal common configuration: %s", err.Error())
+	}
+	if err = json.Unmarshal(jsonBytes, &m); err != nil {
+		return fmt.Errorf("could not unmarshal common configuration configuration file: %s", err.Error())
+	}
+	return nil
+}
+
+// convertMapToInterface uses json to marshal and unmarshal a map into an interface
+func convertMapToInterface(m map[string]any, config interface{}) error {
+	jsonBytes, err := json.Marshal(m)
+	if err != nil {
+		return fmt.Errorf("could not marshal config map: %s", err.Error())
+	}
+
+	if err := json.Unmarshal(jsonBytes, config); err != nil {
+		return fmt.Errorf("could not unmarshal configuration: %s", err.Error())
+	}
+
+	return nil
+}
+
+// removeZeroValues iterates over a map and removes any zero values it may have
+func removeZeroValues(target map[string]any) {
+	var removeKeys []string
+	for key, value := range target {
+		sub, ok := value.(map[string]any)
+		if ok {
+			removeZeroValues(sub)
+			if len(sub) == 0 {
+				removeKeys = append(removeKeys, key)
+			}
+			continue
+		}
+
+		if value == nil || reflect.ValueOf(value).IsZero() {
+			removeKeys = append(removeKeys, key)
+		}
+
+	}
+
+	for _, key := range removeKeys {
+		delete(target, key)
+	}
 }

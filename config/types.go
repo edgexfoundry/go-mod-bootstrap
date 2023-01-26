@@ -31,6 +31,16 @@ const (
 	MessageBusSubscribeTopic     = "SubscribeTopic"
 )
 
+const (
+	ServiceTypeApp    = "app-service"
+	ServiceTypeDevice = "device-service"
+	ServiceTypeOther  = "other"
+)
+
+const (
+	CommonConfigDone = "IsCommonConfigReady"
+)
+
 // ServiceInfo contains configuration settings necessary for the basic operation of any EdgeX service.
 type ServiceInfo struct {
 	// HealthCheckInterval is the interval for Registry heal check callback
