@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2022 Intel Inc.
+ * Copyright 2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -46,7 +46,10 @@ import (
 )
 
 const (
-	writableKey = "/Writable"
+	writableKey       = "/Writable"
+	allServicesKey    = "/all-services"
+	appServicesKey    = "/app-services"
+	deviceServicesKey = "/device-services"
 )
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
@@ -218,7 +221,9 @@ func (cp *Processor) loadCommonConfig(
 	serviceType string,
 	createProvider createProviderCallback) error {
 
-	// load the common config
+	// check that common config is loaded into the provider
+	// this need a separate config provider client here because the config ready variable is stored at the common config level
+	// TODO: refactor to add Client API that allows checking of a variable by passing an absolute path
 	commonConfigCheckClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create provider client for common config check: %s", err.Error())
@@ -226,45 +231,46 @@ func (cp *Processor) loadCommonConfig(
 	if err := cp.waitForCommonConfig(commonConfigCheckClient); err != nil {
 		return err
 	}
-	commonConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+"/all-services", configStem, getAccessToken, configProviderInfo.ServiceConfig())
+	// load the all services section of the common config
+	commonConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+allServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 	if err != nil {
-		return fmt.Errorf("failed to create provider for all services: %s", err.Error())
+		return fmt.Errorf("failed to create provider for %s: %s", allServicesKey, err.Error())
 	}
 	err = cp.loadConfigFromProvider(serviceConfig, commonConfigClient)
 	if err != nil {
-		return fmt.Errorf("failed to load the common configuration for all services: %s", err.Error())
+		return fmt.Errorf("failed to load the common configuration for %s: %s", allServicesKey, err.Error())
 	}
 
 	// use the service type to determine which additional sections to load into the common configuration
 	var serviceTypeConfig interfaces.Configuration
 	switch serviceType {
 	case config.ServiceTypeApp:
-		cp.lc.Info("loading the common configuration for service type " + serviceType)
+		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
 		if err != nil {
-			return fmt.Errorf("failed to copy the configuration structure for app services: %s", err.Error())
+			return fmt.Errorf("failed to copy the configuration structure for %s: %s", appServicesKey, err.Error())
 		}
-		appConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+"/app-services", configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		appConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+appServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
-			return fmt.Errorf("failed to create provider for service type %s: %s", serviceType, err.Error())
+			return fmt.Errorf("failed to create provider for %s: %s", appServicesKey, err.Error())
 		}
 		err = cp.loadConfigFromProvider(serviceTypeConfig, appConfigClient)
 		if err != nil {
-			return fmt.Errorf("failed to load the common configuration for app services: %s", err.Error())
+			return fmt.Errorf("failed to load the common configuration for %s: %s", appServicesKey, err.Error())
 		}
 	case config.ServiceTypeDevice:
-		cp.lc.Info("loading the common configuration for service type " + serviceType)
+		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
 		if err != nil {
-			return fmt.Errorf("failed to copy the configuration structure for device services: %s", err.Error())
+			return fmt.Errorf("failed to copy the configuration structure for %s: %s", deviceServicesKey, err.Error())
 		}
-		deviceConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+"/device-services", configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		deviceConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+deviceServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
-			return fmt.Errorf("failed to create provider for service type %s: %s", serviceType, err.Error())
+			return fmt.Errorf("failed to create provider for %s: %s", deviceServicesKey, err.Error())
 		}
 		err = cp.loadConfigFromProvider(serviceTypeConfig, deviceConfigClient)
 		if err != nil {
-			return fmt.Errorf("failed to load the common configuration for device services: %s", err.Error())
+			return fmt.Errorf("failed to load the common configuration for %s: %s", deviceServicesKey, err.Error())
 		}
 	default:
 		// this case is covered by the initial call to get the common config for all-services
@@ -655,14 +661,18 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client) erro
 
 	// check to see if common config is loaded
 	isConfigReady := false
+	isCommonConfigReady := false
 	for cp.startupTimer.HasNotElapsed() {
 		commonConfigReady, err := configClient.GetConfigurationValue(config.CommonConfigDone)
 		if err != nil {
-			return fmt.Errorf("failed to retrieve common config value %s: %s", config.CommonConfigDone, err.Error())
+			cp.lc.Warn("waiting for Common Configuration to be available from config provider")
+			cp.startupTimer.SleepForInterval()
+			continue
 		}
-		isCommonConfigReady, err := strconv.ParseBool(string(commonConfigReady))
+
+		isCommonConfigReady, err = strconv.ParseBool(string(commonConfigReady))
 		if err != nil {
-			return fmt.Errorf("failed to parse common config value %s for key %s: %s", commonConfigReady, config.CommonConfigDone, err.Error())
+			return fmt.Errorf("did not get boolean from config provider for %s: %s", config.CommonConfigDone, err.Error())
 		}
 		if isCommonConfigReady {
 			isConfigReady = true
@@ -696,7 +706,7 @@ func (cp *Processor) loadConfigFromProvider(serviceConfig interfaces.Configurati
 	// update from raw
 	ok := serviceConfig.UpdateFromRaw(rawConfig)
 	if !ok {
-		return fmt.Errorf("could not update configuration from raw")
+		return fmt.Errorf("could not update service's configuration from raw")
 	}
 
 	return nil
@@ -740,14 +750,15 @@ func mergeConfigs(dest interface{}, src interface{}) error {
 	// convert the configs to maps
 	var destMap, srcMap map[string]any
 	if err := convertInterfaceToMap(dest, &destMap); err != nil {
-		return fmt.Errorf("could not create map from config: %s", err.Error())
+		return fmt.Errorf("could not create destination map from config: %s", err.Error())
 	}
 
 	if err := convertInterfaceToMap(src, &srcMap); err != nil {
-		return fmt.Errorf("could not create map from config: %s", err.Error())
+		return fmt.Errorf("could not source create map from config: %s", err.Error())
 	}
 
-	// remove zero values from the source and merge the src with dest
+	// remove zero values from the source to prevent overwriting items in the destination config
+	// and merge the src with dest
 	removeZeroValues(srcMap)
 	mergeMaps(destMap, srcMap)
 
@@ -798,10 +809,10 @@ func copyConfigurationStruct(config interfaces.Configuration) (interfaces.Config
 func convertInterfaceToMap(config interface{}, m *map[string]any) error {
 	jsonBytes, err := json.Marshal(config)
 	if err != nil {
-		return fmt.Errorf("could not marshal common configuration: %s", err.Error())
+		return fmt.Errorf("could not marshal service's configuration: %s", err.Error())
 	}
 	if err = json.Unmarshal(jsonBytes, &m); err != nil {
-		return fmt.Errorf("could not unmarshal common configuration configuration file: %s", err.Error())
+		return fmt.Errorf("could not unmarshal service's configuration configuration file: %s", err.Error())
 	}
 	return nil
 }

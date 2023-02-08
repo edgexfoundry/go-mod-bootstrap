@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
- * Copyright 2022 Intel Inc.
+ * Copyright 2023 Intel Corporation
  * Copyright 2021-2022 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -35,6 +35,7 @@ const (
 	ServiceTypeApp    = "app-service"
 	ServiceTypeDevice = "device-service"
 	ServiceTypeOther  = "other"
+	//TOOD: add security-service to use in place of useSecretProvider
 )
 
 const (

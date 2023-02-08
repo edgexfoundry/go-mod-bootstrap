@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
@@ -110,10 +111,10 @@ func TestGetSecretPathsChanged(t *testing.T) {
 }
 
 func TestLoadCommonConfig(t *testing.T) {
-	serviceKey := "test-service"
 	getAccessToken := func() (string, error) {
 		return "", nil
 	}
+	// set up configs for use in tests
 	serviceConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
 			LogLevel: "INFO",
@@ -128,7 +129,7 @@ func TestLoadCommonConfig(t *testing.T) {
 	appConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
 			StoreAndForward: StoreAndForwardInfo{
-				Enabled:       false,
+				Enabled:       true,
 				RetryInterval: "5m",
 				MaxRetryCount: 10,
 			},
@@ -141,10 +142,16 @@ func TestLoadCommonConfig(t *testing.T) {
 	deviceConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
 			Telemetry: config.TelemetryInfo{
-				Metrics: map[string]bool{"EventsSent": false, "ReadingsSent": true},
+				Metrics: map[string]bool{"EventsSent": true, "ReadingsSent": true},
 			},
 		},
 	}
+	// set up errors for tests
+	testErr := errors.New("test error")
+	configProviderErr := "configuration provider is not available"
+	loadErr := "common config is not loaded"
+	noBoolErr := "did not get boolean from config provider for IsCommonConfigReady"
+	getConfigErr := fmt.Sprintf("failed to load the common configuration for %s: %s", allServicesKey, testErr.Error())
 
 	tests := []struct {
 		Name                 string
@@ -156,22 +163,24 @@ func TestLoadCommonConfig(t *testing.T) {
 		isCommonConfigReady  []byte
 		commonConfigReadyErr error
 		getConfigErr         error
-		expectedErr          error
+		expectedErr          string
 	}{
 		{"Valid - core service", &serviceConfig, config.ServiceTypeOther, nil,
-			nil, true, []byte("true"), nil, nil, nil},
+			nil, true, []byte("true"), nil, nil, ""},
 		{"Valid - app service", &serviceConfig, config.ServiceTypeApp, &appConfig,
-			nil, true, []byte("true"), nil, nil, nil},
+			nil, true, []byte("true"), nil, nil, ""},
 		{"Valid - device service", &serviceConfig, config.ServiceTypeDevice, &deviceConfig,
-			nil, true, []byte("true"), nil, nil, nil},
+			nil, true, []byte("true"), nil, nil, ""},
 		{"Invalid - config provider not alive", &serviceConfig, config.ServiceTypeOther, nil,
-			nil, false, []byte("false"), nil, nil, errors.New("configuration provider is not available")},
+			nil, false, []byte("false"), nil, nil, configProviderErr},
 		{"Invalid - common config not ready", &serviceConfig, config.ServiceTypeOther, nil,
-			nil, true, []byte("false"), nil, nil, errors.New("common config is not loaded")},
+			nil, true, []byte("false"), nil, nil, loadErr},
+		{"Invalid - common config ready parameter invalid", &serviceConfig, config.ServiceTypeOther, nil,
+			nil, true, []byte("bogus"), nil, nil, noBoolErr},
 		{"Invalid - common config not ready error", &serviceConfig, config.ServiceTypeOther, nil,
-			nil, true, []byte("false"), errors.New("config provider not available"), nil, errors.New("failed to retrieve common config value IsCommonConfigReady: config provider not available")},
+			nil, true, []byte("false"), testErr, nil, loadErr},
 		{"Valid - core service", &serviceConfig, config.ServiceTypeOther, nil,
-			nil, true, []byte("true"), nil, errors.New("configuration not found"), errors.New("failed to load the common configuration for all services: configuration not found")},
+			nil, true, []byte("true"), nil, testErr, getConfigErr},
 	}
 
 	for _, tc := range tests {
@@ -181,7 +190,7 @@ func TestLoadCommonConfig(t *testing.T) {
 			f.Parse(nil)
 			mockLogger := logger.MockLogger{}
 			env := environment.NewVariables(mockLogger)
-			timer := startup.NewStartUpTimer(serviceKey)
+			timer := startup.NewTimer(5, 1)
 			ctx, cancel := context.WithCancel(context.Background())
 
 			wg := sync.WaitGroup{}
@@ -205,8 +214,7 @@ func TestLoadCommonConfig(t *testing.T) {
 				providerClientMock.On("GetConfigurationValue", "IsCommonConfigReady").Return(tc.isCommonConfigReady, tc.commonConfigReadyErr)
 			}
 			ccReady, err := strconv.ParseBool(string(tc.isCommonConfigReady))
-			require.NoError(t, err)
-			if ccReady {
+			if err == nil && ccReady {
 				providerClientMock.On("GetConfiguration", &serviceConfigMock).Return(tc.serviceConfig, tc.getConfigErr).Once()
 			}
 			if tc.serviceType == config.ServiceTypeApp || tc.serviceType == config.ServiceTypeDevice {
@@ -217,21 +225,21 @@ func TestLoadCommonConfig(t *testing.T) {
 			// make assertions
 			providerClientMock.AssertExpectations(t)
 			require.NotNil(t, cancel)
-			if tc.expectedErr == nil {
+			if tc.expectedErr == "" {
 				assert.NoError(t, err)
 				assert.NotNil(t, serviceConfigMock.Writable.LogLevel)
 				switch tc.serviceType {
 				case config.ServiceTypeApp:
-					assert.False(t, serviceConfigMock.Writable.StoreAndForward.Enabled)
+					assert.True(t, serviceConfigMock.Writable.StoreAndForward.Enabled)
 					assert.NotEmpty(t, serviceConfigMock.Writable.StoreAndForward.RetryInterval)
 					assert.NotZero(t, serviceConfigMock.Writable.StoreAndForward.MaxRetryCount)
 				case config.ServiceTypeDevice:
-					assert.False(t, serviceConfigMock.Writable.Telemetry.Metrics["EventsSent"])
+					assert.True(t, serviceConfigMock.Writable.Telemetry.Metrics["EventsSent"])
 					assert.True(t, serviceConfigMock.Writable.Telemetry.Metrics["ReadingsSent"])
 				}
 				return
 			}
-			assert.Equal(t, err, tc.expectedErr)
+			assert.Contains(t, err.Error(), tc.expectedErr)
 		})
 	}
 }
@@ -257,7 +265,7 @@ func TestMergeConfigs(t *testing.T) {
 	appConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
 			StoreAndForward: StoreAndForwardInfo{
-				Enabled:       false,
+				Enabled:       true,
 				RetryInterval: "5m",
 				MaxRetryCount: 10,
 			},
@@ -266,7 +274,7 @@ func TestMergeConfigs(t *testing.T) {
 			Type: "edgex-messagebus",
 		},
 	}
-	require.False(t, appConfig.Writable.StoreAndForward.Enabled)
+	require.True(t, appConfig.Writable.StoreAndForward.Enabled)
 	require.NotEmpty(t, appConfig.Writable.StoreAndForward.RetryInterval)
 	require.NotZero(t, appConfig.Writable.StoreAndForward.MaxRetryCount)
 	require.NotEmpty(t, appConfig.Trigger.Type)
@@ -276,7 +284,7 @@ func TestMergeConfigs(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify values
-	assert.False(t, serviceConfig.Writable.StoreAndForward.Enabled)
+	assert.True(t, serviceConfig.Writable.StoreAndForward.Enabled)
 	assert.NotEmpty(t, serviceConfig.Writable.StoreAndForward.RetryInterval)
 	assert.NotZero(t, serviceConfig.Writable.StoreAndForward.MaxRetryCount)
 	assert.NotEmpty(t, serviceConfig.Trigger.Type)
@@ -296,12 +304,7 @@ func TestMergeMaps(t *testing.T) {
 			Port: 8500,
 			Type: "consul",
 		},
-		"Service":             config.ServiceInfo{},
-		"HttpServer":          HttpConfig{},
-		"MessageBus":          config.MessageBusInfo{},
-		"Trigger":             TriggerInfo{},
-		"ApplicationSettings": nil,
-		"Clients":             nil,
+		"Trigger": TriggerInfo{},
 	}
 	srcMap := map[string]any{
 		"Writable": WritableInfo{
@@ -325,10 +328,11 @@ func TestMergeMaps(t *testing.T) {
 }
 
 func TestRemoveZeroValues(t *testing.T) {
-	config := struct {
-		MaxEventSize int
-	}{
-		MaxEventSize: 4567,
+	config := ConfigurationMockStruct{
+		Registry: config.RegistryInfo{
+			Host: "localhost",
+			Port: 8500,
+		},
 	}
 
 	jbytes, err := json.Marshal(config)
@@ -337,8 +341,13 @@ func TestRemoveZeroValues(t *testing.T) {
 	err = json.Unmarshal(jbytes, &configMap)
 	require.NoError(t, err)
 
+	assert.Len(t, configMap, 3)
+	assert.Len(t, configMap["Registry"], 3)
 	removeZeroValues(configMap)
 
 	assert.Len(t, configMap, 1)
-	assert.NotZero(t, config.MaxEventSize)
+	assert.Len(t, configMap["Registry"], 2)
+	regMap := configMap["Registry"].(map[string]interface{})
+	assert.NotEmpty(t, regMap["Host"])
+	assert.NotZero(t, regMap["Port"])
 }
