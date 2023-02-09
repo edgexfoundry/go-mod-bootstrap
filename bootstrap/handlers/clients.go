@@ -110,11 +110,8 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 					return false
 				}
 
-				client, err = clientsMessaging.NewCommandClient(messageClient, serviceInfo.Topics, timeout)
-				if err != nil {
-					lc.Errorf("Unable to create messaging based Command Client: %v", err)
-					return false
-				}
+				baseTopic := config.GetBootstrap().MessageBus.GetBaseTopicPrefix()
+				client = clientsMessaging.NewCommandClient(messageClient, baseTopic, timeout)
 
 				lc.Infof("Using messaging for '%s' clients", serviceKey)
 			} else {

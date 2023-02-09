@@ -57,20 +57,22 @@ const (
 )
 
 type messageBusReporter struct {
-	lc            logger.LoggingClient
-	serviceName   string
-	dic           *di.Container
-	messageClient messaging.MessageClient
-	config        *config.TelemetryInfo
+	lc               logger.LoggingClient
+	serviceName      string
+	dic              *di.Container
+	messageClient    messaging.MessageClient
+	config           *config.TelemetryInfo
+	baseMetricsTopic string
 }
 
 // NewMessageBusReporter creates a new MessageBus reporter which reports metrics to the EdgeX MessageBus
-func NewMessageBusReporter(lc logger.LoggingClient, serviceName string, dic *di.Container, config *config.TelemetryInfo) interfaces.MetricsReporter {
+func NewMessageBusReporter(lc logger.LoggingClient, baseTopic string, serviceName string, dic *di.Container, config *config.TelemetryInfo) interfaces.MetricsReporter {
 	reporter := &messageBusReporter{
-		lc:          lc,
-		serviceName: serviceName,
-		dic:         dic,
-		config:      config,
+		lc:               lc,
+		serviceName:      serviceName,
+		dic:              dic,
+		config:           config,
+		baseMetricsTopic: common.BuildTopic(baseTopic, common.MetricsPublishTopic, serviceName),
 	}
 
 	return reporter
@@ -181,7 +183,7 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 			ContentType:   common.ContentTypeJSON,
 		}
 
-		topic := fmt.Sprintf("%s/%s", r.baseTopic(), name)
+		topic := common.BuildTopic(r.baseMetricsTopic, name)
 		if err := r.messageClient.Publish(message, topic); err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("failed to publish metric '%s' to topic '%s': %s", name, topic, err.Error()))
 			return
@@ -190,13 +192,9 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 		}
 	})
 
-	r.lc.Debugf("Publish %d metrics to the '%s' base topic", publishedCount, r.baseTopic())
+	r.lc.Debugf("Publish %d metrics to the '%s' base topic", publishedCount, r.baseMetricsTopic)
 
 	return errs
-}
-
-func (r *messageBusReporter) baseTopic() string {
-	return fmt.Sprintf("%s/%s", r.config.PublishTopicPrefix, r.serviceName)
 }
 
 func buildMetricTags(tags map[string]string) []dtos.MetricTag {

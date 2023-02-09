@@ -65,7 +65,8 @@ func (s *ServiceMetrics) BootstrapHandler(ctx context.Context, wg *sync.WaitGrou
 		interval = math.MaxInt64
 	}
 
-	reporter := metrics.NewMessageBusReporter(lc, s.serviceName, dic, telemetryConfig)
+	baseTopic := serviceConfig.GetBootstrap().MessageBus.GetBaseTopicPrefix()
+	reporter := metrics.NewMessageBusReporter(lc, baseTopic, s.serviceName, dic, telemetryConfig)
 	manager := metrics.NewManager(lc, interval, reporter)
 
 	manager.Run(ctx, wg)

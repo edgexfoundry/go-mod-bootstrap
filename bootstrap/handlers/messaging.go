@@ -102,12 +102,11 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 			})
 
 			lc.Infof(
-				"Connected to %s Message Bus @ %s://%s:%d using topics [%v] with AuthMode='%s'",
+				"Connected to %s Message Bus @ %s://%s:%d with AuthMode='%s'",
 				messageBusInfo.Type,
 				messageBusInfo.Protocol,
 				messageBusInfo.Host,
 				messageBusInfo.Port,
-				messageBusInfo.Topics,
 				messageBusInfo.AuthMode)
 
 			return true
@@ -120,18 +119,14 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 
 func deepCopy(target config.MessageBusInfo) config.MessageBusInfo {
 	result := config.MessageBusInfo{
-		Disabled:   target.Disabled,
-		Type:       target.Type,
-		Protocol:   target.Protocol,
-		Host:       target.Host,
-		Port:       target.Port,
-		AuthMode:   target.AuthMode,
-		SecretName: target.SecretName,
-	}
-
-	result.Topics = make(map[string]string)
-	for key, value := range target.Topics {
-		result.Topics[key] = value
+		Disabled:        target.Disabled,
+		Type:            target.Type,
+		Protocol:        target.Protocol,
+		Host:            target.Host,
+		Port:            target.Port,
+		AuthMode:        target.AuthMode,
+		SecretName:      target.SecretName,
+		BaseTopicPrefix: target.BaseTopicPrefix,
 	}
 
 	result.Optional = make(map[string]string)

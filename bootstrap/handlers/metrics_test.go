@@ -50,6 +50,7 @@ func TestServiceMetrics_BootstrapHandler(t *testing.T) {
 
 			mockMessagingClient := &mocks.MessageClient{}
 			mockConfiguration := &mocks2.Configuration{}
+			mockConfiguration.On("GetBootstrap").Return(config.BootstrapConfiguration{})
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
@@ -64,10 +65,9 @@ func TestServiceMetrics_BootstrapHandler(t *testing.T) {
 			})
 
 			expectedTelemetryInfo := config.TelemetryInfo{
-				Interval:           test.Interval,
-				PublishTopicPrefix: "/metrics",
-				Metrics:            make(map[string]bool),
-				Tags:               make(map[string]string),
+				Interval: test.Interval,
+				Metrics:  make(map[string]bool),
+				Tags:     make(map[string]string),
 			}
 
 			mockConfiguration.On("GetTelemetryInfo").Return(&expectedTelemetryInfo)
