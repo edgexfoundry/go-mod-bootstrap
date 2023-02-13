@@ -183,7 +183,6 @@ func (cp *Processor) Process(
 			}
 
 			cp.lc.Info("Configuration has been pushed to into Configuration Provider")
-			cp.listenForChanges(serviceConfig, privateConfigClient)
 		}
 
 	}
@@ -193,8 +192,13 @@ func (cp *Processor) Process(
 	if err != nil {
 		return err
 	}
-
 	cp.lc.Infof("Configuration loaded with %d overrides applied", overrideCount)
+
+	// listen for changes on Writable
+	if useProvider {
+		cp.listenForChanges(serviceConfig, privateConfigClient)
+		cp.lc.Infof("listening for private config changes")
+	}
 
 	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
 	err = cp.lc.SetLogLevel(serviceConfig.GetLogLevel())
