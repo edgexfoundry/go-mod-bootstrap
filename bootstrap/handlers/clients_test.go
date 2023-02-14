@@ -63,12 +63,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 	commandMessagingClientInfo := config.ClientInfo{
 		UseMessageBus: true,
-		Topics: map[string]string{
-			"QueryRequestTopic":         "queryRequest",
-			"QueryResponseTopic":        "queryResponse",
-			"CommandRequestTopicPrefix": "commandRequest",
-			"CommandResponseTopic":      "commandResponse",
-		},
 	}
 
 	notificationClientInfo := config.ClientInfo{
@@ -297,22 +291,13 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 	validDuration := "30s"
 	invalidDuration := "xyz"
 
-	validTopics := map[string]string{
-		"QueryRequestTopic":         "queryRequest",
-		"QueryResponseTopic":        "queryResponse",
-		"CommandRequestTopicPrefix": "commandRequest",
-		"CommandResponseTopic":      "commandResponse",
-	}
-
 	tests := []struct {
 		Name                   string
 		MessagingClientPresent bool
 		TimeoutDuration        string
-		SubscribeError         bool
 	}{
-		{"Missing Messaging Client", false, validDuration, false},
-		{"Error creating Messaging Client", true, validDuration, true},
-		{"Bad Timeout duration", true, invalidDuration, false},
+		{"Missing Messaging Client", false, validDuration},
+		{"Bad Timeout duration", true, invalidDuration},
 	}
 
 	for _, test := range tests {
@@ -322,16 +307,10 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 			mockLogger.On("Errorf", mock.Anything, mock.Anything)
 
 			mockMessaging := &messagingMocks.MessageClient{}
-			if test.SubscribeError {
-				mockMessaging.On("Subscribe", mock.Anything, mock.Anything).Return(errors.New("failed"))
-			} else {
-				mockMessaging.On("Subscribe", mock.Anything, mock.Anything).Return(nil)
-			}
 
 			clients := make(map[string]config.ClientInfo)
 			clients[common.CoreCommandServiceKey] = config.ClientInfo{
 				UseMessageBus: true,
-				Topics:        validTopics,
 			}
 
 			bootstrapConfig := config.BootstrapConfiguration{

@@ -40,13 +40,10 @@ func TestMain(m *testing.M) {
 
 func TestBootstrapHandler(t *testing.T) {
 	validCreateClientSecure := config.MessageBusInfo{
-		Type:     messaging.Redis,
-		Protocol: "redis",
-		Host:     "localhost",
-		Port:     6379,
-		Topics: map[string]string{
-			config.MessageBusPublishTopicPrefix: "edgex/events/#",
-		},
+		Type:       messaging.Redis,
+		Protocol:   "redis",
+		Host:       "localhost",
+		Port:       6379,
 		AuthMode:   boostrapMessaging.AuthModeUsernamePassword,
 		SecretName: "redisdb",
 	}

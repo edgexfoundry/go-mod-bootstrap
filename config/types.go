@@ -26,9 +26,7 @@ import (
 )
 
 const (
-	DefaultHttpProtocol          = "http"
-	MessageBusPublishTopicPrefix = "PublishTopicPrefix"
-	MessageBusSubscribeTopic     = "SubscribeTopic"
+	DefaultHttpProtocol = "http"
 )
 
 const (
@@ -138,8 +136,6 @@ type ClientInfo struct {
 	Protocol string
 	// UseMessageBus indicates weather to use Messaging version of client
 	UseMessageBus bool
-	// Topics holds the MessageBus topics used by the client to communicate to the service
-	Topics map[string]string
 }
 
 func (c ClientInfo) Url() string {
@@ -258,12 +254,21 @@ type MessageBusInfo struct {
 	// dynamically loaded using this name and store the Option property below where the implementation expected to
 	// find them.
 	SecretName string
-	// Topics allows MessageBusInfo to be more flexible with respect to topics.
-	Topics map[string]string
+	// BaseTopicPrefix is the base topic prefix that all topics start with.
+	// If not set the DefaultBaseTopic constant is used.
+	BaseTopicPrefix string
 	// Provides additional configuration properties which do not fit within the existing field.
 	// Typically, the key is the name of the configuration property and the value is a string representation of the
 	// desired value for the configuration property.
 	Optional map[string]string
+}
+
+func (m MessageBusInfo) GetBaseTopicPrefix() string {
+	if len(m.BaseTopicPrefix) == 0 {
+		return common.DefaultBaseTopic
+	}
+
+	return m.BaseTopicPrefix
 }
 
 type ExternalMQTTInfo struct {
@@ -312,9 +317,6 @@ func (p MessageBusInfo) URL() string {
 type TelemetryInfo struct {
 	// Interval is the time duration in which to collect and report the service's metrics
 	Interval string
-	// PublishTopicPrefix is the base topic in which to publish (report) the service's metrics to the EdgeX MessageBus
-	// The service name and the metric name are appended to this base topic. i.e. <prefix>/<service-name>/<metric-name>
-	PublishTopicPrefix string
 	// Metrics is the list of service's metrics that can be collected. Each of the service's metrics must be in the list
 	// and set to true if enable or false if disabled.
 	Metrics map[string]bool

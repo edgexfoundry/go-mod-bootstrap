@@ -16,9 +16,9 @@ package metrics
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -37,12 +37,10 @@ import (
 
 func TestNewMessageBusReporter(t *testing.T) {
 	expectedServiceName := "test-service"
-	baseTopic := "metrics"
-	expectedBaseTopic := "metrics/test-service"
+	expectedBaseTopic := common.BuildTopic(common.DefaultBaseTopic, common.MetricsPublishTopic, expectedServiceName)
 
 	expectedTelemetryConfig := &config.TelemetryInfo{
-		Interval:           "30s",
-		PublishTopicPrefix: baseTopic,
+		Interval: "30s",
 		Metrics: map[string]bool{
 			"MyMetric": true,
 		},
@@ -73,12 +71,12 @@ func TestNewMessageBusReporter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			r := NewMessageBusReporter(logger.NewMockClient(), test.ExpectedServiceName, nil, expectedTelemetryConfig)
+			r := NewMessageBusReporter(logger.NewMockClient(), common.DefaultBaseTopic, test.ExpectedServiceName, nil, expectedTelemetryConfig)
 			actual := r.(*messageBusReporter)
 			assert.NotNil(t, actual)
 			assert.Equal(t, expectedServiceName, actual.serviceName)
 			assert.Equal(t, expectedTelemetryConfig, actual.config)
-			assert.Equal(t, expectedBaseTopic, actual.baseTopic())
+			assert.Equal(t, expectedBaseTopic, actual.baseMetricsTopic)
 		})
 	}
 
@@ -88,12 +86,10 @@ func TestMessageBusReporter_Report(t *testing.T) {
 	expectedServiceName := "test-service"
 	expectedMetricName := "test-metric"
 	unexpectedMetricName := "disabled-metric"
-	baseTopic := "metrics"
-	expectedTopic := fmt.Sprintf("%s/%s/%s", baseTopic, expectedServiceName, expectedMetricName)
+	expectedTopic := common.BuildTopic(common.DefaultBaseTopic, common.MetricsPublishTopic, expectedServiceName, expectedMetricName)
 
 	expectedTelemetryConfig := &config.TelemetryInfo{
-		Interval:           "30s",
-		PublishTopicPrefix: baseTopic,
+		Interval: "30s",
 		Metrics: map[string]bool{
 			expectedMetricName:   true,
 			unexpectedMetricName: false,
@@ -222,7 +218,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 				},
 			})
 
-			target := NewMessageBusReporter(logger.NewMockClient(), expectedServiceName, dic, expectedTelemetryConfig)
+			target := NewMessageBusReporter(logger.NewMockClient(), common.DefaultBaseTopic, expectedServiceName, dic, expectedTelemetryConfig)
 
 			if test.Metric != nil {
 				err = reg.Register(expectedMetricName, test.Metric)
