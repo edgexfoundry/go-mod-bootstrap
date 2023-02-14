@@ -676,7 +676,8 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client) erro
 
 		isCommonConfigReady, err = strconv.ParseBool(string(commonConfigReady))
 		if err != nil {
-			return fmt.Errorf("did not get boolean from config provider for %s: %s", config.CommonConfigDone, err.Error())
+			cp.lc.Warnf("did not get boolean from config provider for %s: %s", config.CommonConfigDone, err.Error())
+			isConfigReady = false
 		}
 		if isCommonConfigReady {
 			isConfigReady = true
@@ -694,7 +695,7 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client) erro
 		}
 	}
 	if !isConfigReady {
-		return errors.New("common config is not loaded")
+		return errors.New("common config is not loaded - did core-common-config-bootstrapper run?")
 	}
 	return nil
 }
