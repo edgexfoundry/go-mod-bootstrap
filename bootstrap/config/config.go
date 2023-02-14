@@ -677,7 +677,7 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client) erro
 		isCommonConfigReady, err = strconv.ParseBool(string(commonConfigReady))
 		if err != nil {
 			cp.lc.Warnf("did not get boolean from config provider for %s: %s", config.CommonConfigDone, err.Error())
-			isConfigReady = false
+			isCommonConfigReady = false
 		}
 		if isCommonConfigReady {
 			isConfigReady = true
