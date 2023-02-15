@@ -150,7 +150,6 @@ func TestLoadCommonConfig(t *testing.T) {
 	testErr := errors.New("test error")
 	configProviderErr := "configuration provider is not available"
 	loadErr := "common config is not loaded"
-	noBoolErr := "did not get boolean from config provider for IsCommonConfigReady"
 	getConfigErr := fmt.Sprintf("failed to load the common configuration for %s: %s", allServicesKey, testErr.Error())
 
 	tests := []struct {
@@ -176,7 +175,7 @@ func TestLoadCommonConfig(t *testing.T) {
 		{"Invalid - common config not ready", &serviceConfig, config.ServiceTypeOther, nil,
 			nil, true, []byte("false"), nil, nil, loadErr},
 		{"Invalid - common config ready parameter invalid", &serviceConfig, config.ServiceTypeOther, nil,
-			nil, true, []byte("bogus"), nil, nil, noBoolErr},
+			nil, true, []byte("bogus"), nil, nil, loadErr},
 		{"Invalid - common config not ready error", &serviceConfig, config.ServiceTypeOther, nil,
 			nil, true, []byte("false"), testErr, nil, loadErr},
 		{"Valid - core service", &serviceConfig, config.ServiceTypeOther, nil,
