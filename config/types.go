@@ -148,7 +148,7 @@ type SecretStoreInfo struct {
 	Type           string
 	Host           string
 	Port           int
-	Path           string
+	SecretName     string
 	Protocol       string
 	Namespace      string
 	RootCaCertPath string
@@ -172,7 +172,7 @@ func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 		Protocol:                "http",
 		Host:                    "localhost",
 		Port:                    8200,
-		Path:                    serviceKey,
+		SecretName:              serviceKey,
 		TokenFile:               fmt.Sprintf("/tmp/edgex/secrets/%s/secrets-token.json", serviceKey),
 		DisableScrubSecretsFile: false,
 		Namespace:               "",
@@ -220,8 +220,8 @@ type InsecureSecrets map[string]InsecureSecretsInfo
 
 // InsecureSecretsInfo encapsulates info used to retrieve insecure secrets
 type InsecureSecretsInfo struct {
-	Path    string
-	Secrets map[string]string
+	SecretName string
+	Secrets    map[string]string
 }
 
 // BootstrapConfiguration defines the configuration elements required by the bootstrap.

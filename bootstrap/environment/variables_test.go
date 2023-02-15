@@ -470,8 +470,8 @@ func TestLogEnvironmentOverride(t *testing.T) {
 			redacted: true,
 		},
 		{
-			name:     "insecure secret path - not redacted",
-			path:     "Writable.InsecureSecrets.credentials001.Path",
+			name:     "insecure secret name - not redacted",
+			path:     "Writable.InsecureSecrets.credentials001.secretName",
 			value:    "credentials001",
 			redacted: false,
 		},

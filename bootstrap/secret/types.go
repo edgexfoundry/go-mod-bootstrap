@@ -30,7 +30,7 @@ type ServiceSecrets struct {
 
 // ServiceSecret contains the information about a service's secret to import into a service's SecretStore
 type ServiceSecret struct {
-	Path       string                      `json:"path" validate:"edgex-dto-none-empty-string"`
+	SecretName       string                `json:"secretName" validate:"edgex-dto-none-empty-string"`
 	Imported   bool                        `json:"imported"`
 	SecretData []common.SecretDataKeyValue `json:"secretData" validate:"required,dive"`
 }
@@ -57,7 +57,7 @@ func UnmarshalServiceSecretsJson(data []byte) (*ServiceSecrets, error) {
 	// Since secretData len validation can't be specified to only validate when Imported=false, we have to do it manually here
 	for _, secret := range secrets.Secrets {
 		if !secret.Imported && len(secret.SecretData) == 0 {
-			validationErrs = multierror.Append(validationErrs, fmt.Errorf("SecretData for '%s' must not be empty when Imported=false", secret.Path))
+			validationErrs = multierror.Append(validationErrs, fmt.Errorf("SecretData for '%s' must not be empty when Imported=false", secret.SecretName))
 		}
 	}
 

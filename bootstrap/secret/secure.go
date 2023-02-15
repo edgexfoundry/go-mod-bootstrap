@@ -54,11 +54,11 @@ type SecureProvider struct {
 	runtimeTokenProvider          runtimetokenprovider.RuntimeTokenProvider
 	serviceKey                    string
 	secretStoreInfo               config.SecretStoreInfo
-	secretsCache                  map[string]map[string]string // secret's path, key, value
+	secretsCache                  map[string]map[string]string // secret's secretName, key, value
 	cacheMutex                    *sync.RWMutex
 	lastUpdated                   time.Time
 	ctx                           context.Context
-	registeredSecretCallbacks     map[string]func(path string)
+	registeredSecretCallbacks     map[string]func(secretName string)
 	securitySecretsRequested      gometrics.Counter
 	securitySecretsStored         gometrics.Counter
 	securityConsulTokensRequested gometrics.Counter
@@ -79,7 +79,7 @@ func NewSecureProvider(ctx context.Context, secretStoreInfo *config.SecretStoreI
 		cacheMutex:                    &sync.RWMutex{},
 		lastUpdated:                   time.Now(),
 		ctx:                           ctx,
-		registeredSecretCallbacks:     make(map[string]func(path string)),
+		registeredSecretCallbacks:     make(map[string]func(secretName string)),
 		securitySecretsRequested:      gometrics.NewCounter(),
 		securitySecretsStored:         gometrics.NewCounter(),
 		securityConsulTokensRequested: gometrics.NewCounter(),
@@ -94,13 +94,13 @@ func (p *SecureProvider) SetClient(client secrets.SecretClient) {
 }
 
 // GetSecret retrieves secrets from a secret store.
-// path specifies the type or location of the secrets to retrieve.
+// secretName specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
-// specified path will be returned.
-func (p *SecureProvider) GetSecret(path string, keys ...string) (map[string]string, error) {
+// specified secretName will be returned.
+func (p *SecureProvider) GetSecret(secretName string, keys ...string) (map[string]string, error) {
 	p.securitySecretsRequested.Inc(1)
 
-	if cachedSecrets := p.getSecretsCache(path, keys...); cachedSecrets != nil {
+	if cachedSecrets := p.getSecretsCache(secretName, keys...); cachedSecrets != nil {
 		return cachedSecrets, nil
 	}
 
@@ -108,23 +108,23 @@ func (p *SecureProvider) GetSecret(path string, keys ...string) (map[string]stri
 		return nil, errors.New("can't get secrets. Secure secret provider is not properly initialized")
 	}
 
-	secureSecrets, err := p.secretClient.GetSecrets(path, keys...)
+	secureSecrets, err := p.secretClient.GetSecret(secretName, keys...)
 
 	retry, err := p.reloadTokenOnAuthError(err)
 	if retry {
 		// Retry with potential new token
-		secureSecrets, err = p.secretClient.GetSecrets(path, keys...)
+		secureSecrets, err = p.secretClient.GetSecret(secretName, keys...)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	p.updateSecretsCache(path, secureSecrets)
+	p.updateSecretsCache(secretName, secureSecrets)
 	return secureSecrets, nil
 }
 
-func (p *SecureProvider) getSecretsCache(path string, keys ...string) map[string]string {
+func (p *SecureProvider) getSecretsCache(secretName string, keys ...string) map[string]string {
 	secureSecrets := make(map[string]string)
 
 	// Synchronize cache access
@@ -133,7 +133,7 @@ func (p *SecureProvider) getSecretsCache(path string, keys ...string) map[string
 
 	// check cache for keys
 	allKeysExistInCache := false
-	cachedSecrets, cacheExists := p.secretsCache[path]
+	cachedSecrets, cacheExists := p.secretsCache[secretName]
 	value := ""
 
 	if cacheExists {
@@ -154,45 +154,45 @@ func (p *SecureProvider) getSecretsCache(path string, keys ...string) map[string
 	return nil
 }
 
-func (p *SecureProvider) updateSecretsCache(path string, secrets map[string]string) {
+func (p *SecureProvider) updateSecretsCache(secretName string, secrets map[string]string) {
 	// Synchronize cache access
 	p.cacheMutex.Lock()
 	defer p.cacheMutex.Unlock()
 
-	if _, cacheExists := p.secretsCache[path]; !cacheExists {
-		p.secretsCache[path] = secrets
+	if _, cacheExists := p.secretsCache[secretName]; !cacheExists {
+		p.secretsCache[secretName] = secrets
 	}
 
 	for key, value := range secrets {
-		p.secretsCache[path][key] = value
+		p.secretsCache[secretName][key] = value
 	}
 }
 
 // StoreSecret stores the secrets to a secret store.
 // it sets the values requested at provided keys
-// path specifies the type or location of the secrets to store
+// secretName specifies the type or location of the secrets to store
 // secrets map specifies the "key": "value" pairs of secrets to store
-func (p *SecureProvider) StoreSecret(path string, secrets map[string]string) error {
+func (p *SecureProvider) StoreSecret(secretName string, secrets map[string]string) error {
 	p.securitySecretsStored.Inc(1)
 
 	if p.secretClient == nil {
 		return errors.New("can't store secrets. Secure secret provider is not properly initialized")
 	}
 
-	err := p.secretClient.StoreSecrets(path, secrets)
+	err := p.secretClient.StoreSecret(secretName, secrets)
 
 	retry, err := p.reloadTokenOnAuthError(err)
 	if retry {
 		// Retry with potential new token
-		err = p.secretClient.StoreSecrets(path, secrets)
+		err = p.secretClient.StoreSecret(secretName, secrets)
 	}
 
 	if err != nil {
 		return err
 	}
 
-	// Execute Callbacks on registered secret paths.
-	p.SecretUpdatedAtPath(path)
+	// Execute Callbacks on registered secret secretNames.
+	p.SecretUpdatedAtSecretName(secretName)
 
 	// Synchronize cache access before clearing
 	p.cacheMutex.Lock()
@@ -332,21 +332,21 @@ func (p *SecureProvider) seedSecrets(contents []byte) ([]byte, error) {
 	var seedingErrs error
 	for index, secret := range serviceSecrets.Secrets {
 		if secret.Imported {
-			p.lc.Infof("Secret for '%s' already imported. Skipping...", secret.Path)
+			p.lc.Infof("Secret for '%s' already imported. Skipping...", secret.SecretName)
 			continue
 		}
 
 		// At this pint the JSON validation and above check cover all the required validation, so go to store secret.
-		path, data := prepareSecret(secret)
-		err := p.StoreSecret(path, data)
+		secretName, data := prepareSecret(secret)
+		err := p.StoreSecret(secretName, data)
 		if err != nil {
-			message := fmt.Sprintf("failed to store secret for '%s': %s", secret.Path, err.Error())
+			message := fmt.Sprintf("failed to store secret for '%s': %s", secret.SecretName, err.Error())
 			p.lc.Errorf(message)
 			seedingErrs = multierror.Append(seedingErrs, errors.New(message))
 			continue
 		}
 
-		p.lc.Infof("Secret for '%s' successfully stored.", secret.Path)
+		p.lc.Infof("Secret for '%s' successfully stored.", secret.SecretName)
 
 		serviceSecrets.Secrets[index].Imported = true
 		serviceSecrets.Secrets[index].SecretData = make([]common.SecretDataKeyValue, 0)
@@ -367,17 +367,17 @@ func prepareSecret(secret ServiceSecret) (string, map[string]string) {
 		secretsKV[secret.Key] = secret.Value
 	}
 
-	path := strings.TrimSpace(secret.Path)
+	secretName := strings.TrimSpace(secret.SecretName)
 
-	return path, secretsKV
+	return secretName, secretsKV
 }
 
-// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
-func (p *SecureProvider) HasSecret(path string) (bool, error) {
-	_, err := p.GetSecret(path)
+// HasSecret returns true if the service's SecretStore contains a secret at the specified secretName.
+func (p *SecureProvider) HasSecret(secretName string) (bool, error) {
+	_, err := p.GetSecret(secretName)
 
 	if err != nil {
-		_, ok := err.(pkg.ErrPathNotFound)
+		_, ok := err.(pkg.ErrSecretNameNotFound)
 		if ok {
 			return false, nil
 		}
@@ -388,59 +388,59 @@ func (p *SecureProvider) HasSecret(path string) (bool, error) {
 	return true, nil
 }
 
-// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
-func (p *SecureProvider) ListSecretPaths() ([]string, error) {
+// ListSecretSecretNames returns a list of secretNames for the current service from an insecure/secure secret store.
+func (p *SecureProvider) ListSecretNames() ([]string, error) {
 
 	if p.secretClient == nil {
-		return nil, errors.New("can't get secret paths. Secure secret provider is not properly initialized")
+		return nil, errors.New("can't get secret secretNames. Secure secret provider is not properly initialized")
 	}
 
-	secureSecrets, err := p.secretClient.GetKeys("")
+	secureSecrets, err := p.secretClient.GetSecretNames("")
 
 	retry, err := p.reloadTokenOnAuthError(err)
 	if retry {
 		// Retry with potential new token
-		secureSecrets, err = p.secretClient.GetKeys("")
+		secureSecrets, err = p.secretClient.GetSecretNames("")
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("unable to get secret paths: %v", err)
+		return nil, fmt.Errorf("unable to get secret secretNames: %v", err)
 	}
 
 	return secureSecrets, nil
 }
 
 // RegisteredSecretUpdatedCallback registers a callback for a secret.
-func (p *SecureProvider) RegisteredSecretUpdatedCallback(path string, callback func(path string)) error {
-	if _, ok := p.registeredSecretCallbacks[path]; ok {
-		return fmt.Errorf("there is a callback already registered for path '%v'", path)
+func (p *SecureProvider) RegisteredSecretUpdatedCallback(secretName string, callback func(secretName string)) error {
+	if _, ok := p.registeredSecretCallbacks[secretName]; ok {
+		return fmt.Errorf("there is a callback already registered for secretName '%v'", secretName)
 	}
 
-	// Register new call back for path.
-	p.registeredSecretCallbacks[path] = callback
+	// Register new call back for secretName.
+	p.registeredSecretCallbacks[secretName] = callback
 
 	return nil
 }
 
-// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
-func (p *SecureProvider) SecretUpdatedAtPath(path string) {
+// SecretUpdatedAtSecretName performs updates and callbacks for an updated secret or secretName.
+func (p *SecureProvider) SecretUpdatedAtSecretName(secretName string) {
 	p.lastUpdated = time.Now()
 	if p.registeredSecretCallbacks != nil {
-		// Execute Callback for provided path.
+		// Execute Callback for provided secretName.
 		for k, v := range p.registeredSecretCallbacks {
-			if k == path {
-				p.lc.Debugf("invoking callback registered for path: '%s'", path)
-				v(path)
+			if k == secretName {
+				p.lc.Debugf("invoking callback registered for secretName: '%s'", secretName)
+				v(secretName)
 				return
 			}
 		}
 	}
 }
 
-// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
-func (p *SecureProvider) DeregisterSecretUpdatedCallback(path string) {
-	// Remove path from map.
-	delete(p.registeredSecretCallbacks, path)
+// DeregisterSecretUpdatedCallback removes a secret's registered callback secretName.
+func (p *SecureProvider) DeregisterSecretUpdatedCallback(secretName string) {
+	// Remove secretName from map.
+	delete(p.registeredSecretCallbacks, secretName)
 }
 
 // GetMetricsToRegister returns all metric objects that needs to be registered.

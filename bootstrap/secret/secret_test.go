@@ -34,14 +34,15 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
 	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader/mocks"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	expectedUsername = "admin"
-	expectedPassword = "password"
-	expectedPath     = "/redisdb"
+	expectedUsername   = "admin"
+	expectedPassword   = "password"
+	expectedSecretName = "redisdb"
 )
 
 // nolint: gosec
@@ -106,8 +107,8 @@ func TestNewSecretProvider(t *testing.T) {
 				configuration = TestConfig{
 					map[string]bootstrapConfig.InsecureSecretsInfo{
 						"DB": {
-							Path:    expectedPath,
-							Secrets: expectedSecrets,
+							SecretName: expectedSecretName,
+							Secrets:    expectedSecrets,
 						},
 					},
 				}
@@ -121,7 +122,7 @@ func TestNewSecretProvider(t *testing.T) {
 			actualProvider := container.SecretProviderFrom(dic.Get)
 			assert.NotNil(t, actualProvider)
 
-			actualSecrets, err := actualProvider.GetSecret(expectedPath)
+			actualSecrets, err := actualProvider.GetSecret(expectedSecretName)
 			require.NoError(t, err)
 			assert.Equal(t, expectedUsername, actualSecrets[UsernameKey])
 			assert.Equal(t, expectedPassword, actualSecrets[PasswordKey])
@@ -134,7 +135,7 @@ func TestAddPrefix(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		secretPath       string
+		secretName       string
 		expectedFullPath string
 	}{
 		{"non-empty given secret path without trailing slash", "core-command", expectedPrefixPath + "core-command/"},
@@ -144,7 +145,7 @@ func TestAddPrefix(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actualSecretFullPath := addEdgeXSecretPathPrefix(test.secretPath)
+			actualSecretFullPath := addEdgeXSecretNamePrefix(test.secretName)
 			require.Equal(t, test.expectedFullPath, actualSecretFullPath)
 		})
 	}
@@ -170,7 +171,7 @@ func TestBuildSecretStoreConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEqual(t, bootstrapConfig.SecretStoreInfo{}, target)
-	assert.Equal(t, expectedServiceKey, target.Path)
+	assert.Equal(t, expectedServiceKey, target.SecretName)
 	assert.Equal(t, expectedHost, target.Host)
 	assert.Equal(t, expectedPort, target.Port)
 	assert.Equal(t, expectedTokenFile, target.TokenFile)

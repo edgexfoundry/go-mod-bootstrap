@@ -19,11 +19,11 @@ import (
 // SecretProvider defines the contract for secret provider implementations that
 // allow secrets to be retrieved/stored from/to a services Secret Store.
 type SecretProvider interface {
-	// StoreSecret stores new secrets into the service's SecretStore at the specified path.
-	StoreSecret(path string, secrets map[string]string) error
+	// StoreSecret stores new secrets into the service's SecretStore at the specified secretName.
+	StoreSecret(secretName string, secrets map[string]string) error
 
-	// GetSecret retrieves secrets from the service's SecretStore at the specified path.
-	GetSecret(path string, keys ...string) (map[string]string, error)
+	// GetSecret retrieves secrets from the service's SecretStore at the specified secretName.
+	GetSecret(secretName string, keys ...string) (map[string]string, error)
 
 	// SecretsUpdated sets the secrets last updated time to current time.
 	SecretsUpdated()
@@ -35,20 +35,20 @@ type SecretProvider interface {
 	// Service key is use as the access token role which must have be previously setup.
 	GetAccessToken(tokenType string, serviceKey string) (string, error)
 
-	// ListSecretPaths returns a list of paths for the current service from an insecure/secure secret store.
-	ListSecretPaths() ([]string, error)
+	// ListSecretNames returns a list of secretNames for the current service from an insecure/secure secret store.
+	ListSecretNames() ([]string, error)
 
-	// HasSecret returns true if the service's SecretStore contains a secret at the specified path.
-	HasSecret(path string) (bool, error)
+	// HasSecret returns true if the service's SecretStore contains a secret at the specified secretName.
+	HasSecret(secretName string) (bool, error)
 
 	// RegisteredSecretUpdatedCallback registers a callback for a secret.
-	RegisteredSecretUpdatedCallback(path string, callback func(path string)) error
+	RegisteredSecretUpdatedCallback(secretName string, callback func(path string)) error
 
-	// SecretUpdatedAtPath performs updates and callbacks for an updated secret or path.
-	SecretUpdatedAtPath(path string)
+	// SecretUpdatedAtSecretName performs updates and callbacks for an updated secret or secretName.
+	SecretUpdatedAtSecretName(secretName string)
 
-	// DeregisterSecretUpdatedCallback removes a secret's registered callback path.
-	DeregisterSecretUpdatedCallback(path string)
+	// DeregisterSecretUpdatedCallback removes a secret's registered callback secretName.
+	DeregisterSecretUpdatedCallback(secretName string)
 
 	// GetMetricsToRegister returns all metric objects that needs to be registered.
 	GetMetricsToRegister() map[string]interface{}
