@@ -30,7 +30,7 @@ type ServiceSecrets struct {
 
 // ServiceSecret contains the information about a service's secret to import into a service's SecretStore
 type ServiceSecret struct {
-	SecretName       string                `json:"secretName" validate:"edgex-dto-none-empty-string"`
+	SecretName string                      `json:"secretName" validate:"edgex-dto-none-empty-string"`
 	Imported   bool                        `json:"imported"`
 	SecretData []common.SecretDataKeyValue `json:"secretData" validate:"required,dive"`
 }
