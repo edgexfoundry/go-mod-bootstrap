@@ -171,7 +171,7 @@ func TestBuildSecretStoreConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEqual(t, bootstrapConfig.SecretStoreInfo{}, target)
-	assert.Equal(t, expectedServiceKey, target.SecretName)
+	assert.Equal(t, expectedServiceKey, target.StoreName)
 	assert.Equal(t, expectedHost, target.Host)
 	assert.Equal(t, expectedPort, target.Port)
 	assert.Equal(t, expectedTokenFile, target.TokenFile)

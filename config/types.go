@@ -148,7 +148,7 @@ type SecretStoreInfo struct {
 	Type           string
 	Host           string
 	Port           int
-	SecretName     string
+	StoreName      string
 	Protocol       string
 	Namespace      string
 	RootCaCertPath string
@@ -172,7 +172,7 @@ func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 		Protocol:                "http",
 		Host:                    "localhost",
 		Port:                    8200,
-		SecretName:              serviceKey,
+		StoreName:               serviceKey,
 		TokenFile:               fmt.Sprintf("/tmp/edgex/secrets/%s/secrets-token.json", serviceKey),
 		DisableScrubSecretsFile: false,
 		Namespace:               "",
