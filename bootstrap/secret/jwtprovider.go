@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022 Intel Corporation
+// Copyright (C) 2022-2023 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -36,7 +36,7 @@ func (self *jwtSecretProvider) AddAuthenticationData(req *http.Request) error {
 		return err
 	}
 
-	// Only add authorization header if we can non-empty token back
+	// Only add authorization header if we get non-empty token back
 	if len(jwt) > 0 {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwt))
 	}
