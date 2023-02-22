@@ -139,13 +139,13 @@ func TestAddPrefix(t *testing.T) {
 		expectedFullPath string
 	}{
 		{"non-empty StoreName", "core-command", expectedPrefixPath + "core-command/"},
-		{"empty given secret path", "", ""},
+		{"empty StoreName", "", ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actualSecretFullPath := addEdgeXSecretNamePrefix(test.storeName)
-			require.Equal(t, test.expectedFullPath, actualSecretFullPath)
+			actualStoreFullPath := addEdgeXSecretNamePrefix(test.storeName)
+			require.Equal(t, test.expectedFullPath, actualStoreFullPath)
 		})
 	}
 }

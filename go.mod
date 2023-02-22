@@ -18,6 +18,8 @@ require (
 	github.com/stretchr/testify v1.8.1
 )
 
+replace github.com/edgexfoundry/go-mod-secrets/v3 => github.com/vli11/go-mod-secrets/v3 v3.0.0-20230222214258-c0ec9a3dbd4c
+
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect

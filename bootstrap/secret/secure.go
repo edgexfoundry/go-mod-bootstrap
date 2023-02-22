@@ -395,12 +395,12 @@ func (p *SecureProvider) ListSecretNames() ([]string, error) {
 		return nil, errors.New("can't get secret secretNames. Secure secret provider is not properly initialized")
 	}
 
-	secureSecrets, err := p.secretClient.GetSecretNames("")
+	secureSecrets, err := p.secretClient.GetSecretNames()
 
 	retry, err := p.reloadTokenOnAuthError(err)
 	if retry {
 		// Retry with potential new token
-		secureSecrets, err = p.secretClient.GetSecretNames("")
+		secureSecrets, err = p.secretClient.GetSecretNames()
 	}
 
 	if err != nil {
