@@ -138,8 +138,7 @@ func TestAddPrefix(t *testing.T) {
 		secretName       string
 		expectedFullPath string
 	}{
-		{"non-empty given secret path without trailing slash", "core-command", expectedPrefixPath + "core-command/"},
-		{"non-empty given secret path with trailing slash", "core-command/", expectedPrefixPath + "core-command/"},
+		{"non-empty StoreName", "core-command", expectedPrefixPath + "core-command/"},
 		{"empty given secret path", "", ""},
 	}
 

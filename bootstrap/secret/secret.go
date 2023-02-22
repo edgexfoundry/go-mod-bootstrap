@@ -211,12 +211,12 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 }
 
 func addEdgeXSecretNamePrefix(secretName string) string {
-	trimmedSecretPath := strings.TrimSpace(secretName)
+	trimmedSecretName := strings.TrimSpace(secretName)
 
 	// in this case, treat it as no secret path
-	if len(trimmedSecretPath) == 0 {
+	if len(trimmedSecretName) == 0 {
 		return ""
 	}
 
-	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretPath) + "/"
+	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretName) + "/"
 }
