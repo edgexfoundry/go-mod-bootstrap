@@ -171,7 +171,7 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 		Type:                 secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
 		Host:                 secretStoreInfo.Host,
 		Port:                 secretStoreInfo.Port,
-		BasePath:             addEdgeXSecretNamePrefix(secretStoreInfo.SecretName),
+		BasePath:             addEdgeXSecretNamePrefix(secretStoreInfo.StoreName),
 		SecretsFile:          secretStoreInfo.SecretsFile,
 		Protocol:             secretStoreInfo.Protocol,
 		Namespace:            secretStoreInfo.Namespace,
