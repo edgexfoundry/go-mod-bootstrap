@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 Intel Inc.
+ * Copyright 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -495,4 +495,44 @@ func secretStoreConfig(t *testing.T) *config.SecretStoreInfo {
 	config, err := BuildSecretStoreConfig("unit-test", envVars, lc)
 	require.NoError(t, err)
 	return config
+}
+
+func TestSecureProvider_GetSelfJWT(t *testing.T) {
+	sampleJWT := "eyJhbGciOiJFUzM4NCIsImtpZCI6IjE3NzdiMGNmLWEzMmMtYTc2YS05ZTI4LTZiMjcyYzYwYmYyMCJ9.eyJhdWQiOiJGN0Z3VXBjNnV6dDc0Y1JSRkZ2bXRLSWg1RyIsImVkZ2V4LXNlcnZpY2UiOiJjb3JlLWRhdGEiLCJleHAiOjE2NzAwNDIwMTUsImlhdCI6MTY3MDA0MTExNSwiaXNzIjoiL3YxL2lkZW50aXR5L29pZGMiLCJuYW1lc3BhY2UiOiJyb290Iiwic3ViIjoiM2ZhYzcwNmEtMmM4ZS01Yjc4LTI5N2EtOGU4NmIwMmJmZjg1In0.wos1twPPMEDUvNhTJIFe8dX6BmTzh3CutNjaW5PUrWG7KtsNexETRSxL2oIN0kJYomBT6RaHX6NtkOkO4Wf6J_hcSknQ64lVw4gwSCEoX2d_mlcKJArLx9skngF-W2VC"
+
+	mock := &mocks.SecretClient{}
+	mock.On("GetSelfJWT", "testService").Return(sampleJWT, nil)
+
+	target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, "testService")
+	target.SetClient(mock)
+
+	actualToken, err := target.GetSelfJWT()
+	require.NoError(t, err)
+	require.Equal(t, sampleJWT, actualToken)
+}
+
+func TestSecureProvider_IsJWTValidTrue(t *testing.T) {
+	nullJWT := "eyJhbGciOiJOb25lIiwidHlwIjoiSldUIn0.e30."
+	mock := &mocks.SecretClient{}
+	mock.On("IsJWTValid", nullJWT).Return(true, nil)
+
+	target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, "testService")
+	target.SetClient(mock)
+
+	result, err := target.IsJWTValid(nullJWT)
+	require.NoError(t, err)
+	require.Equal(t, true, result)
+}
+
+func TestSecureProvider_IsJWTValidFalse(t *testing.T) {
+	nullJWT := "eyJhbGciOiJOb25lIiwidHlwIjoiSldUIn0.e30."
+	mock := &mocks.SecretClient{}
+	mock.On("IsJWTValid", nullJWT).Return(false, nil)
+
+	target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, "testService")
+	target.SetClient(mock)
+
+	result, err := target.IsJWTValid(nullJWT)
+	require.NoError(t, err)
+	require.Equal(t, false, result)
 }

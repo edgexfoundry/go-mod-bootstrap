@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2022 Intel Inc.
+ * Copyright (C) 2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -29,6 +30,7 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/v3/registry"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
@@ -56,6 +58,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	lc := container.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
 	cb.registry = container.RegistryFrom(dic.Get)
+	jwtSecretProvider := secret.NewJWTSecretProvider(container.SecretProviderFrom(dic.Get))
 
 	for serviceKey, serviceInfo := range config.GetBootstrap().Clients {
 		var url string
@@ -73,22 +76,22 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 		case common.CoreDataServiceKey:
 			dic.Update(di.ServiceConstructorMap{
 				container.EventClientName: func(get di.Get) interface{} {
-					return clients.NewEventClient(url)
+					return clients.NewEventClient(url, jwtSecretProvider)
 				},
 			})
 		case common.CoreMetaDataServiceKey:
 			dic.Update(di.ServiceConstructorMap{
 				container.DeviceClientName: func(get di.Get) interface{} {
-					return clients.NewDeviceClient(url)
+					return clients.NewDeviceClient(url, jwtSecretProvider)
 				},
 				container.DeviceServiceClientName: func(get di.Get) interface{} {
-					return clients.NewDeviceServiceClient(url)
+					return clients.NewDeviceServiceClient(url, jwtSecretProvider)
 				},
 				container.DeviceProfileClientName: func(get di.Get) interface{} {
-					return clients.NewDeviceProfileClient(url)
+					return clients.NewDeviceProfileClient(url, jwtSecretProvider)
 				},
 				container.ProvisionWatcherClientName: func(get di.Get) interface{} {
-					return clients.NewProvisionWatcherClient(url)
+					return clients.NewProvisionWatcherClient(url, jwtSecretProvider)
 				},
 			})
 
@@ -115,7 +118,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 				lc.Infof("Using messaging for '%s' clients", serviceKey)
 			} else {
-				client = clients.NewCommandClient(url)
+				client = clients.NewCommandClient(url, jwtSecretProvider)
 			}
 
 			dic.Update(di.ServiceConstructorMap{
@@ -127,20 +130,20 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 		case common.SupportNotificationsServiceKey:
 			dic.Update(di.ServiceConstructorMap{
 				container.NotificationClientName: func(get di.Get) interface{} {
-					return clients.NewNotificationClient(url)
+					return clients.NewNotificationClient(url, jwtSecretProvider)
 				},
 				container.SubscriptionClientName: func(get di.Get) interface{} {
-					return clients.NewSubscriptionClient(url)
+					return clients.NewSubscriptionClient(url, jwtSecretProvider)
 				},
 			})
 
 		case common.SupportSchedulerServiceKey:
 			dic.Update(di.ServiceConstructorMap{
 				container.IntervalClientName: func(get di.Get) interface{} {
-					return clients.NewIntervalClient(url)
+					return clients.NewIntervalClient(url, jwtSecretProvider)
 				},
 				container.IntervalActionClientName: func(get di.Get) interface{} {
-					return clients.NewIntervalActionClient(url)
+					return clients.NewIntervalActionClient(url, jwtSecretProvider)
 				},
 			})
 

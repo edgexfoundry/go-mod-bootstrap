@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
- * Copyright 2020 Intel Inc.
+ * Copyright 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -451,4 +451,14 @@ func (p *SecureProvider) GetMetricsToRegister() map[string]interface{} {
 		securityConsulTokensRequestedName: p.securityConsulTokensRequested,
 		securityConsulTokenDurationName:   p.securityConsulTokenDuration,
 	}
+}
+
+// GetSelfJWT returns an encoded JWT for the current identity-based secret store token
+func (p *SecureProvider) GetSelfJWT() (string, error) {
+	return p.secretClient.GetSelfJWT(p.serviceKey)
+}
+
+// IsJWTValid evaluates a given JWT and returns a true/false if the JWT is valid (i.e. belongs to us and current) or not
+func (p *SecureProvider) IsJWTValid(jwt string) (bool, error) {
+	return p.secretClient.IsJWTValid(jwt)
 }

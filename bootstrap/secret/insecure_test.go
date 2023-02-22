@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2020 Intel Inc.
+ * Copyright 2020-2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -96,6 +96,21 @@ func TestInsecureProvider_GetAccessToken(t *testing.T) {
 	actualToken, err := target.GetAccessToken(TokenTypeConsul, "my-service-key")
 	require.NoError(t, err)
 	assert.Len(t, actualToken, 0)
+}
+
+func TestInsecureProvider_GetSelfJWT(t *testing.T) {
+	target := NewInsecureProvider(nil, logger.MockLogger{})
+	actualToken, err := target.GetSelfJWT()
+	require.NoError(t, err)
+	require.Equal(t, "", actualToken)
+}
+
+func TestInsecureProvider_IsJWTValid(t *testing.T) {
+	nullJWT := "eyJhbGciOiJOb25lIiwidHlwIjoiSldUIn0.e30."
+	target := NewInsecureProvider(nil, logger.MockLogger{})
+	result, err := target.IsJWTValid(nullJWT)
+	require.NoError(t, err)
+	require.Equal(t, true, result)
 }
 
 func TestInsecureProvider_ListPaths(t *testing.T) {
