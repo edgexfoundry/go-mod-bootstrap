@@ -29,6 +29,8 @@ type MetricsManager interface {
 	ResetInterval(interval time.Duration)
 	// Register registers a go-metrics metric item such as a Counter
 	Register(name string, item interface{}, tags map[string]string) error
+	// IsRegistered checks whether a metric has been registered
+	IsRegistered(name string) bool
 	// Unregister unregisters a go-metrics metric item such as a Counter
 	Unregister(name string)
 	// Run starts the collection of metrics

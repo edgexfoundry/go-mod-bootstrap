@@ -80,6 +80,11 @@ func (m *manager) Register(name string, item interface{}, tags map[string]string
 	return nil
 }
 
+// IsRegistered checks whether a metric has been registered
+func (m *manager) IsRegistered(name string) bool {
+	return m.registry.Get(name) != nil
+}
+
 // Unregister unregisters a metric item
 func (m *manager) Unregister(name string) {
 	m.tagsMutex.Lock()
