@@ -135,7 +135,7 @@ func TestAddPrefix(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		secretName       string
+		storeName        string
 		expectedFullPath string
 	}{
 		{"non-empty StoreName", "core-command", expectedPrefixPath + "core-command/"},
@@ -144,7 +144,7 @@ func TestAddPrefix(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actualSecretFullPath := addEdgeXSecretNamePrefix(test.secretName)
+			actualSecretFullPath := addEdgeXSecretNamePrefix(test.storeName)
 			require.Equal(t, test.expectedFullPath, actualSecretFullPath)
 		})
 	}
