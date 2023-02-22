@@ -35,7 +35,7 @@ func TestInsecureProvider_GetSecrets(t *testing.T) {
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
 				SecretName: expectedSecretName,
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 		},
 	}
@@ -118,11 +118,11 @@ func TestInsecureProvider_ListPaths(t *testing.T) {
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"REDIS": {
 				SecretName: "redisdb",
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 			"KONG": {
 				SecretName: "kongdb",
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 		},
 	}
@@ -170,7 +170,7 @@ func TestInsecureProvider_HasSecrets(t *testing.T) {
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
 				SecretName: expectedSecretName,
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 		},
 	}
@@ -220,7 +220,7 @@ func TestInsecureProvider_SecretUpdatedAtPath(t *testing.T) {
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
 				SecretName: expectedSecretName,
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 		},
 	}
@@ -260,7 +260,7 @@ func TestInsecureProvider_RegisteredSecretUpdatedCallback(t *testing.T) {
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
 				SecretName: expectedSecretName,
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 		},
 	}
@@ -295,7 +295,7 @@ func TestInsecureProvider_DeregisterSecretUpdatedCallback(t *testing.T) {
 		InsecureSecrets: map[string]bootstrapConfig.InsecureSecretsInfo{
 			"DB": {
 				SecretName: expectedSecretName,
-				Secrets:    expectedSecrets,
+				SecretData: expectedSecrets,
 			},
 		},
 	}

@@ -49,7 +49,7 @@ func TestGetSecretNamesChanged(t *testing.T) {
 	prevVals := config.InsecureSecrets{
 		"DB": config.InsecureSecretsInfo{
 			SecretName: expectedSecretName,
-			Secrets: map[string]string{
+			SecretData: map[string]string{
 				UsernameKey: "edgex",
 				PasswordKey: expectedPassword,
 			}}}
@@ -57,7 +57,7 @@ func TestGetSecretNamesChanged(t *testing.T) {
 	curVals := config.InsecureSecrets{
 		"DB": config.InsecureSecretsInfo{
 			SecretName: expectedSecretName,
-			Secrets: map[string]string{
+			SecretData: map[string]string{
 				UsernameKey: expectedUsername,
 				PasswordKey: expectedPassword,
 			}}}
@@ -73,7 +73,7 @@ func TestGetSecretNamesChanged(t *testing.T) {
 		{"Valid - New Secret", []string{expectedSecretName}, prevVals, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{
 				SecretName: expectedSecretName,
-				Secrets: map[string]string{
+				SecretData: map[string]string{
 					UsernameKey: expectedUsername,
 					PasswordKey: expectedPassword,
 					"attempts":  "1",
@@ -81,14 +81,14 @@ func TestGetSecretNamesChanged(t *testing.T) {
 		{"Valid - Deleted Secret", []string{expectedSecretName}, prevVals, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{
 				SecretName: expectedSecretName,
-				Secrets: map[string]string{
+				SecretData: map[string]string{
 					UsernameKey: expectedUsername,
 				}}}},
 		{"Valid - Path update", []string{"redisdb", "message-bus"}, curVals,
 			config.InsecureSecrets{
 				"DB": config.InsecureSecretsInfo{
 					SecretName: "message-bus",
-					Secrets: map[string]string{
+					SecretData: map[string]string{
 						UsernameKey: expectedUsername,
 						PasswordKey: expectedPassword,
 					}}}},
@@ -97,7 +97,7 @@ func TestGetSecretNamesChanged(t *testing.T) {
 		{"Valid - No updates, unsorted keys", nil, curVals, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{
 				SecretName: expectedSecretName,
-				Secrets: map[string]string{
+				SecretData: map[string]string{
 					PasswordKey: expectedPassword,
 					UsernameKey: expectedUsername,
 				}}}},

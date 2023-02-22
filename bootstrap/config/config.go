@@ -20,13 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	"github.com/mitchellh/copystructure"
 	"math"
 	"reflect"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/mitchellh/copystructure"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
@@ -724,7 +725,7 @@ func getSecretNamesChanged(prevVals config.InsecureSecrets, curVals config.Insec
 		curVal := curVals[key]
 
 		// Catches removed secrets
-		if curVal.Secrets == nil {
+		if curVal.SecretData == nil {
 			updatedNames = append(updatedNames, prevVal.SecretName)
 			continue
 		}
@@ -742,7 +743,7 @@ func getSecretNamesChanged(prevVals config.InsecureSecrets, curVals config.Insec
 
 	for key, curVal := range curVals {
 		// Catches new secrets added
-		if prevVals[key].Secrets == nil {
+		if prevVals[key].SecretData == nil {
 			updatedNames = append(updatedNames, curVal.SecretName)
 		}
 	}

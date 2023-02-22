@@ -108,7 +108,7 @@ func TestNewSecretProvider(t *testing.T) {
 					map[string]bootstrapConfig.InsecureSecretsInfo{
 						"DB": {
 							SecretName: expectedSecretName,
-							Secrets:    expectedSecrets,
+							SecretData: expectedSecrets,
 						},
 					},
 				}

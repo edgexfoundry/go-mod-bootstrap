@@ -221,7 +221,7 @@ type InsecureSecrets map[string]InsecureSecretsInfo
 // InsecureSecretsInfo encapsulates info used to retrieve insecure secrets
 type InsecureSecretsInfo struct {
 	SecretName string
-	Secrets    map[string]string
+	SecretData map[string]string
 }
 
 // BootstrapConfiguration defines the configuration elements required by the bootstrap.

@@ -69,7 +69,7 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 		if insecureSecret.SecretName == secretName {
 			if len(keys) == 0 {
 				// If no keys are provided then all the keys associated with the specified secretName will be returned
-				for k, v := range insecureSecret.Secrets {
+				for k, v := range insecureSecret.SecretData {
 					results[k] = v
 				}
 				return results, nil
@@ -77,7 +77,7 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 
 			secretNameExists = true
 			for _, key := range keys {
-				value, keyExists := insecureSecret.Secrets[key]
+				value, keyExists := insecureSecret.SecretData[key]
 				if !keyExists {
 					missingKeys = append(missingKeys, key)
 					continue
