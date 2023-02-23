@@ -80,7 +80,7 @@ func TestNewSecretProvider(t *testing.T) {
 					case "/v1/auth/token/lookup-self":
 						w.WriteHeader(http.StatusOK)
 						_, _ = w.Write([]byte(testTokenResponse))
-					case "/v1/secret/edgex/testServiceKey//redisdb":
+					case "/v1/secret/edgex/testServiceKey/redisdb":
 						w.WriteHeader(http.StatusOK)
 						data := make(map[string]interface{})
 						data["data"] = expectedSecrets
@@ -138,7 +138,7 @@ func TestAddPrefix(t *testing.T) {
 		storeName        string
 		expectedFullPath string
 	}{
-		{"non-empty StoreName", "core-command", expectedPrefixPath + "core-command/"},
+		{"non-empty StoreName", "core-command", expectedPrefixPath + "core-command"},
 		{"empty StoreName", "", ""},
 	}
 

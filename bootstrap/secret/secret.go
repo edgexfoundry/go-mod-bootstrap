@@ -218,5 +218,5 @@ func addEdgeXSecretNamePrefix(secretName string) string {
 		return ""
 	}
 
-	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretName) + "/"
+	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretName)
 }
