@@ -8,7 +8,7 @@ require (
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.22
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.11
 	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.3
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0-dev.7
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0-dev.8
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -17,8 +17,6 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.8.1
 )
-
-replace github.com/edgexfoundry/go-mod-secrets/v3 => github.com/vli11/go-mod-secrets/v3 v3.0.0-20230222214258-c0ec9a3dbd4c
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
