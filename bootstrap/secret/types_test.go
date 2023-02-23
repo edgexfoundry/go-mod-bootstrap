@@ -114,7 +114,7 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 
 func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 	allGood := `{"secrets": [{"secretName": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
-	noSecretName := `{"secrets": [{"secretName": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
+	noSecretName := `{"secrets": [{"secretName": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}` // nolint:gosec
 	//nolint: gosec
 	noSecretData := `{"secrets": [{"secretName": "auth","imported": false}]}`
 	//nolint: gosec
