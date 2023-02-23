@@ -213,7 +213,7 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 func addEdgeXSecretNamePrefix(secretName string) string {
 	trimmedSecretName := strings.TrimSpace(secretName)
 
-	// in this case, treat it as no secret path
+	// in this case, treat it as no secret name prefix
 	if len(trimmedSecretName) == 0 {
 		return ""
 	}
