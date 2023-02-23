@@ -26,16 +26,16 @@ func TestServiceSecrets_UnmarshalJson_Imported_false(t *testing.T) {
 	expected := ServiceSecrets{
 		[]ServiceSecret{
 			{
-				Path:     "credentials001",
-				Imported: false,
+				SecretName: "credentials001",
+				Imported:   false,
 				SecretData: []common.SecretDataKeyValue{{
 					Key:   "user1",
 					Value: "password1",
 				}},
 			},
 			{
-				Path:     "credentials002",
-				Imported: false,
+				SecretName: "credentials002",
+				Imported:   false,
 				SecretData: []common.SecretDataKeyValue{{
 					Key:   "user2",
 					Value: "password2",
@@ -47,7 +47,7 @@ func TestServiceSecrets_UnmarshalJson_Imported_false(t *testing.T) {
 	data := ` {
     "secrets": [
         {
-            "path": "credentials001",
+            "secretName": "credentials001",
             "imported": false,
             "secretData": [
                 {
@@ -57,7 +57,7 @@ func TestServiceSecrets_UnmarshalJson_Imported_false(t *testing.T) {
             ]
         },
         {
-            "path": "credentials002",
+            "secretName": "credentials002",
             "imported": false,
             "secretData": [
                 {
@@ -79,12 +79,12 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 	expected := ServiceSecrets{
 		[]ServiceSecret{
 			{
-				Path:       "credentials001",
+				SecretName: "credentials001",
 				Imported:   true,
 				SecretData: make([]common.SecretDataKeyValue, 0),
 			},
 			{
-				Path:       "credentials002",
+				SecretName: "credentials002",
 				Imported:   true,
 				SecretData: make([]common.SecretDataKeyValue, 0),
 			},
@@ -94,12 +94,12 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 	data := ` {
     "secrets": [
         {
-            "path": "credentials001",
+            "secretName": "credentials001",
             "imported": true,
             "secretData": []
         },
         {
-            "path": "credentials002",
+            "secretName": "credentials002",
             "imported": true,
             "secretData": []
         }
@@ -113,14 +113,14 @@ func TestServiceSecrets_UnmarshalJson_Imported_true(t *testing.T) {
 }
 
 func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
-	allGood := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
-	noPath := `{"secrets": [{"path": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
+	allGood := `{"secrets": [{"secretName": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
+	noSecretName := `{"secrets": [{"secretName": "","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}` // nolint:gosec
 	//nolint: gosec
-	noSecretData := `{"secrets": [{"path": "auth","imported": false}]}`
+	noSecretData := `{"secrets": [{"secretName": "auth","imported": false}]}`
 	//nolint: gosec
-	emptySecretData := `{"secrets": [{"path": "auth","imported": false, "secretData": []}]}`
-	missingKey := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"value": "password1"}]}]}`
-	missingValue := `{"secrets": [{"path": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`
+	emptySecretData := `{"secrets": [{"secretName": "auth","imported": false, "secretData": []}]}`
+	missingKey := `{"secrets": [{"secretName": "auth","imported": false,"secretData": [{"value": "password1"}]}]}`
+	missingValue := `{"secrets": [{"secretName": "auth","imported": false,"secretData": [{"key": "user1"}]}]}`
 
 	tests := []struct {
 		name          string
@@ -130,7 +130,7 @@ func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 		{"All good", allGood, ""},
 		{"Empty JSON", `{}`, "ServiceSecrets.Secrets field is required"},
 		{"No Secrets", `{"secrets": []}`, "ServiceSecrets.Secrets field should greater than 0"},
-		{"No Path", noPath, "ServiceSecrets.Secrets[0].Path field should not be empty string"},
+		{"No SecretName", noSecretName, "ServiceSecrets.Secrets[0].SecretName field should not be empty string"},
 		{"No SecretData", noSecretData, "ServiceSecrets.Secrets[0].SecretData field is required"},
 		{"Empty SecretData", emptySecretData, "1 error occurred:\n\t* SecretData for 'auth' must not be empty when Imported=false\n\n"},
 		{"Missing Key", missingKey, "ServiceSecrets.Secrets[0].SecretData[0].Key field is required"},
@@ -153,16 +153,16 @@ func TestServiceSecrets_UnmarshalJson_Failed_Validation(t *testing.T) {
 }
 
 func TestServiceSecrets_MarshalJson(t *testing.T) {
-	expected := `{"secrets":[{"path":"credentials001","imported":true,"secretData":[]},{"path":"credentials002","imported":true,"secretData":[]}]}`
+	expected := `{"secrets":[{"secretName":"credentials001","imported":true,"secretData":[]},{"secretName":"credentials002","imported":true,"secretData":[]}]}`
 	secrets := ServiceSecrets{
 		[]ServiceSecret{
 			{
-				Path:       "credentials001",
+				SecretName: "credentials001",
 				Imported:   true,
 				SecretData: make([]common.SecretDataKeyValue, 0),
 			},
 			{
-				Path:       "credentials002",
+				SecretName: "credentials002",
 				SecretData: make([]common.SecretDataKeyValue, 0),
 				Imported:   true,
 			},

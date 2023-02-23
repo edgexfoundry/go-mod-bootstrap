@@ -18,6 +18,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"sync"
+	"testing"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
@@ -31,32 +35,29 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"strconv"
-	"sync"
-	"testing"
 )
 
 const (
-	expectedUsername = "admin"
-	expectedPassword = "password"
-	expectedPath     = "redisdb"
-	UsernameKey      = "username"
-	PasswordKey      = "password"
+	expectedUsername   = "admin"
+	expectedPassword   = "password"
+	expectedSecretName = "redisdb"
+	UsernameKey        = "username"
+	PasswordKey        = "password"
 )
 
-func TestGetSecretPathsChanged(t *testing.T) {
+func TestGetSecretNamesChanged(t *testing.T) {
 	prevVals := config.InsecureSecrets{
 		"DB": config.InsecureSecretsInfo{
-			Path: expectedPath,
-			Secrets: map[string]string{
+			SecretName: expectedSecretName,
+			SecretData: map[string]string{
 				UsernameKey: "edgex",
 				PasswordKey: expectedPassword,
 			}}}
 
 	curVals := config.InsecureSecrets{
 		"DB": config.InsecureSecretsInfo{
-			Path: expectedPath,
-			Secrets: map[string]string{
+			SecretName: expectedSecretName,
+			SecretData: map[string]string{
 				UsernameKey: expectedUsername,
 				PasswordKey: expectedPassword,
 			}}}
@@ -68,35 +69,35 @@ func TestGetSecretPathsChanged(t *testing.T) {
 		prevVals     config.InsecureSecrets
 	}{
 		{"Valid - No updates", nil, curVals, curVals},
-		{"Valid - Secret update", []string{expectedPath}, prevVals, curVals},
-		{"Valid - New Secret", []string{expectedPath}, prevVals, config.InsecureSecrets{
+		{"Valid - Secret update", []string{expectedSecretName}, prevVals, curVals},
+		{"Valid - New Secret", []string{expectedSecretName}, prevVals, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{
-				Path: expectedPath,
-				Secrets: map[string]string{
+				SecretName: expectedSecretName,
+				SecretData: map[string]string{
 					UsernameKey: expectedUsername,
 					PasswordKey: expectedPassword,
 					"attempts":  "1",
 				}}}},
-		{"Valid - Deleted Secret", []string{expectedPath}, prevVals, config.InsecureSecrets{
+		{"Valid - Deleted Secret", []string{expectedSecretName}, prevVals, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{
-				Path: expectedPath,
-				Secrets: map[string]string{
+				SecretName: expectedSecretName,
+				SecretData: map[string]string{
 					UsernameKey: expectedUsername,
 				}}}},
 		{"Valid - Path update", []string{"redisdb", "message-bus"}, curVals,
 			config.InsecureSecrets{
 				"DB": config.InsecureSecretsInfo{
-					Path: "message-bus",
-					Secrets: map[string]string{
+					SecretName: "message-bus",
+					SecretData: map[string]string{
 						UsernameKey: expectedUsername,
 						PasswordKey: expectedPassword,
 					}}}},
-		{"Valid - Path delete", []string{expectedPath}, config.InsecureSecrets{
+		{"Valid - Path delete", []string{expectedSecretName}, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{}}, prevVals},
 		{"Valid - No updates, unsorted keys", nil, curVals, config.InsecureSecrets{
 			"DB": config.InsecureSecretsInfo{
-				Path: expectedPath,
-				Secrets: map[string]string{
+				SecretName: expectedSecretName,
+				SecretData: map[string]string{
 					PasswordKey: expectedPassword,
 					UsernameKey: expectedUsername,
 				}}}},
@@ -104,8 +105,8 @@ func TestGetSecretPathsChanged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
-			updatedPaths := getSecretPathsChanged(tc.prevVals, tc.curVals)
-			assert.Equal(t, tc.UpdatedPaths, updatedPaths)
+			updatedSecretNames := getSecretNamesChanged(tc.prevVals, tc.curVals)
+			assert.Equal(t, tc.UpdatedPaths, updatedSecretNames)
 		})
 	}
 }

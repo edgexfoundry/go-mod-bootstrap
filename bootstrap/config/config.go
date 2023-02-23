@@ -20,13 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	"github.com/mitchellh/copystructure"
 	"math"
 	"reflect"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/mitchellh/copystructure"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
@@ -602,9 +603,9 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					secretProvider := container.SecretProviderFrom(cp.dic.Get)
 					if secretProvider != nil {
 						// Find the updated secret's path and perform call backs.
-						updatedSecrets := getSecretPathsChanged(previousInsecureSecrets, currentInsecureSecrets)
+						updatedSecrets := getSecretNamesChanged(previousInsecureSecrets, currentInsecureSecrets)
 						for _, v := range updatedSecrets {
-							secretProvider.SecretUpdatedAtPath(v)
+							secretProvider.SecretUpdatedAtSecretName(v)
 						}
 					}
 
@@ -717,37 +718,37 @@ func (cp *Processor) loadConfigFromProvider(serviceConfig interfaces.Configurati
 	return nil
 }
 
-// getSecretPathsChanged returns a slice of paths that have changed secrets or are new.
-func getSecretPathsChanged(prevVals config.InsecureSecrets, curVals config.InsecureSecrets) []string {
-	var updatedPaths []string
+// getSecretNamesChanged returns a slice of secretNames that have changed secrets or are new.
+func getSecretNamesChanged(prevVals config.InsecureSecrets, curVals config.InsecureSecrets) []string {
+	var updatedNames []string
 	for key, prevVal := range prevVals {
 		curVal := curVals[key]
 
 		// Catches removed secrets
-		if curVal.Secrets == nil {
-			updatedPaths = append(updatedPaths, prevVal.Path)
+		if curVal.SecretData == nil {
+			updatedNames = append(updatedNames, prevVal.SecretName)
 			continue
 		}
 
-		// Catches changes to secret data or to the path name
+		// Catches changes to secret data or to the secret name
 		if !reflect.DeepEqual(prevVal, curVal) {
-			updatedPaths = append(updatedPaths, curVal.Path)
+			updatedNames = append(updatedNames, curVal.SecretName)
 
-			// Catches path name changes, so also include the previous path
-			if prevVal.Path != curVal.Path {
-				updatedPaths = append(updatedPaths, prevVal.Path)
+			// Catches secret name changes, so also include the previous secretName
+			if prevVal.SecretName != curVal.SecretName {
+				updatedNames = append(updatedNames, prevVal.SecretName)
 			}
 		}
 	}
 
 	for key, curVal := range curVals {
 		// Catches new secrets added
-		if prevVals[key].Secrets == nil {
-			updatedPaths = append(updatedPaths, curVal.Path)
+		if prevVals[key].SecretData == nil {
+			updatedNames = append(updatedNames, curVal.SecretName)
 		}
 	}
 
-	return updatedPaths
+	return updatedNames
 }
 
 // mergeConfigs combines src (zeros removed) with the dest

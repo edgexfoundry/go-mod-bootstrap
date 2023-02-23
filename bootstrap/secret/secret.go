@@ -171,7 +171,7 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 		Type:                 secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
 		Host:                 secretStoreInfo.Host,
 		Port:                 secretStoreInfo.Port,
-		Path:                 addEdgeXSecretPathPrefix(secretStoreInfo.Path),
+		BasePath:             addEdgeXSecretNamePrefix(secretStoreInfo.StoreName),
 		SecretsFile:          secretStoreInfo.SecretsFile,
 		Protocol:             secretStoreInfo.Protocol,
 		Namespace:            secretStoreInfo.Namespace,
@@ -210,13 +210,13 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 	return secretConfig, nil
 }
 
-func addEdgeXSecretPathPrefix(secretPath string) string {
-	trimmedSecretPath := strings.TrimSpace(secretPath)
+func addEdgeXSecretNamePrefix(secretName string) string {
+	trimmedSecretName := strings.TrimSpace(secretName)
 
-	// in this case, treat it as no secret path
-	if len(trimmedSecretPath) == 0 {
+	// in this case, treat it as no secret name prefix
+	if len(trimmedSecretName) == 0 {
 		return ""
 	}
 
-	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretPath) + "/"
+	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretName)
 }

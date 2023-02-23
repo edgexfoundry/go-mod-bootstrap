@@ -149,7 +149,7 @@ func (_m *SecretProvider) IsJWTValid(jwt string) (bool, error) {
 }
 
 // ListSecretPaths provides a mock function with given fields:
-func (_m *SecretProvider) ListSecretPaths() ([]string, error) {
+func (_m *SecretProvider) ListSecretNames() ([]string, error) {
 	ret := _m.Called()
 
 	var r0 []string
@@ -185,9 +185,9 @@ func (_m *SecretProvider) RegisteredSecretUpdatedCallback(path string, callback 
 	return r0
 }
 
-// SecretUpdatedAtPath provides a mock function with given fields: path
-func (_m *SecretProvider) SecretUpdatedAtPath(path string) {
-	_m.Called(path)
+// SecretUpdatedAtSecretName provides a mock function with given fields: secretName
+func (_m *SecretProvider) SecretUpdatedAtSecretName(secretName string) {
+	_m.Called(secretName)
 }
 
 // SecretsLastUpdated provides a mock function with given fields:

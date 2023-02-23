@@ -34,14 +34,15 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
 	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader/mocks"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	expectedUsername = "admin"
-	expectedPassword = "password"
-	expectedPath     = "/redisdb"
+	expectedUsername   = "admin"
+	expectedPassword   = "password"
+	expectedSecretName = "redisdb"
 )
 
 // nolint: gosec
@@ -79,7 +80,7 @@ func TestNewSecretProvider(t *testing.T) {
 					case "/v1/auth/token/lookup-self":
 						w.WriteHeader(http.StatusOK)
 						_, _ = w.Write([]byte(testTokenResponse))
-					case "/v1/secret/edgex/testServiceKey//redisdb":
+					case "/v1/secret/edgex/testServiceKey/redisdb":
 						w.WriteHeader(http.StatusOK)
 						data := make(map[string]interface{})
 						data["data"] = expectedSecrets
@@ -106,8 +107,8 @@ func TestNewSecretProvider(t *testing.T) {
 				configuration = TestConfig{
 					map[string]bootstrapConfig.InsecureSecretsInfo{
 						"DB": {
-							Path:    expectedPath,
-							Secrets: expectedSecrets,
+							SecretName: expectedSecretName,
+							SecretData: expectedSecrets,
 						},
 					},
 				}
@@ -121,7 +122,7 @@ func TestNewSecretProvider(t *testing.T) {
 			actualProvider := container.SecretProviderFrom(dic.Get)
 			assert.NotNil(t, actualProvider)
 
-			actualSecrets, err := actualProvider.GetSecret(expectedPath)
+			actualSecrets, err := actualProvider.GetSecret(expectedSecretName)
 			require.NoError(t, err)
 			assert.Equal(t, expectedUsername, actualSecrets[UsernameKey])
 			assert.Equal(t, expectedPassword, actualSecrets[PasswordKey])
@@ -134,18 +135,17 @@ func TestAddPrefix(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		secretPath       string
+		storeName        string
 		expectedFullPath string
 	}{
-		{"non-empty given secret path without trailing slash", "core-command", expectedPrefixPath + "core-command/"},
-		{"non-empty given secret path with trailing slash", "core-command/", expectedPrefixPath + "core-command/"},
-		{"empty given secret path", "", ""},
+		{"non-empty StoreName", "core-command", expectedPrefixPath + "core-command"},
+		{"empty StoreName", "", ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actualSecretFullPath := addEdgeXSecretPathPrefix(test.secretPath)
-			require.Equal(t, test.expectedFullPath, actualSecretFullPath)
+			actualStoreFullPath := addEdgeXSecretNamePrefix(test.storeName)
+			require.Equal(t, test.expectedFullPath, actualStoreFullPath)
 		})
 	}
 }
@@ -170,7 +170,7 @@ func TestBuildSecretStoreConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEqual(t, bootstrapConfig.SecretStoreInfo{}, target)
-	assert.Equal(t, expectedServiceKey, target.Path)
+	assert.Equal(t, expectedServiceKey, target.StoreName)
 	assert.Equal(t, expectedHost, target.Host)
 	assert.Equal(t, expectedPort, target.Port)
 	assert.Equal(t, expectedTokenFile, target.TokenFile)
