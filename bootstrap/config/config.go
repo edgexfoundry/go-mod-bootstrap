@@ -228,18 +228,15 @@ func (cp *Processor) loadCommonConfig(
 
 	// check that common config is loaded into the provider
 	// this need a separate config provider client here because the config ready variable is stored at the common config level
-	// TODO: refactor to add Client API that allows checking of a variable by passing an absolute path
-	commonConfigCheckClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
-	if err != nil {
-		return fmt.Errorf("failed to create provider client for common config check: %s", err.Error())
-	}
-	if err := cp.waitForCommonConfig(commonConfigCheckClient); err != nil {
-		return err
-	}
 	// load the all services section of the common config
 	commonConfigClient, err := createProvider(cp.lc, common.CoreCommonConfigServiceKey+allServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create provider for %s: %s", allServicesKey, err.Error())
+	}
+	// build the path for the common configuration ready value
+	commonConfigPath := fmt.Sprintf("%s/%s", configStem, common.CoreCommonConfigServiceKey)
+	if err := cp.waitForCommonConfig(commonConfigClient, commonConfigPath); err != nil {
+		return err
 	}
 	err = cp.loadConfigFromProvider(serviceConfig, commonConfigClient)
 	if err != nil {
@@ -641,7 +638,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 	}()
 }
 
-func (cp *Processor) waitForCommonConfig(configClient configuration.Client) error {
+func (cp *Processor) waitForCommonConfig(configClient configuration.Client, configReadyPath string) error {
 	// Wait for configuration provider to be available
 	isAlive := false
 	for cp.startupTimer.HasNotElapsed() {
@@ -668,7 +665,7 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client) erro
 	isConfigReady := false
 	isCommonConfigReady := false
 	for cp.startupTimer.HasNotElapsed() {
-		commonConfigReady, err := configClient.GetConfigurationValue(config.CommonConfigDone)
+		commonConfigReady, err := configClient.GetConfigurationValueByFullPath(fmt.Sprintf("%s/%s", configReadyPath, config.CommonConfigDone))
 		if err != nil {
 			cp.lc.Warn("waiting for Common Configuration to be available from config provider")
 			cp.startupTimer.SleepForInterval()
