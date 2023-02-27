@@ -234,8 +234,8 @@ func (cp *Processor) loadCommonConfig(
 		return fmt.Errorf("failed to create provider for %s: %s", allServicesKey, err.Error())
 	}
 	// build the path for the common configuration ready value
-	commonConfigPath := fmt.Sprintf("%s/%s", configStem, common.CoreCommonConfigServiceKey)
-	if err := cp.waitForCommonConfig(commonConfigClient, commonConfigPath); err != nil {
+	commonConfigReadyPath := fmt.Sprintf("%s/%s/%s", configStem, common.CoreCommonConfigServiceKey, config.CommonConfigDone)
+	if err := cp.waitForCommonConfig(commonConfigClient, commonConfigReadyPath); err != nil {
 		return err
 	}
 	err = cp.loadConfigFromProvider(serviceConfig, commonConfigClient)
@@ -665,7 +665,7 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client, conf
 	isConfigReady := false
 	isCommonConfigReady := false
 	for cp.startupTimer.HasNotElapsed() {
-		commonConfigReady, err := configClient.GetConfigurationValueByFullPath(fmt.Sprintf("%s/%s", configReadyPath, config.CommonConfigDone))
+		commonConfigReady, err := configClient.GetConfigurationValueByFullPath(configReadyPath)
 		if err != nil {
 			cp.lc.Warn("waiting for Common Configuration to be available from config provider")
 			cp.startupTimer.SleepForInterval()
@@ -674,7 +674,7 @@ func (cp *Processor) waitForCommonConfig(configClient configuration.Client, conf
 
 		isCommonConfigReady, err = strconv.ParseBool(string(commonConfigReady))
 		if err != nil {
-			cp.lc.Warnf("did not get boolean from config provider for %s: %s", config.CommonConfigDone, err.Error())
+			cp.lc.Warnf("did not get boolean from config provider for %s: %s", configReadyPath, err.Error())
 			isCommonConfigReady = false
 		}
 		if isCommonConfigReady {
