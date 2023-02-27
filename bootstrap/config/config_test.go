@@ -211,7 +211,7 @@ func TestLoadCommonConfig(t *testing.T) {
 			providerClientMock.On("IsAlive").Return(tc.isAlive)
 			serviceConfigMock := ConfigurationMockStruct{}
 			if tc.isAlive {
-				providerClientMock.On("GetConfigurationValue", "IsCommonConfigReady").Return(tc.isCommonConfigReady, tc.commonConfigReadyErr)
+				providerClientMock.On("GetConfigurationValueByFullPath", "edgex/v3/core-common-config-bootstrapper/IsCommonConfigReady").Return(tc.isCommonConfigReady, tc.commonConfigReadyErr)
 			}
 			ccReady, err := strconv.ParseBool(string(tc.isCommonConfigReady))
 			if err == nil && ccReady {
