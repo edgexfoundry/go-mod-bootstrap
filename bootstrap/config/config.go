@@ -600,6 +600,8 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 	go func() {
 		defer cp.wg.Done()
 
+		var previousCommonWritable any
+
 		errorStream := make(chan error)
 		defer close(errorStream)
 
@@ -625,47 +627,54 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
 				// any changes to the configuration. This causes an issue during start-up if there is an
-				// envVars override of one of the Writable fields, so we must ignore the first update.
+				// envVars override of one of the Writable fields, so on the first update we can just save a copy of the
+				// common writable for comparison for future writable updates.
 				if isFirstUpdate {
 					isFirstUpdate = false
+					previousCommonWritable = raw
 					continue
 				}
 
-				privateConfig, err := copyConfigurationStruct(fullServiceConfig)
-				if err != nil {
-					lc.Errorf("could not make private copy of config while watching for common config writable: %s", err.Error())
-					return
+				if err := cp.processCommonConfigChange(fullServiceConfig, previousCommonWritable, raw, privateConfigClient); err != nil {
+					lc.Error(err.Error())
 				}
-
-				err = cp.loadConfigFromProvider(privateConfig, privateConfigClient)
-				if err != nil {
-					lc.Errorf("could not load private config while watching for common config writable: %s", err.Error())
-					return
-				}
-
-				// check if changed value is a private override
-				if cp.isPrivateOverride(fullServiceConfig.GetWritablePtr(), raw, privateConfigClient) {
-					continue
-				}
-
-				// merge raw with fullServiceConfig and call it changedConfig
-				changedConfig, err := copyConfigurationStruct(fullServiceConfig)
-				if err != nil {
-					lc.Errorf("could not copy config while watching for common config writable: %s", err.Error())
-					return
-				}
-				changedWritable := changedConfig.GetWritablePtr()
-
-				if err := mergeConfigs(changedWritable, raw); err != nil {
-					lc.Errorf("could not merge configs while watching for common config writable: %s", err.Error())
-					return
-				}
-
-				// pass fullServiceConfig and changedWritable to applyWritableUpdates
-				cp.applyWritableUpdates(fullServiceConfig, changedWritable)
+				// ensure that the local copy of the common writable gets updated no matter what
+				previousCommonWritable = raw
 			}
 		}
 	}()
+}
+
+func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Configuration, previousCommonWritable any, raw any, privateConfigClient configuration.Client) error {
+	privateConfig, err := copyConfigurationStruct(fullServiceConfig)
+	if err != nil {
+		return fmt.Errorf("could not make private copy of config while watching for common config writable: %s", err.Error())
+	}
+
+	err = cp.loadConfigFromProvider(privateConfig, privateConfigClient)
+	if err != nil {
+		return fmt.Errorf("could not load private config while watching for common config writable: %s", err.Error())
+	}
+
+	// check if changed value is a private override
+	if cp.isPrivateOverride(previousCommonWritable, raw, privateConfigClient) {
+		return nil
+	}
+
+	// merge raw with fullServiceConfig and call it changedConfig
+	changedConfig, err := copyConfigurationStruct(fullServiceConfig)
+	if err != nil {
+		return fmt.Errorf("could not copy config while watching for common config writable: %s", err.Error())
+	}
+	changedWritable := changedConfig.GetWritablePtr()
+
+	if err := mergeConfigs(changedWritable, raw); err != nil {
+		return fmt.Errorf("could not merge configs while watching for common config writable: %s", err.Error())
+	}
+
+	// pass fullServiceConfig and changedWritable to applyWritableUpdates
+	cp.applyWritableUpdates(fullServiceConfig, changedWritable)
+	return nil
 }
 
 func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigClient configuration.Client) bool {
@@ -683,8 +692,12 @@ func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigC
 	// walk to see what setting changed - assumes only one change at a time
 	changedKey = walkMapForChange(previousMap, updatedMap, "")
 	if changedKey == "" {
-		cp.lc.Error("could not find updated writable key %s or an error occurred", changedKey)
-		return true
+		// look the other way around to see if an item was removed
+		changedKey = walkMapForChange(updatedMap, previousMap, "")
+		if changedKey == "" {
+			cp.lc.Error("could not find updated writable key or an error occurred")
+			return true
+		}
 	}
 	// check to see if that setting is in the private config
 	if cp.isKeyInPrivate(privateConfigClient, changedKey) {
