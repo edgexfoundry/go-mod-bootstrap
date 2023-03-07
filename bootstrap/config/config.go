@@ -155,7 +155,7 @@ func (cp *Processor) Process(
 
 		cp.providerHasConfig, err = privateConfigClient.HasConfiguration()
 		if err != nil {
-			return fmt.Errorf("failed check for Configuration Provider has privateKeys configiuration: %s", err.Error())
+			return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
 		}
 		if cp.providerHasConfig && !cp.overwriteConfig {
 			privateServiceConfig, err = copyConfigurationStruct(serviceConfig)
@@ -166,19 +166,19 @@ func (cp *Processor) Process(
 				return err
 			}
 			if err := mergeConfigs(serviceConfig, privateServiceConfig); err != nil {
-				return fmt.Errorf("could not merge common and privateKeys configurations: %s", err.Error())
+				return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
 			}
 		}
 	}
 
 	// Now must load configuration from local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
-		// tomlTree contains the service's privateKeys configuration in its toml tree form
+		// tomlTree contains the service's private configuration in its toml tree form
 		tomlTree, err := cp.loadPrivateFromFile()
 		if err != nil {
 			return err
 		}
-		cp.lc.Info("Using local privateKeys configuration from file")
+		cp.lc.Info("Using local private configuration from file")
 		if err := cp.mergeTomlWithConfig(serviceConfig, tomlTree); err != nil {
 			return err
 		}
@@ -202,7 +202,7 @@ func (cp *Processor) Process(
 	// listen for changes on Writable
 	if useProvider {
 		cp.listenForChanges(serviceConfig, privateConfigClient)
-		cp.lc.Infof("listening for privateKeys config changes")
+		cp.lc.Infof("listening for private config changes")
 		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient)
 		cp.lc.Infof("listening for all services common config changes")
 		if cp.appConfigClient != nil {
@@ -504,13 +504,13 @@ func CreateProviderClient(
 
 // loadPrivateFromFile attempts to read the configuration toml file
 func (cp *Processor) loadPrivateFromFile() (*toml.Tree, error) {
-	// pull the privateKeys config and convert it to a map[string]any
+	// pull the private config and convert it to a map[string]any
 	filePath := GetConfigLocation(cp.lc, cp.flags)
 	contents, err := toml.LoadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("could not load privateKeys configuration file (%s): %s", filePath, err.Error())
+		return nil, fmt.Errorf("could not load private configuration file (%s): %s", filePath, err.Error())
 	}
-	cp.lc.Info(fmt.Sprintf("Loaded privateKeys configuration from %s", filePath))
+	cp.lc.Info(fmt.Sprintf("Loaded private configuration from %s", filePath))
 	return contents, nil
 }
 
@@ -521,7 +521,7 @@ func (cp *Processor) mergeTomlWithConfig(config interface{}, tomlTree *toml.Tree
 		return err
 	}
 
-	// convert the privateKeys configuration from the toml tree to a map[string]any
+	// convert the private configuration from the toml tree to a map[string]any
 	contentsMap := tomlTree.ToMap()
 
 	mergeMaps(configMap, contentsMap)
@@ -590,9 +590,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 }
 
 // listenForCommonChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
-// service's common configuration writable sub-struct.  It's assumed the log level is universally part of the
-// writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
-// are received.
+// service's common configuration writable sub-struct.
 func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configuration, commonConfigClient configuration.Client,
 	privateConfigClient configuration.Client) {
 	lc := cp.lc
@@ -635,19 +633,18 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 
 				privateConfig, err := copyConfigurationStruct(fullServiceConfig)
 				if err != nil {
-					lc.Errorf("could not make privateKeys copy of config while watching for common config writable: %s", err.Error())
+					lc.Errorf("could not make private copy of config while watching for common config writable: %s", err.Error())
 					return
 				}
 
 				err = cp.loadConfigFromProvider(privateConfig, privateConfigClient)
 				if err != nil {
-					lc.Errorf("could not load privateKeys config while watching for common config writable: %s", err.Error())
+					lc.Errorf("could not load private config while watching for common config writable: %s", err.Error())
 					return
 				}
 
-				// check if changed value is a privateKeys override
+				// check if changed value is a private override
 				if cp.isPrivateOverride(fullServiceConfig.GetWritablePtr(), raw, privateConfigClient) {
-					lc.Infof("updated change ignored because it is a privateKeys override or an error occurred")
 					continue
 				}
 
@@ -672,7 +669,6 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 }
 
 func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigClient configuration.Client) bool {
-	// TODO: implement this!
 	var changedKey string
 	// convert previous and updated to maps
 	var previousMap, updatedMap map[string]any
@@ -690,10 +686,9 @@ func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigC
 		cp.lc.Error("could not find updated writable key %s or an error occurred", changedKey)
 		return true
 	}
-	// check to see if that setting is in the privateKeys config
-	// TODO: use the Keys from consul to see if changedKey in in the privateKeys returned
+	// check to see if that setting is in the private config
 	if cp.isKeyInPrivate(privateConfigClient, changedKey) {
-		cp.lc.Infof("writable key %s overwritten in privateKeys writable", changedKey)
+		cp.lc.Infof("ignoring changed writable key %s overwritten in private writable", changedKey)
 		return true
 	}
 	return false
@@ -993,7 +988,7 @@ func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, cha
 			return buildNewKey(changedKey, updatedKey)
 		}
 		updatedSubMap, ok := updatedVal.(map[string]any)
-		// if the value is not of type any, it should be a string to compare
+		// if the value is not of type map[string]any, it should be a value to compare
 		if !ok {
 			if updatedVal != previousVal {
 				return buildNewKey(changedKey, updatedKey)
@@ -1022,7 +1017,7 @@ func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, cha
 func (cp *Processor) isKeyInPrivate(privateConfigClient configuration.Client, changedKey string) bool {
 	keys, err := privateConfigClient.GetConfigurationKeys(writableKey)
 	if err != nil {
-		cp.lc.Errorf("could not get writable keys from privateKeys configuration: %s", err.Error())
+		cp.lc.Errorf("could not get writable keys from private configuration: %s", err.Error())
 		// return true because shouldn't change an overridden value
 		// error means it is undetermined, so don't override to be safe
 		return true
