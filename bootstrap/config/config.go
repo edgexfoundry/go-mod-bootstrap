@@ -646,16 +646,6 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 }
 
 func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Configuration, previousCommonWritable any, raw any, privateConfigClient configuration.Client) error {
-	privateConfig, err := copyConfigurationStruct(fullServiceConfig)
-	if err != nil {
-		return fmt.Errorf("could not make private copy of config while watching for common config writable: %s", err.Error())
-	}
-
-	err = cp.loadConfigFromProvider(privateConfig, privateConfigClient)
-	if err != nil {
-		return fmt.Errorf("could not load private config while watching for common config writable: %s", err.Error())
-	}
-
 	// check if changed value is a private override
 	if cp.isPrivateOverride(previousCommonWritable, raw, privateConfigClient) {
 		return nil
@@ -679,7 +669,6 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 
 func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigClient configuration.Client) bool {
 	var changedKey string
-	// convert previous and updated to maps
 	var previousMap, updatedMap map[string]any
 	if err := convertInterfaceToMap(previous, &previousMap); err != nil {
 		cp.lc.Errorf("could not convert previous interface to map: %s", err.Error())
@@ -689,7 +678,6 @@ func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigC
 		cp.lc.Errorf("could not convert previous interface to map: %s", err.Error())
 		return true
 	}
-	// walk to see what setting changed - assumes only one change at a time
 	changedKey = walkMapForChange(previousMap, updatedMap, "")
 	if changedKey == "" {
 		// look the other way around to see if an item was removed
@@ -1010,6 +998,7 @@ func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, cha
 		}
 		previousSubMap, ok := previousVal.(map[string]any)
 		if !ok {
+			// handle the case where a new setting is added
 			if previousSubMap == nil && updatedSubMap != nil {
 				subKey := buildNewKey(changedKey, updatedKey)
 				for k, _ := range updatedSubMap {
