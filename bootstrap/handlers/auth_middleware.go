@@ -47,7 +47,7 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProvider, lc
 	return func(inner http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
-			lc.Infof("Authorizing incoming call to '%s' via JWT (Authorization len=%d)", r.URL.Path, len(authHeader))
+			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d)", r.URL.Path, len(authHeader))
 			authParts := strings.Split(authHeader, " ")
 			if len(authParts) >= 2 && strings.EqualFold(authParts[0], "Bearer") {
 				token := authParts[1]
@@ -57,11 +57,11 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProvider, lc
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				} else if !validToken {
-					lc.Infof("Request to '%s' UNAUTHORIZED", r.URL.Path)
+					lc.Warnf("Request to '%s' UNAUTHORIZED", r.URL.Path)
 					http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 					return
 				}
-				lc.Infof("Request to '%s' authorized", r.URL.Path)
+				lc.Debug("Request to '%s' authorized", r.URL.Path)
 				inner(w, r)
 				return
 			}
