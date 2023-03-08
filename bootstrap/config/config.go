@@ -661,7 +661,7 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 	if err := mergeConfigs(changedWritable, raw); err != nil {
 		return fmt.Errorf("could not merge configs while watching for common config writable: %s", err.Error())
 	}
-	
+
 	cp.applyWritableUpdates(fullServiceConfig, changedWritable)
 	return nil
 }
@@ -1000,7 +1000,7 @@ func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, cha
 			// handle the case where a new setting is added
 			if previousSubMap == nil && updatedSubMap != nil {
 				subKey := buildNewKey(changedKey, updatedKey)
-				for k, _ := range updatedSubMap {
+				for k := range updatedSubMap {
 					return buildNewKey(subKey, k)
 				}
 			}

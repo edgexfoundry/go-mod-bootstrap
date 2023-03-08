@@ -404,7 +404,7 @@ func TestIsPrivateConfig(t *testing.T) {
 			mockLogger := logger.MockLogger{}
 			env := environment.NewVariables(mockLogger)
 			timer := startup.NewTimer(5, 1)
-			ctx, _ := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(context.Background())
 			wg := sync.WaitGroup{}
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} { return mockLogger },
@@ -416,7 +416,9 @@ func TestIsPrivateConfig(t *testing.T) {
 			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
 			// set up mocks
 			result := proc.isPrivateOverride(tc.previous, tc.updated, providerClientMock)
-			assert.Equal(t, tc.expectedOut, result)
+			require.Equal(t, tc.expectedOut, result)
+			providerClientMock.AssertExpectations(t)
+			require.NotNil(t, cancel)
 		})
 	}
 }
