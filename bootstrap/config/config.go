@@ -661,8 +661,7 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 	if err := mergeConfigs(changedWritable, raw); err != nil {
 		return fmt.Errorf("could not merge configs while watching for common config writable: %s", err.Error())
 	}
-
-	// pass fullServiceConfig and changedWritable to applyWritableUpdates
+	
 	cp.applyWritableUpdates(fullServiceConfig, changedWritable)
 	return nil
 }
