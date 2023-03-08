@@ -97,3 +97,7 @@ func (ut unitTestConfiguration) GetRegistryInfo() config.RegistryInfo {
 func (ut unitTestConfiguration) GetTelemetryInfo() *config.TelemetryInfo {
 	panic("should not be called")
 }
+
+func (ut unitTestConfiguration) GetWritablePtr() any {
+	panic("should not be called")
+}
