@@ -61,4 +61,7 @@ type Configuration interface {
 
 	// GetTelemetryInfo gets the config.Telemetry section from the ConfigurationStruct
 	GetTelemetryInfo() *config.TelemetryInfo
+
+	// GetWritablePtr gets the config.WritablePtr section from the ConfigurationStruct
+	GetWritablePtr() any
 }

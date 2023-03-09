@@ -357,3 +357,7 @@ func (t TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
 func (t TestConfig) GetTelemetryInfo() *bootstrapConfig.TelemetryInfo {
 	panic("implement me")
 }
+
+func (t TestConfig) GetWritablePtr() any {
+	panic("implement me")
+}

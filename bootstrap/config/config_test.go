@@ -18,7 +18,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/mock"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -350,4 +352,73 @@ func TestRemoveZeroValues(t *testing.T) {
 	regMap := configMap["Registry"].(map[string]interface{})
 	assert.NotEmpty(t, regMap["Host"])
 	assert.NotZero(t, regMap["Port"])
+}
+
+func TestIsPrivateConfig(t *testing.T) {
+	commonConfig := ConfigurationMockStruct{
+		Writable: WritableInfo{
+			Telemetry: config.TelemetryInfo{
+				Interval: "30s",
+			},
+		},
+	}
+	commonWritable := commonConfig.GetWritablePtr()
+
+	updatedCommonConfig := ConfigurationMockStruct{
+		Writable: WritableInfo{
+			Telemetry: config.TelemetryInfo{
+				Interval: "10s",
+			},
+		},
+	}
+	updatedCommonWritable := updatedCommonConfig.GetWritablePtr()
+
+	updatedCommonKeyConfig := ConfigurationMockStruct{
+		Writable: WritableInfo{
+			Telemetry: config.TelemetryInfo{
+				Interval: "30s",
+				Metrics:  map[string]bool{"NewKey": true},
+			},
+		},
+	}
+	updatedCommonKeyWritable := updatedCommonKeyConfig.GetWritablePtr()
+
+	tests := []struct {
+		Name        string
+		previous    any
+		updated     any
+		privateKeys []string
+		expectedOut bool
+	}{
+		{"happy path - updated key in common", commonWritable, updatedCommonWritable, []string{strings.Join([]string{writableKey, "Telemetry", "Metrics", "bogus"}, "/")}, false},
+		{"happy path - new key in common", commonWritable, updatedCommonKeyWritable, nil, false},
+		{"happy path - remove in common", updatedCommonKeyWritable, commonWritable, nil, false},
+		{"happy path - updated override privateKeys", commonWritable, updatedCommonWritable, []string{strings.Join([]string{writableKey, "Telemetry", "Interval"}, "/")}, true},
+		// new key in common - already exists in privateKeys
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			f := flags.New()
+			f.Parse(nil)
+			mockLogger := logger.MockLogger{}
+			env := environment.NewVariables(mockLogger)
+			timer := startup.NewTimer(5, 1)
+			ctx, cancel := context.WithCancel(context.Background())
+			wg := sync.WaitGroup{}
+			dic := di.NewContainer(di.ServiceConstructorMap{
+				container.LoggingClientInterfaceName: func(get di.Get) interface{} { return mockLogger },
+			})
+			providerClientMock := &mocks.Client{}
+			providerClientMock.On("GetConfigurationKeys", mock.Anything, mock.Anything).Return(tc.privateKeys, nil)
+
+			// create the processor
+			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
+			// set up mocks
+			result := proc.isPrivateOverride(tc.previous, tc.updated, providerClientMock)
+			require.Equal(t, tc.expectedOut, result)
+			providerClientMock.AssertExpectations(t)
+			require.NotNil(t, cancel)
+		})
+	}
 }

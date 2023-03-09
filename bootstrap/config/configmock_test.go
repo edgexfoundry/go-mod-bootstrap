@@ -88,3 +88,7 @@ func (c *ConfigurationMockStruct) GetTelemetryInfo() *config.TelemetryInfo {
 func (c *ConfigurationMockStruct) transformToBootstrapServiceInfo() config.ServiceInfo {
 	return config.ServiceInfo{}
 }
+
+func (c *ConfigurationMockStruct) GetWritablePtr() any {
+	return &c.Writable
+}
