@@ -29,17 +29,17 @@ import (
 // VaultAuthenticationHandlerFunc prefixes an existing HandlerFunc
 // with a Vault-based JWT authentication check.  Usage:
 //
-//  authenticationHook := handlers.NilAuthenticationHandlerFunc()
-//  if secret.IsSecurityEnabled() {
-//		lc := container.LoggingClientFrom(dic.Get)
-//      secretProvider := container.SecretProviderFrom(dic.Get)
-//      authenticationHook = handlers.VaultAuthenticationHandlerFunc(secretProvider, lc)
-//  }
-//  For optionally-authenticated requests
-//  r.HandleFunc("path", authenticationHook(handlerFunc)).Methods(http.MethodGet)
+//	 authenticationHook := handlers.NilAuthenticationHandlerFunc()
+//	 if secret.IsSecurityEnabled() {
+//			lc := container.LoggingClientFrom(dic.Get)
+//	     secretProvider := container.SecretProviderFrom(dic.Get)
+//	     authenticationHook = handlers.VaultAuthenticationHandlerFunc(secretProvider, lc)
+//	 }
+//	 For optionally-authenticated requests
+//	 r.HandleFunc("path", authenticationHook(handlerFunc)).Methods(http.MethodGet)
 //
-//  For unauthenticated requests
-//  r.HandleFunc("path", handlerFunc).Methods(http.MethodGet)
+//	 For unauthenticated requests
+//	 r.HandleFunc("path", handlerFunc).Methods(http.MethodGet)
 //
 // For typical usage, it is preferred to use AutoConfigAuthenticationFunc which
 // will automatically select between a real and a fake JWT validation handler.
