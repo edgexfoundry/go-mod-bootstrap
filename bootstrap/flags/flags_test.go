@@ -31,6 +31,7 @@ func TestNewAllFlags(t *testing.T) {
 	expectedProfile := "docker"
 	expectedConfigDirectory := "/res"
 	expectedFileName := "config.toml"
+	expectedCommonConfig := "config.yaml"
 
 	actual := newSUT(
 		[]string{
@@ -39,6 +40,7 @@ func TestNewAllFlags(t *testing.T) {
 			"-p=" + expectedProfile,
 			"-cd=" + expectedConfigDirectory,
 			"-cf=" + expectedFileName,
+			"-cc=" + expectedCommonConfig,
 		},
 	)
 
@@ -47,6 +49,7 @@ func TestNewAllFlags(t *testing.T) {
 	assert.Equal(t, expectedProfile, actual.Profile())
 	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
 	assert.Equal(t, expectedFileName, actual.ConfigFileName())
+	assert.Equal(t, expectedCommonConfig, actual.CommonConfig())
 }
 
 func TestNewDefaultsNoFlags(t *testing.T) {
@@ -58,6 +61,7 @@ func TestNewDefaultsNoFlags(t *testing.T) {
 	assert.Equal(t, "", actual.Profile())
 	assert.Equal(t, "", actual.ConfigDirectory())
 	assert.Equal(t, DefaultConfigFile, actual.ConfigFileName())
+	assert.Equal(t, "", actual.CommonConfig())
 }
 
 func TestNewDefaultForCP(t *testing.T) {

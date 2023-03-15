@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/mock"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -239,6 +240,54 @@ func TestLoadCommonConfig(t *testing.T) {
 					assert.True(t, serviceConfigMock.Writable.Telemetry.Metrics["EventsSent"])
 					assert.True(t, serviceConfigMock.Writable.Telemetry.Metrics["ReadingsSent"])
 				}
+				return
+			}
+			assert.Contains(t, err.Error(), tc.expectedErr)
+		})
+	}
+}
+
+func TestLoadCommonConfigFromUri(t *testing.T) {
+	tests := []struct {
+		Name          string
+		config        string
+		serviceConfig *ConfigurationMockStruct
+		serviceType   string
+		expectedErr   string
+	}{
+		{"Valid - core service", path.Join(".", "testdata", "configuration.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeOther, ""},
+		{"Valid - app service", path.Join(".", "testdata", "configuration.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeApp, ""},
+		{"Valid - device service", path.Join(".", "testdata", "configuration.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeDevice, ""},
+		{"Invalid - bad config file", path.Join(".", "testdata", "bad_config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeOther, "no such file or directory"},
+		{"Invalid - missing all service", path.Join(".", "testdata", "bogus.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeOther, "could not find all-services section in config"},
+		{"Invalid - missing app service", path.Join(".", "testdata", "all-service-config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeApp, fmt.Sprintf("could not find %s section in config", appServicesKey)},
+		{"Invalid - missing device service", path.Join(".", "testdata", "all-service-config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeDevice, fmt.Sprintf("could not find %s section in config", deviceServicesKey)},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			// create parameters for the processor
+			f := flags.New()
+			f.Parse(nil)
+			mockLogger := logger.MockLogger{}
+			env := environment.NewVariables(mockLogger)
+			timer := startup.NewTimer(5, 1)
+			ctx, cancel := context.WithCancel(context.Background())
+
+			wg := sync.WaitGroup{}
+			dic := di.NewContainer(di.ServiceConstructorMap{
+				container.LoggingClientInterfaceName: func(get di.Get) interface{} { return mockLogger },
+			})
+			// create the processor
+			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
+
+			// call load common config
+			err := proc.loadCommonConfigFromUri(tc.config, tc.serviceConfig, tc.serviceType)
+			// make assertions
+			require.NotNil(t, cancel)
+			if tc.expectedErr == "" {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, tc.serviceType)
 				return
 			}
 			assert.Contains(t, err.Error(), tc.expectedErr)
