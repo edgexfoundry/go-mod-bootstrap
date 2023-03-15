@@ -140,6 +140,8 @@ func (cp *Processor) Process(
 			return err
 		}
 
+		cp.lc.Info("Common configuration loaded from the Configuration Provider. No overrides applied")
+
 		privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
@@ -157,6 +159,7 @@ func (cp *Processor) Process(
 		if err != nil {
 			return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
 		}
+
 		if cp.providerHasConfig && !cp.overwriteConfig {
 			privateServiceConfig, err = copyConfigurationStruct(serviceConfig)
 			if err != nil {
@@ -168,6 +171,8 @@ func (cp *Processor) Process(
 			if err := mergeConfigs(serviceConfig, privateServiceConfig); err != nil {
 				return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
 			}
+
+			cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
 		}
 	}
 
@@ -178,26 +183,26 @@ func (cp *Processor) Process(
 		if err != nil {
 			return err
 		}
-		cp.lc.Info("Using local private configuration from file")
+
+		// apply overrides - Now only done when loaded from file and values will get pushed into Configuration Provider (if used)
+		overrideCount, err := cp.envVars.OverrideTomlValues(tomlTree)
+		if err != nil {
+			return err
+		}
+		cp.lc.Infof("Configuration loaded from file with %d overrides applied", overrideCount)
+
 		if err := cp.mergeTomlWithConfig(serviceConfig, tomlTree); err != nil {
 			return err
 		}
+
 		if useProvider {
 			if err := privateConfigClient.PutConfigurationToml(tomlTree, cp.overwriteConfig); err != nil {
 				return fmt.Errorf("could not push configuration into Configuration Provider: %s", err.Error())
 			}
 
-			cp.lc.Info("Configuration has been pushed to into Configuration Provider")
+			cp.lc.Info("Configuration has been pushed to into Configuration Provider with overrides applied")
 		}
-
 	}
-
-	// apply overrides
-	overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
-	if err != nil {
-		return err
-	}
-	cp.lc.Infof("Configuration loaded with %d overrides applied", overrideCount)
 
 	// listen for changes on Writable
 	if useProvider {
@@ -319,12 +324,12 @@ func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider in
 					err.Error())
 			}
 
-			cp.lc.Infof("Using Configuration Provider access token of length %d", len(accessToken))
+			cp.lc.Debugf("Using Configuration Provider access token of length %d", len(accessToken))
 			return accessToken, nil
 		}
 
 	} else {
-		cp.lc.Info("Not configured to use Config Provider access token")
+		cp.lc.Debug("Not configured to use Config Provider access token")
 	}
 	return getAccessToken, err
 }
@@ -415,7 +420,7 @@ func (cp *Processor) LoadCustomConfigSection(config interfaces.UpdatableConfig, 
 }
 
 // ListenForCustomConfigChanges listens for changes to the specified custom configuration section. When changes occur it
-// applies the changes to the custom configuration section and signals the the changes have occurred.
+// applies the changes to the custom configuration section and signals the changes have occurred.
 func (cp *Processor) ListenForCustomConfigChanges(
 	configToWatch interface{},
 	sectionName string,
@@ -920,11 +925,11 @@ func mergeMaps(dest map[string]any, src map[string]any) {
 
 // copyConfigurationStruct returns a copy of the passed in configuration interface
 func copyConfigurationStruct(config interfaces.Configuration) (interfaces.Configuration, error) {
-	copy, err := copystructure.Copy(config)
+	rawCopy, err := copystructure.Copy(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load copy the configuration: %s", err.Error())
 	}
-	configCopy, ok := copy.(interfaces.Configuration)
+	configCopy, ok := rawCopy.(interfaces.Configuration)
 	if !ok {
 		return nil, errors.New("failed to cast the copy of the configuration")
 	}
