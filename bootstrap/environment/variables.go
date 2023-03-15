@@ -204,7 +204,7 @@ func (e *Variables) buildOverrideNames(paths []string) map[string]string {
 func (_ *Variables) getOverrideNameFor(path string) string {
 	// ".", "/" & "-" are the only special character allowed in path not allowed in environment variable Name
 	override := strings.ReplaceAll(path, tomlPathDotSeparator, envNameSeparator)
-	override = strings.ReplaceAll(path, tomlPathSlashSeparator, envNameSeparator)
+	override = strings.ReplaceAll(override, tomlPathSlashSeparator, envNameSeparator)
 	override = strings.ReplaceAll(override, tomlNameSeparator, envNameSeparator)
 	override = strings.ToUpper(override)
 	return override
