@@ -46,9 +46,10 @@ const (
 
 	noConfigProviderValue = "none"
 
-	tomlPathSeparator = "."
-	tomlNameSeparator = "-"
-	envNameSeparator  = "_"
+	tomlPathDotSeparator   = "."
+	tomlPathSlashSeparator = "/"
+	tomlNameSeparator      = "-"
+	envNameSeparator       = "_"
 
 	// insecureSecretsRegexStr is a regex to look for toml keys that are under the Secrets sub-key of values within the
 	// Writable.InsecureSecrets topology.
@@ -64,7 +65,7 @@ var (
 	insecureSecretsRegex = regexp.MustCompile(insecureSecretsRegexStr)
 )
 
-// Variables is a receiver that holds Variables variables and encapsulates toml.Tree-based configuration field
+// Variables is a receiver that holds Variables and encapsulates toml.Tree-based configuration field
 // overrides.  Assumes "_" embedded in Variables variable key separates sub-structs; e.g. foo_bar_baz might refer to
 //
 //			type foo struct {
@@ -114,7 +115,6 @@ func (e *Variables) UseRegistry() (bool, bool) {
 // OverrideConfiguration method replaces values in the configuration for matching Variables variable keys.
 // serviceConfig must be pointer to the service configuration.
 func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error) {
-	var overrideCount = 0
 
 	contents, err := toml.Marshal(reflect.ValueOf(serviceConfig).Elem().Interface())
 	if err != nil {
@@ -125,6 +125,23 @@ func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error
 	if err != nil {
 		return 0, err
 	}
+
+	overrideCount, err := e.OverrideTomlValues(configTree)
+	if err != nil {
+		return 0, err
+	}
+
+	// Put the configuration back into the services configuration struct with the overridden values
+	err = configTree.Unmarshal(serviceConfig)
+	if err != nil {
+		return 0, fmt.Errorf("could not marshal toml configTree to configuration: %s", err.Error())
+	}
+
+	return overrideCount, nil
+}
+
+func (e *Variables) OverrideTomlValues(configTree *toml.Tree) (int, error) {
+	var overrideCount int
 
 	// The toml.Tree API keys() only return to top level keys, rather that paths.
 	// It is also missing a GetPaths so have to spin our own
@@ -149,12 +166,6 @@ func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error
 		configTree.Set(path, newValue)
 		overrideCount++
 		logEnvironmentOverride(e.lc, path, envVar, envValue)
-	}
-
-	// Put the configuration back into the services configuration struct with the overridden values
-	err = configTree.Unmarshal(serviceConfig)
-	if err != nil {
-		return 0, fmt.Errorf("could not marshal toml configTree to configuration: %s", err.Error())
 	}
 
 	return overrideCount, nil
@@ -191,8 +202,9 @@ func (e *Variables) buildOverrideNames(paths []string) map[string]string {
 }
 
 func (_ *Variables) getOverrideNameFor(path string) string {
-	// "." & "-" are the only special character allowed in TOML path not allowed in environment variable Name
-	override := strings.ReplaceAll(path, tomlPathSeparator, envNameSeparator)
+	// ".", "/" & "-" are the only special character allowed in path not allowed in environment variable Name
+	override := strings.ReplaceAll(path, tomlPathDotSeparator, envNameSeparator)
+	override = strings.ReplaceAll(path, tomlPathSlashSeparator, envNameSeparator)
 	override = strings.ReplaceAll(override, tomlNameSeparator, envNameSeparator)
 	override = strings.ToUpper(override)
 	return override
@@ -280,7 +292,7 @@ type StartupInfo struct {
 // GetStartupInfo gets the Service StartupInfo values from an Variables variable value (if it exists)
 // or uses the default values.
 func GetStartupInfo(serviceKey string) StartupInfo {
-	// lc hasn't be created at the time this info is needed so have to create local client.
+	// lc hasn't been created at the time this info is needed so have to create local client.
 	lc := logger.NewClient(serviceKey, models.InfoLog)
 
 	startup := StartupInfo{
