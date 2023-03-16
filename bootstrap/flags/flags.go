@@ -23,7 +23,7 @@ import (
 
 const (
 	DefaultConfigProvider = "consul.http://localhost:8500"
-	DefaultConfigFile     = "configuration.toml"
+	DefaultConfigFile     = "configuration.yaml"
 )
 
 // Common is an interface that defines AP for the common command-line flags used by most EdgeX services

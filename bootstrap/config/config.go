@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/mitchellh/copystructure"
+	"gopkg.in/yaml.v3"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
@@ -507,16 +509,26 @@ func CreateProviderClient(
 	return configuration.NewConfigurationClient(providerConfig)
 }
 
-// loadPrivateFromFile attempts to read the configuration toml file
+// loadPrivateFromFile attempts to read the local configuration file
 func (cp *Processor) loadPrivateFromFile() (*toml.Tree, error) {
-	// pull the private config and convert it to a map[string]any
 	filePath := GetConfigLocation(cp.lc, cp.flags)
-	contents, err := toml.LoadFile(filePath)
+	contents, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not load private configuration file (%s): %s", filePath, err.Error())
 	}
+
+	config := make(map[string]any)
+	if err := yaml.Unmarshal(contents, &config); err != nil {
+		return nil, fmt.Errorf("could not un-marshal configuration file as YAML (%s): %s", filePath, err.Error())
+	}
+
+	tomlTree, err := toml.TreeFromMap(config)
+	if err != nil {
+		return nil, fmt.Errorf("could not convert to TOML Tree: %s", err.Error())
+	}
+
 	cp.lc.Info(fmt.Sprintf("Loaded private configuration from %s", filePath))
-	return contents, nil
+	return tomlTree, nil
 }
 
 func (cp *Processor) mergeTomlWithConfig(config interface{}, tomlTree *toml.Tree) error {
