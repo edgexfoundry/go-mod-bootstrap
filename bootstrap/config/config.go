@@ -187,32 +187,38 @@ func (cp *Processor) Process(
 			}
 		}
 
-		// Now load the private config from a local file if any of these conditions are true
-		if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
-			// tomlTree contains the service's private configuration in its toml tree form
-			tomlTree, err := cp.loadPrivateFromFile()
-			if err != nil {
-				return err
+		overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
+		if err != nil {
+			return err
+		}
+		cp.lc.Infof("Common configuration loaded from file with %d overrides applied", overrideCount)
+	}
+
+	// Now load the private config from a local file if any of these conditions are true
+	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
+		// tomlTree contains the service's private configuration in its toml tree form
+		tomlTree, err := cp.loadPrivateFromFile()
+		if err != nil {
+			return err
+		}
+
+		// apply overrides - Now only done when loaded from file and values will get pushed into Configuration Provider (if used)
+		overrideCount, err := cp.envVars.OverrideTomlValues(tomlTree)
+		if err != nil {
+			return err
+		}
+		cp.lc.Infof("Configuration loaded from file with %d overrides applied", overrideCount)
+
+		if err := cp.mergeTomlWithConfig(serviceConfig, tomlTree); err != nil {
+			return err
+		}
+
+		if useProvider {
+			if err := privateConfigClient.PutConfigurationToml(tomlTree, cp.overwriteConfig); err != nil {
+				return fmt.Errorf("could not push configuration into Configuration Provider: %s", err.Error())
 			}
 
-			// apply overrides - Now only done when loaded from file and values will get pushed into Configuration Provider (if used)
-			overrideCount, err := cp.envVars.OverrideTomlValues(tomlTree)
-			if err != nil {
-				return err
-			}
-			cp.lc.Infof("Configuration loaded from file with %d overrides applied", overrideCount)
-
-			if err := cp.mergeTomlWithConfig(serviceConfig, tomlTree); err != nil {
-				return err
-			}
-
-			if useProvider {
-				if err := privateConfigClient.PutConfigurationToml(tomlTree, cp.overwriteConfig); err != nil {
-					return fmt.Errorf("could not push configuration into Configuration Provider: %s", err.Error())
-				}
-
-				cp.lc.Info("Configuration has been pushed to into Configuration Provider with overrides applied")
-			}
+			cp.lc.Info("Configuration has been pushed to into Configuration Provider with overrides applied")
 		}
 	}
 
