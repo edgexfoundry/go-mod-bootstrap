@@ -368,16 +368,16 @@ func GetConfigFileName(lc logger.LoggingClient, configFileName string) string {
 	return configFileName
 }
 
-// GetCommonConfig gets the common configuration value from the Variables value (if it exists)
+// GetCommonConfigFileName gets the common configuration value from the Variables value (if it exists)
 // or uses passed in value.
-func GetCommonConfig(lc logger.LoggingClient, commonConfig string) string {
+func GetCommonConfigFileName(lc logger.LoggingClient, commonConfigFileName string) string {
 	envValue := os.Getenv(envKeyCommonConfig)
 	if len(envValue) > 0 {
-		commonConfig = envValue
+		commonConfigFileName = envValue
 		logEnvironmentOverride(lc, "-cc/--commonConfig", envKeyCommonConfig, envValue)
 	}
 
-	return commonConfig
+	return commonConfigFileName
 }
 
 // parseCommaSeparatedSlice converts comma separated list to a string slice

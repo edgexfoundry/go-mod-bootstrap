@@ -137,7 +137,7 @@ func (d *Default) ConfigFileName() string {
 	return d.configFileName
 }
 
-// CommonConfig returns the uri for the common configuration
+// CommonConfig returns the location for the common configuration
 func (d *Default) CommonConfig() string {
 	return d.commonConfig
 }
@@ -154,7 +154,7 @@ func (d *Default) helpCallback() {
 			"Server Options:\n"+
 			"    -cp, --configProvider           Indicates to use Configuration Provider service at specified URL.\n"+
 			"                                    URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500\n"+
-			"    -cc, --commonConfig             Takes the URI that specifies where the common configuration is pulled from when\n"+
+			"    -cc, --commonConfig             Takes the location to specifies where the common configuration is loaded from when\n"+
 			"                                    not using the Configuration Provider\n"+
 			"    -o, --overwrite                 Overwrite configuration in provider with local configuration\n"+
 			"                                    *** Use with cation *** Use will clobber existing settings in provider,\n"+

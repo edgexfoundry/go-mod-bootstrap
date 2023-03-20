@@ -177,15 +177,13 @@ func (cp *Processor) Process(
 
 			cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
 		}
-	}
-
-	// Now must load configuration from local file if any of these conditions are true
-	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
-		commonConfigLocation := environment.GetCommonConfig(cp.lc, cp.flags.CommonConfig())
+	} else {
+		// Now must load configuration from local file if any of these conditions are true
+		commonConfigLocation := environment.GetCommonConfigFileName(cp.lc, cp.flags.CommonConfig())
 		if commonConfigLocation != "" {
-			err := cp.loadCommonConfigFromUri(commonConfigLocation, serviceConfig, serviceType)
+			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType)
 			if err != nil {
-				return fmt.Errorf("could not load oommon config: %s", err.Error())
+				return err
 			}
 		}
 		// tomlTree contains the service's private configuration in its toml tree form
@@ -318,23 +316,22 @@ func (cp *Processor) loadCommonConfig(
 	return nil
 }
 
-// loadCommonConfigFromUri will pull up to two separate common configs from the config provider
-func (cp *Processor) loadCommonConfigFromUri(
+// loadCommonConfigFromFile will pull up the common config from the provided file and load it into the passed in interface
+func (cp *Processor) loadCommonConfigFromFile(
 	configFile string,
 	serviceConfig interfaces.Configuration,
 	serviceType string) error {
 
 	var err error
 
-	//TODO: implement reading from URI
 	commonConfig, err := cp.loadConfigYamlFromFile(configFile)
 	if err != nil {
-		return fmt.Errorf("could not load common configuration %s: %s", configFile, err.Error())
+		return err
 	}
 	// separate out the necessary sections
 	allServicesConfig, ok := commonConfig["all-services"].(map[string]any)
 	if !ok {
-		return fmt.Errorf("could not find all-services section in config %s", configFile)
+		return fmt.Errorf("could not find all-services section in common config %s", configFile)
 	}
 	// use the service type to separate out the necessary sections
 	var serviceTypeConfig map[string]any
@@ -343,13 +340,13 @@ func (cp *Processor) loadCommonConfigFromUri(
 		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, ok = commonConfig[appServicesKey].(map[string]any)
 		if !ok {
-			return fmt.Errorf("could not find %s section in config %s", appServicesKey, configFile)
+			return fmt.Errorf("could not find %s section in common config %s", appServicesKey, configFile)
 		}
 	case config.ServiceTypeDevice:
 		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, ok = commonConfig[deviceServicesKey].(map[string]any)
 		if !ok {
-			return fmt.Errorf("could not find %s section in config %s", deviceServicesKey, configFile)
+			return fmt.Errorf("could not find %s section in common config %s", deviceServicesKey, configFile)
 		}
 	default:
 		// this case is covered by the initial call to get the common config for all-services

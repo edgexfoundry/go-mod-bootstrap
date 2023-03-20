@@ -247,7 +247,7 @@ func TestLoadCommonConfig(t *testing.T) {
 	}
 }
 
-func TestLoadCommonConfigFromUri(t *testing.T) {
+func TestLoadCommonConfigFromFile(t *testing.T) {
 	tests := []struct {
 		Name          string
 		config        string
@@ -259,9 +259,9 @@ func TestLoadCommonConfigFromUri(t *testing.T) {
 		{"Valid - app service", path.Join(".", "testdata", "configuration.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeApp, ""},
 		{"Valid - device service", path.Join(".", "testdata", "configuration.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeDevice, ""},
 		{"Invalid - bad config file", path.Join(".", "testdata", "bad_config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeOther, "no such file or directory"},
-		{"Invalid - missing all service", path.Join(".", "testdata", "bogus.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeOther, "could not find all-services section in config"},
-		{"Invalid - missing app service", path.Join(".", "testdata", "all-service-config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeApp, fmt.Sprintf("could not find %s section in config", appServicesKey)},
-		{"Invalid - missing device service", path.Join(".", "testdata", "all-service-config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeDevice, fmt.Sprintf("could not find %s section in config", deviceServicesKey)},
+		{"Invalid - missing all service", path.Join(".", "testdata", "bogus.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeOther, "could not find all-services section in common config"},
+		{"Invalid - missing app service", path.Join(".", "testdata", "all-service-config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeApp, fmt.Sprintf("could not find %s section in common config", appServicesKey)},
+		{"Invalid - missing device service", path.Join(".", "testdata", "all-service-config.yaml"), &ConfigurationMockStruct{}, config.ServiceTypeDevice, fmt.Sprintf("could not find %s section in common config", deviceServicesKey)},
 	}
 
 	for _, tc := range tests {
@@ -282,12 +282,12 @@ func TestLoadCommonConfigFromUri(t *testing.T) {
 			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
 
 			// call load common config
-			err := proc.loadCommonConfigFromUri(tc.config, tc.serviceConfig, tc.serviceType)
+			err := proc.loadCommonConfigFromFile(tc.config, tc.serviceConfig, tc.serviceType)
 			// make assertions
 			require.NotNil(t, cancel)
 			if tc.expectedErr == "" {
 				assert.NoError(t, err)
-				assert.NotEmpty(t, tc.serviceType)
+				assert.NotEmpty(t, tc.serviceConfig)
 				return
 			}
 			assert.Contains(t, err.Error(), tc.expectedErr)

@@ -238,7 +238,7 @@ func TestGetConfigFileName(t *testing.T) {
 	}
 }
 
-func TestGetCommonConfig(t *testing.T) {
+func TestGetCommonConfigFileName(t *testing.T) {
 	_, lc := initializeTest()
 
 	testCases := []struct {
@@ -261,7 +261,7 @@ func TestGetCommonConfig(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			actual := GetCommonConfig(lc, test.PassedInName)
+			actual := GetCommonConfigFileName(lc, test.PassedInName)
 			assert.Equal(t, test.ExpectedName, actual)
 		})
 	}
