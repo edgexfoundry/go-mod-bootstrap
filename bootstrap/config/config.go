@@ -339,9 +339,9 @@ func (cp *Processor) loadCommonConfigFromFile(
 		return err
 	}
 	// separate out the necessary sections
-	allServicesConfig, ok := commonConfig["all-services"].(map[string]any)
+	allServicesConfig, ok := commonConfig[allServicesKey].(map[string]any)
 	if !ok {
-		return fmt.Errorf("could not find all-services section in common config %s", configFile)
+		return fmt.Errorf("could not find %s section in common config %s", allServicesKey, configFile)
 	}
 	// use the service type to separate out the necessary sections
 	var serviceTypeConfig map[string]any
@@ -595,14 +595,14 @@ func (cp *Processor) loadPrivateFromFile() (*toml.Tree, error) {
 }
 
 // loadConfigYamlFromFile attempts to read the configuration yaml file
-func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]interface{}, error) {
+func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, error) {
 	cp.lc.Infof("reading %s", yamlFile)
 	contents, err := os.ReadFile(yamlFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read common configuration file %s: %s", yamlFile, err.Error())
 	}
 
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 
 	err = yaml.Unmarshal(contents, &data)
 	if err != nil {
