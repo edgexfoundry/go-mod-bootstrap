@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.2
-	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.9
+	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.10
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.30
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.18
 	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.7
@@ -13,7 +13,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/pelletier/go-toml v1.9.5
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.8.2
 	gopkg.in/yaml.v3 v3.0.1

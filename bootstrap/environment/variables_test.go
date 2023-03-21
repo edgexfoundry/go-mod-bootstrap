@@ -531,3 +531,58 @@ func TestLogEnvironmentOverride(t *testing.T) {
 		})
 	}
 }
+
+func TestOverrideConfigMapValues(t *testing.T) {
+	flatMap := map[string]any{
+		"top":             "top value",
+		"some/value":      "my string",
+		"some/thing/here": 123,
+		"my/other/value":  12.89,
+	}
+
+	nonFlatMap := map[string]any{
+		"top": "top value",
+		"some": map[string]any{
+			"value": "my string",
+			"thing": map[string]any{
+				"here": 123,
+			},
+		},
+		"my": map[string]any{
+			"other": map[string]any{
+				"value": 12.89,
+			},
+		},
+	}
+
+	tests := []struct {
+		Name      string
+		ConfigMap map[string]any
+	}{
+		{"Flat Map", flatMap},
+		{"Non Flat Map", nonFlatMap},
+	}
+
+	expectedCount := 4
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			defer os.Clearenv()
+			os.Setenv("TOP", "new top value")
+			os.Setenv("SOME_VALUE", "your string")
+			os.Setenv("SOME_THING_HERE", "321")
+			os.Setenv("MY_OTHER_VALUE", "89.12")
+
+			mockLogger := &loggerMocks.LoggingClient{}
+			mockLogger.On("Infof", mock.Anything, "top", "TOP", "new top value")
+			mockLogger.On("Infof", mock.Anything, "some/value", "SOME_VALUE", "your string")
+			mockLogger.On("Infof", mock.Anything, "some/thing/here", "SOME_THING_HERE", "321")
+			mockLogger.On("Infof", mock.Anything, "my/other/value", "MY_OTHER_VALUE", "89.12")
+			target := NewVariables(mockLogger)
+
+			actualCount, err := target.OverrideConfigMapValues(test.ConfigMap)
+			require.NoError(t, err)
+			assert.Equal(t, expectedCount, actualCount)
+			mockLogger.AssertExpectations(t)
+		})
+	}
+}

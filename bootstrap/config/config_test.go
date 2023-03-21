@@ -18,12 +18,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/mock"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
