@@ -176,20 +176,21 @@ func (cp *Processor) Process(
 			cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
 		}
 	} else {
-		// Now load common configuration from local file if not using config provider
+		// Now load common configuration from local file if not using config provider and -cc/--commonConfig flag is used.
+		// NOTE: Some security services don't use any common configuration and don't use the configuration provider.
 		commonConfigLocation := environment.GetCommonConfigFileName(cp.lc, cp.flags.CommonConfig())
 		if commonConfigLocation != "" {
 			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType)
 			if err != nil {
 				return err
 			}
-		}
 
-		overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
-		if err != nil {
-			return err
+			overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
+			if err != nil {
+				return err
+			}
+			cp.lc.Infof("Common configuration loaded from file with %d overrides applied", overrideCount)
 		}
-		cp.lc.Infof("Common configuration loaded from file with %d overrides applied", overrideCount)
 	}
 
 	// Now load the private config from a local file if any of these conditions are true
