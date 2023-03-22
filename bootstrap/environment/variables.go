@@ -37,12 +37,13 @@ const (
 	defaultConfigDirValue     = "./res"
 
 	envKeyConfigUrl       = "EDGEX_CONFIG_PROVIDER"
+	envKeyCommonConfig    = "EDGEX_COMMON_CONFIG"
 	envKeyUseRegistry     = "EDGEX_USE_REGISTRY"
 	envKeyStartupDuration = "EDGEX_STARTUP_DURATION"
 	envKeyStartupInterval = "EDGEX_STARTUP_INTERVAL"
-	envConfigDir          = "EDGEX_CONFIG_DIR"
-	envProfile            = "EDGEX_PROFILE"
-	envConfigFile         = "EDGEX_CONFIG_FILE"
+	envKeyConfigDir       = "EDGEX_CONFIG_DIR"
+	envKeyProfile         = "EDGEX_PROFILE"
+	envKeyConfigFile      = "EDGEX_CONFIG_FILE"
 
 	noConfigProviderValue = "none"
 
@@ -326,10 +327,10 @@ func GetStartupInfo(serviceKey string) StartupInfo {
 // GetConfigDir get the config directory value from a Variables variable value (if it exists)
 // or uses passed in value or default if previous result in blank.
 func GetConfigDir(lc logger.LoggingClient, configDir string) string {
-	envValue := os.Getenv(envConfigDir)
+	envValue := os.Getenv(envKeyConfigDir)
 	if len(envValue) > 0 {
 		configDir = envValue
-		logEnvironmentOverride(lc, "-cd/-configDir", envConfigDir, envValue)
+		logEnvironmentOverride(lc, "-cd/-configDir", envKeyConfigDir, envValue)
 	}
 
 	if len(configDir) == 0 {
@@ -342,10 +343,10 @@ func GetConfigDir(lc logger.LoggingClient, configDir string) string {
 // GetProfileDir get the profile directory value from a Variables variable value (if it exists)
 // or uses passed in value or default if previous result in blank.
 func GetProfileDir(lc logger.LoggingClient, profileDir string) string {
-	envValue := os.Getenv(envProfile)
+	envValue := os.Getenv(envKeyProfile)
 	if len(envValue) > 0 {
 		profileDir = envValue
-		logEnvironmentOverride(lc, "-p/-profile", envProfile, envValue)
+		logEnvironmentOverride(lc, "-p/-profile", envKeyProfile, envValue)
 	}
 
 	if len(profileDir) > 0 {
@@ -358,13 +359,25 @@ func GetProfileDir(lc logger.LoggingClient, profileDir string) string {
 // GetConfigFileName gets the configuration filename value from a Variables variable value (if it exists)
 // or uses passed in value.
 func GetConfigFileName(lc logger.LoggingClient, configFileName string) string {
-	envValue := os.Getenv(envConfigFile)
+	envValue := os.Getenv(envKeyConfigFile)
 	if len(envValue) > 0 {
 		configFileName = envValue
-		logEnvironmentOverride(lc, "-cf/--configFile", envConfigFile, envValue)
+		logEnvironmentOverride(lc, "-cf/--configFile", envKeyConfigFile, envValue)
 	}
 
 	return configFileName
+}
+
+// GetCommonConfigFileName gets the common configuration value from the Variables value (if it exists)
+// or uses passed in value.
+func GetCommonConfigFileName(lc logger.LoggingClient, commonConfigFileName string) string {
+	envValue := os.Getenv(envKeyCommonConfig)
+	if len(envValue) > 0 {
+		commonConfigFileName = envValue
+		logEnvironmentOverride(lc, "-cc/--commonConfig", envKeyCommonConfig, envValue)
+	}
+
+	return commonConfigFileName
 }
 
 // parseCommaSeparatedSlice converts comma separated list to a string slice

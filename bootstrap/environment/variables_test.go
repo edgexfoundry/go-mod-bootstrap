@@ -159,7 +159,7 @@ func TestGetConfigDir(t *testing.T) {
 		PassedInName string
 		ExpectedName string
 	}{
-		{"With Env Var", envConfigDir, "res", "myres"},
+		{"With Env Var", envKeyConfigDir, "res", "myres"},
 		{"With No Env Var", "", "res", "res"},
 		{"With No Env Var and no passed in", "", "", defaultConfigDirValue},
 	}
@@ -189,7 +189,7 @@ func TestGetProfileDir(t *testing.T) {
 		PassedInName string
 		ExpectedName string
 	}{
-		{"With V2 Env Var", envProfile, "myProfileV2", "sample", "myProfileV2/"},
+		{"With V2 Env Var", envKeyProfile, "myProfileV2", "sample", "myProfileV2/"},
 		{"With No Env Var", "", "", "sample", "sample/"},
 		{"With No Env Var and no passed in", "", "", "", ""},
 	}
@@ -218,7 +218,7 @@ func TestGetConfigFileName(t *testing.T) {
 		PassedInName string
 		ExpectedName string
 	}{
-		{"With Env Var", envConfigFile, "configuration.toml", "config.toml"},
+		{"With Env Var", envKeyConfigFile, "configuration.toml", "config.toml"},
 		{"With No Env Var", "", "configuration.toml", "configuration.toml"},
 		{"With No Env Var and no passed in", "", "", ""},
 	}
@@ -233,6 +233,35 @@ func TestGetConfigFileName(t *testing.T) {
 			}
 
 			actual := GetConfigFileName(lc, test.PassedInName)
+			assert.Equal(t, test.ExpectedName, actual)
+		})
+	}
+}
+
+func TestGetCommonConfigFileName(t *testing.T) {
+	_, lc := initializeTest()
+
+	testCases := []struct {
+		TestName     string
+		EnvName      string
+		PassedInName string
+		ExpectedName string
+	}{
+		{"With Env Var", envKeyCommonConfig, "configuration.yaml", "config.yaml"},
+		{"With No Env Var", "", "configuration.yaml", "configuration.yaml"},
+		{"With No Env Var and no passed in", "", "", ""},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
+
+			if len(test.EnvName) > 0 {
+				err := os.Setenv(test.EnvName, test.ExpectedName)
+				require.NoError(t, err)
+			}
+
+			actual := GetCommonConfigFileName(lc, test.PassedInName)
 			assert.Equal(t, test.ExpectedName, actual)
 		})
 	}

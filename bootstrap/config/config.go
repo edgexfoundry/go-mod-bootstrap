@@ -51,9 +51,10 @@ import (
 
 const (
 	writableKey       = "/Writable"
-	allServicesKey    = "/all-services"
-	appServicesKey    = "/app-services"
-	deviceServicesKey = "/device-services"
+	allServicesKey    = "all-services"
+	appServicesKey    = "app-services"
+	deviceServicesKey = "device-services"
+	sep               = "/"
 )
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
@@ -176,9 +177,24 @@ func (cp *Processor) Process(
 
 			cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
 		}
+	} else {
+		// Now load common configuration from local file if not using config provider
+		commonConfigLocation := environment.GetCommonConfigFileName(cp.lc, cp.flags.CommonConfig())
+		if commonConfigLocation != "" {
+			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType)
+			if err != nil {
+				return err
+			}
+		}
+
+		overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
+		if err != nil {
+			return err
+		}
+		cp.lc.Infof("Common configuration loaded from file with %d overrides applied", overrideCount)
 	}
 
-	// Now must load configuration from local file if any of these conditions are true
+	// Now load the private config from a local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
 		// tomlTree contains the service's private configuration in its toml tree form
 		tomlTree, err := cp.loadPrivateFromFile()
@@ -251,7 +267,7 @@ func (cp *Processor) loadCommonConfig(
 	// check that common config is loaded into the provider
 	// this need a separate config provider client here because the config ready variable is stored at the common config level
 	// load the all services section of the common config
-	cp.commonConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+allServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+	cp.commonConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+sep+allServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create provider for %s: %s", allServicesKey, err.Error())
 	}
@@ -274,7 +290,7 @@ func (cp *Processor) loadCommonConfig(
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", appServicesKey, err.Error())
 		}
-		cp.appConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+appServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		cp.appConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+sep+appServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create provider for %s: %s", appServicesKey, err.Error())
 		}
@@ -288,7 +304,7 @@ func (cp *Processor) loadCommonConfig(
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", deviceServicesKey, err.Error())
 		}
-		cp.deviceConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+deviceServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		cp.deviceConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+sep+deviceServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create provider for %s: %s", deviceServicesKey, err.Error())
 		}
@@ -308,6 +324,53 @@ func (cp *Processor) loadCommonConfig(
 	}
 
 	return nil
+}
+
+// loadCommonConfigFromFile will pull up the common config from the provided file and load it into the passed in interface
+func (cp *Processor) loadCommonConfigFromFile(
+	configFile string,
+	serviceConfig interfaces.Configuration,
+	serviceType string) error {
+
+	var err error
+
+	commonConfig, err := cp.loadConfigYamlFromFile(configFile)
+	if err != nil {
+		return err
+	}
+	// separate out the necessary sections
+	allServicesConfig, ok := commonConfig[allServicesKey].(map[string]any)
+	if !ok {
+		return fmt.Errorf("could not find %s section in common config %s", allServicesKey, configFile)
+	}
+	// use the service type to separate out the necessary sections
+	var serviceTypeConfig map[string]any
+	switch serviceType {
+	case config.ServiceTypeApp:
+		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
+		serviceTypeConfig, ok = commonConfig[appServicesKey].(map[string]any)
+		if !ok {
+			return fmt.Errorf("could not find %s section in common config %s", appServicesKey, configFile)
+		}
+	case config.ServiceTypeDevice:
+		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
+		serviceTypeConfig, ok = commonConfig[deviceServicesKey].(map[string]any)
+		if !ok {
+			return fmt.Errorf("could not find %s section in common config %s", deviceServicesKey, configFile)
+		}
+	default:
+		// this case is covered by the initial call to get the common config for all-services
+	}
+
+	if serviceType == config.ServiceTypeApp || serviceType == config.ServiceTypeDevice {
+		mergeMaps(allServicesConfig, serviceTypeConfig)
+	}
+
+	if err := convertMapToInterface(allServicesConfig, serviceConfig); err != nil {
+		return err
+	}
+
+	return err
 }
 
 func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider interfaces.SecretProvider, err error, configProviderInfo *ProviderInfo) (types.GetAccessTokenCallback, error) {
@@ -527,8 +590,25 @@ func (cp *Processor) loadPrivateFromFile() (*toml.Tree, error) {
 		return nil, fmt.Errorf("could not convert to TOML Tree: %s", err.Error())
 	}
 
-	cp.lc.Info(fmt.Sprintf("Loaded private configuration from %s", filePath))
+	cp.lc.Infof(fmt.Sprintf("Loaded private configuration from %s", filePath))
 	return tomlTree, nil
+}
+
+// loadConfigYamlFromFile attempts to read the configuration yaml file
+func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, error) {
+	cp.lc.Infof("reading %s", yamlFile)
+	contents, err := os.ReadFile(yamlFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read common configuration file %s: %s", yamlFile, err.Error())
+	}
+
+	data := make(map[string]any)
+
+	err = yaml.Unmarshal(contents, &data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshall common configuration file %s: %s", yamlFile, err.Error())
+	}
+	return data, nil
 }
 
 func (cp *Processor) mergeTomlWithConfig(config interface{}, tomlTree *toml.Tree) error {

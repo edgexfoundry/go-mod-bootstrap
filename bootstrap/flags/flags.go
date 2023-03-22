@@ -34,6 +34,7 @@ type Common interface {
 	Profile() string
 	ConfigDirectory() string
 	ConfigFileName() string
+	CommonConfig() string
 	Parse([]string)
 	Help()
 }
@@ -45,6 +46,7 @@ type Default struct {
 	overwriteConfig   bool
 	useRegistry       bool
 	configProviderUrl string
+	commonConfig      string
 	profile           string
 	configDir         string
 	configFileName    string
@@ -80,9 +82,11 @@ func (d *Default) Parse(arguments []string) {
 		}
 	}
 
-	// Usage is provided by caller, so leaving individual usage blank here so not confusing where if comes from.
+	// Usage is provided by caller, so leaving individual usage blank here so not confusing where it comes from.
 	d.FlagSet.StringVar(&d.configProviderUrl, "configProvider", "", "")
 	d.FlagSet.StringVar(&d.configProviderUrl, "cp", "", "")
+	d.FlagSet.StringVar(&d.commonConfig, "commonConfig", "", "")
+	d.FlagSet.StringVar(&d.commonConfig, "cc", "", "")
 	d.FlagSet.BoolVar(&d.overwriteConfig, "overwrite", false, "")
 	d.FlagSet.BoolVar(&d.overwriteConfig, "o", false, "")
 	d.FlagSet.StringVar(&d.configFileName, "cf", DefaultConfigFile, "")
@@ -133,6 +137,11 @@ func (d *Default) ConfigFileName() string {
 	return d.configFileName
 }
 
+// CommonConfig returns the location for the common configuration
+func (d *Default) CommonConfig() string {
+	return d.commonConfig
+}
+
 // Help displays the usage help message and exit.
 func (d *Default) Help() {
 	d.helpCallback()
@@ -145,6 +154,8 @@ func (d *Default) helpCallback() {
 			"Server Options:\n"+
 			"    -cp, --configProvider           Indicates to use Configuration Provider service at specified URL.\n"+
 			"                                    URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500\n"+
+			"    -cc, --commonConfig             Takes the location where the common configuration is loaded from when\n"+
+			"                                    not using the Configuration Provider\n"+
 			"    -o, --overwrite                 Overwrite configuration in provider with local configuration\n"+
 			"                                    *** Use with cation *** Use will clobber existing settings in provider,\n"+
 			"                                    problematic if those settings were edited by hand intentionally\n"+
