@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
@@ -113,7 +114,7 @@ func (e *Variables) UseRegistry() (bool, bool) {
 
 // OverrideConfiguration method replaces values in the configuration for matching Variables variable keys.
 // serviceConfig must be pointer to the service configuration.
-func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error) {
+func (e *Variables) OverrideConfiguration(serviceConfig any) (int, error) {
 
 	contents, err := json.Marshal(reflect.ValueOf(serviceConfig).Elem().Interface())
 	if err != nil {
@@ -132,14 +133,9 @@ func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error
 	}
 
 	// Put the configuration back into the services configuration struct with the overridden values
-	contents, err = json.Marshal(configMap)
+	err = utils.ConvertFromMap(configMap, serviceConfig)
 	if err != nil {
-		return 0, fmt.Errorf("could marshal config map to JSON with overrides: %s", err.Error())
-	}
-
-	err = json.Unmarshal(contents, serviceConfig)
-	if err != nil {
-		return 0, fmt.Errorf("could not marshal JSON config with overrides to configuration: %s", err.Error())
+		return 0, fmt.Errorf("failed to convert map of configuratuion into service's configuration struct: %v", err)
 	}
 
 	return overrideCount, nil
@@ -242,7 +238,7 @@ func (e *Variables) buildPaths(keyMap map[string]any) []string {
 			continue
 		}
 
-		subMap := item.(map[string]interface{})
+		subMap := item.(map[string]any)
 
 		subPaths := e.buildPaths(subMap)
 		for _, path := range subPaths {
@@ -291,11 +287,11 @@ func (e *Variables) OverrideConfigProviderInfo(configProviderInfo types.ServiceC
 }
 
 // convertToType attempts to convert the string value to the specified type of the old value
-func (_ *Variables) convertToType(oldValue interface{}, value string) (newValue interface{}, err error) {
+func (_ *Variables) convertToType(oldValue any, value string) (newValue any, err error) {
 	switch oldValue.(type) {
 	case []string:
 		newValue = parseCommaSeparatedSlice(value)
-	case []interface{}:
+	case []any:
 		newValue = parseCommaSeparatedSlice(value)
 	case string:
 		newValue = value
@@ -440,7 +436,7 @@ func GetCommonConfigFileName(lc logger.LoggingClient, commonConfigFileName strin
 }
 
 // parseCommaSeparatedSlice converts comma separated list to a string slice
-func parseCommaSeparatedSlice(value string) (values []interface{}) {
+func parseCommaSeparatedSlice(value string) (values []any) {
 	// Assumption is environment variable value is comma separated
 	// Whitespace can vary so must be trimmed out
 	result := strings.Split(strings.TrimSpace(value), ",")

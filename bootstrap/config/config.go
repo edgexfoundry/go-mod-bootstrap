@@ -17,7 +17,6 @@ package config
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -28,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/mitchellh/copystructure"
 	"gopkg.in/yaml.v3"
@@ -151,7 +151,7 @@ func (cp *Processor) Process(
 		// TODO: figure out what uses the dic - this will not have the common config info!!
 		// is this potentially custom config for app/device services?
 		cp.dic.Update(di.ServiceConstructorMap{
-			container.ConfigClientInterfaceName: func(get di.Get) interface{} {
+			container.ConfigClientInterfaceName: func(get di.Get) any {
 				return privateConfigClient
 			},
 		})
@@ -365,8 +365,8 @@ func (cp *Processor) loadCommonConfigFromFile(
 		mergeMaps(allServicesConfig, serviceTypeConfig)
 	}
 
-	if err := convertMapToInterface(allServicesConfig, serviceConfig); err != nil {
-		return err
+	if err := utils.ConvertFromMap(allServicesConfig, serviceConfig); err != nil {
+		return fmt.Errorf("failed to convert common configuration into service's configuration: %v", err)
 	}
 
 	return err
@@ -415,14 +415,9 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 			return err
 		}
 
-		contents, err := json.Marshal(configMap)
+		err = utils.ConvertFromMap(configMap, updatableConfig)
 		if err != nil {
-			return fmt.Errorf("could Marshal custom config to JSON: %v", err)
-		}
-
-		err = json.Unmarshal(contents, updatableConfig)
-		if err != nil {
-			return fmt.Errorf("could un-marshal custom config from JSON: %v", err)
+			return fmt.Errorf("failed to convert custom configuration into service's configuration: %v", err)
 		}
 	} else {
 		cp.lc.Infof("Checking if custom configuration ('%s') exists in Configuration Provider", sectionName)
@@ -480,9 +475,9 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 // ListenForCustomConfigChanges listens for changes to the specified custom configuration section. When changes occur it
 // applies the changes to the custom configuration section and signals the changes have occurred.
 func (cp *Processor) ListenForCustomConfigChanges(
-	configToWatch interface{},
+	configToWatch any,
 	sectionName string,
-	changedCallback func(interface{})) {
+	changedCallback func(any)) {
 	configClient := container.ConfigClientFrom(cp.dic.Get)
 	if configClient == nil {
 		cp.lc.Warnf("unable to watch custom configuration for changes: Configuration Provider not enabled")
@@ -496,7 +491,7 @@ func (cp *Processor) ListenForCustomConfigChanges(
 		errorStream := make(chan error)
 		defer close(errorStream)
 
-		updateStream := make(chan interface{})
+		updateStream := make(chan any)
 		defer close(updateStream)
 
 		configClient.WatchForChanges(updateStream, errorStream, configToWatch, sectionName)
@@ -582,17 +577,17 @@ func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, er
 	return data, nil
 }
 
-func (cp *Processor) mergeMapWithConfig(config interface{}, configMap map[string]any) error {
+func (cp *Processor) mergeMapWithConfig(config any, configMap map[string]any) error {
 	// convert the common config passed in to a map[string]any
 	var destConfigMap map[string]any
-	if err := convertInterfaceToMap(config, &destConfigMap); err != nil {
-		return err
+	if err := utils.ConvertToMap(config, &destConfigMap); err != nil {
+		return fmt.Errorf("failed to mergre configuration: %v", err)
 	}
 
 	mergeMaps(destConfigMap, configMap)
 
-	if err := convertMapToInterface(configMap, config); err != nil {
-		return err
+	if err := utils.ConvertFromMap(configMap, config); err != nil {
+		return fmt.Errorf("failed to mergre configuration: %v", err)
 	}
 
 	return nil
@@ -622,7 +617,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 		errorStream := make(chan error)
 		defer close(errorStream)
 
-		updateStream := make(chan interface{})
+		updateStream := make(chan any)
 		defer close(updateStream)
 
 		go configClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey)
@@ -671,7 +666,7 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 		errorStream := make(chan error)
 		defer close(errorStream)
 
-		updateStream := make(chan interface{})
+		updateStream := make(chan any)
 		defer close(updateStream)
 
 		go commonConfigClient.WatchForChanges(updateStream, errorStream, fullServiceConfig.EmptyWritablePtr(), writableKey)
@@ -735,12 +730,12 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigClient configuration.Client) bool {
 	var changedKey string
 	var previousMap, updatedMap map[string]any
-	if err := convertInterfaceToMap(previous, &previousMap); err != nil {
+	if err := utils.ConvertToMap(previous, &previousMap); err != nil {
 		cp.lc.Errorf("could not convert previous interface to map: %s", err.Error())
 		return true
 	}
-	if err := convertInterfaceToMap(updated, &updatedMap); err != nil {
-		cp.lc.Errorf("could not convert previous interface to map: %s", err.Error())
+	if err := utils.ConvertToMap(updated, &updatedMap); err != nil {
+		cp.lc.Errorf("could not convert updated interface to map: %s", err.Error())
 		return true
 	}
 	changedKey = walkMapForChange(previousMap, updatedMap, "")
@@ -938,14 +933,14 @@ func getSecretNamesChanged(prevVals config.InsecureSecrets, curVals config.Insec
 }
 
 // mergeConfigs combines src (zeros removed) with the dest
-func mergeConfigs(dest interface{}, src interface{}) error {
+func mergeConfigs(dest any, src any) error {
 	// convert the configs to maps
 	var destMap, srcMap map[string]any
-	if err := convertInterfaceToMap(dest, &destMap); err != nil {
+	if err := utils.ConvertToMap(dest, &destMap); err != nil {
 		return fmt.Errorf("could not create destination map from config: %s", err.Error())
 	}
 
-	if err := convertInterfaceToMap(src, &srcMap); err != nil {
+	if err := utils.ConvertToMap(src, &srcMap); err != nil {
 		return fmt.Errorf("could not source create map from config: %s", err.Error())
 	}
 
@@ -955,7 +950,7 @@ func mergeConfigs(dest interface{}, src interface{}) error {
 	mergeMaps(destMap, srcMap)
 
 	// convert the map back to a config
-	if err := convertMapToInterface(destMap, dest); err != nil {
+	if err := utils.ConvertFromMap(destMap, dest); err != nil {
 		return err
 	}
 
@@ -995,32 +990,6 @@ func copyConfigurationStruct(config interfaces.Configuration) (interfaces.Config
 		return nil, errors.New("failed to cast the copy of the configuration")
 	}
 	return configCopy, nil
-}
-
-// convertInterfaceToMap uses json to marshal and unmarshal an interface into a map
-func convertInterfaceToMap(config interface{}, m *map[string]any) error {
-	jsonBytes, err := json.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("could not marshal service's configuration: %s", err.Error())
-	}
-	if err = json.Unmarshal(jsonBytes, &m); err != nil {
-		return fmt.Errorf("could not unmarshal service's configuration configuration file: %s", err.Error())
-	}
-	return nil
-}
-
-// convertMapToInterface uses json to marshal and unmarshal a map into an interface
-func convertMapToInterface(m map[string]any, config interface{}) error {
-	jsonBytes, err := json.Marshal(m)
-	if err != nil {
-		return fmt.Errorf("could not marshal config map: %s", err.Error())
-	}
-
-	if err := json.Unmarshal(jsonBytes, config); err != nil {
-		return fmt.Errorf("could not unmarshal configuration: %s", err.Error())
-	}
-
-	return nil
 }
 
 // removeZeroValues iterates over a map and removes any zero values it may have
