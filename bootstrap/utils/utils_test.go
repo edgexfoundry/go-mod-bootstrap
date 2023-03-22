@@ -15,6 +15,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
@@ -125,4 +126,29 @@ func TestMergeConfigs(t *testing.T) {
 	assert.NotEmpty(t, serviceConfig.Writable.StoreAndForward.RetryInterval)
 	assert.NotZero(t, serviceConfig.Writable.StoreAndForward.MaxRetryCount)
 	assert.NotEmpty(t, serviceConfig.Trigger.Type)
+}
+
+func TestRemoveZeroValues(t *testing.T) {
+	config := ConfigurationMockStruct{
+		Registry: config.RegistryInfo{
+			Host: "localhost",
+			Port: 8500,
+		},
+	}
+
+	jbytes, err := json.Marshal(config)
+	require.NoError(t, err)
+	configMap := map[string]any{}
+	err = json.Unmarshal(jbytes, &configMap)
+	require.NoError(t, err)
+
+	assert.Len(t, configMap, 3)
+	assert.Len(t, configMap["Registry"], 3)
+	RemoveZeroValues(configMap)
+
+	assert.Len(t, configMap, 1)
+	assert.Len(t, configMap["Registry"], 2)
+	regMap := configMap["Registry"].(map[string]interface{})
+	assert.NotEmpty(t, regMap["Host"])
+	assert.NotZero(t, regMap["Port"])
 }

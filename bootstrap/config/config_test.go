@@ -15,7 +15,6 @@ package config
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -24,7 +23,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -295,31 +293,6 @@ func TestLoadCommonConfigFromFile(t *testing.T) {
 			assert.Contains(t, err.Error(), tc.expectedErr)
 		})
 	}
-}
-
-func TestRemoveZeroValues(t *testing.T) {
-	config := ConfigurationMockStruct{
-		Registry: config.RegistryInfo{
-			Host: "localhost",
-			Port: 8500,
-		},
-	}
-
-	jbytes, err := json.Marshal(config)
-	require.NoError(t, err)
-	configMap := map[string]any{}
-	err = json.Unmarshal(jbytes, &configMap)
-	require.NoError(t, err)
-
-	assert.Len(t, configMap, 3)
-	assert.Len(t, configMap["Registry"], 3)
-	utils.RemoveZeroValues(configMap)
-
-	assert.Len(t, configMap, 1)
-	assert.Len(t, configMap["Registry"], 2)
-	regMap := configMap["Registry"].(map[string]interface{})
-	assert.NotEmpty(t, regMap["Host"])
-	assert.NotZero(t, regMap["Port"])
 }
 
 func TestIsPrivateConfig(t *testing.T) {
