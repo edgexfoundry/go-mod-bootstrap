@@ -169,7 +169,7 @@ func (cp *Processor) Process(
 			if err := cp.loadConfigFromProvider(privateServiceConfig, privateConfigClient); err != nil {
 				return err
 			}
-			if err := mergeConfigs(serviceConfig, privateServiceConfig); err != nil {
+			if err := utils.MergeValues(serviceConfig, privateServiceConfig); err != nil {
 				return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
 			}
 
@@ -317,7 +317,7 @@ func (cp *Processor) loadCommonConfig(
 
 	// merge together the common config and the service type config
 	if serviceTypeConfig != nil {
-		if err := mergeConfigs(serviceConfig, serviceTypeConfig); err != nil {
+		if err := utils.MergeValues(serviceConfig, serviceTypeConfig); err != nil {
 			return fmt.Errorf("failed to merge %s config with common config: %s", serviceType, err.Error())
 		}
 	}
@@ -362,7 +362,7 @@ func (cp *Processor) loadCommonConfigFromFile(
 	}
 
 	if serviceType == config.ServiceTypeApp || serviceType == config.ServiceTypeDevice {
-		mergeMaps(allServicesConfig, serviceTypeConfig)
+		utils.MergeMaps(allServicesConfig, serviceTypeConfig)
 	}
 
 	if err := utils.ConvertFromMap(allServicesConfig, serviceConfig); err != nil {
@@ -584,7 +584,7 @@ func (cp *Processor) mergeMapWithConfig(config any, configMap map[string]any) er
 		return fmt.Errorf("failed to mergre configuration: %v", err)
 	}
 
-	mergeMaps(destConfigMap, configMap)
+	utils.MergeMaps(destConfigMap, configMap)
 
 	if err := utils.ConvertFromMap(configMap, config); err != nil {
 		return fmt.Errorf("failed to mergre configuration: %v", err)
@@ -719,7 +719,7 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 	}
 	changedWritable := changedConfig.GetWritablePtr()
 
-	if err := mergeConfigs(changedWritable, raw); err != nil {
+	if err := utils.MergeValues(changedWritable, raw); err != nil {
 		return fmt.Errorf("could not merge configs while watching for common config writable: %s", err.Error())
 	}
 
@@ -932,53 +932,6 @@ func getSecretNamesChanged(prevVals config.InsecureSecrets, curVals config.Insec
 	return updatedNames
 }
 
-// mergeConfigs combines src (zeros removed) with the dest
-func mergeConfigs(dest any, src any) error {
-	// convert the configs to maps
-	var destMap, srcMap map[string]any
-	if err := utils.ConvertToMap(dest, &destMap); err != nil {
-		return fmt.Errorf("could not create destination map from config: %s", err.Error())
-	}
-
-	if err := utils.ConvertToMap(src, &srcMap); err != nil {
-		return fmt.Errorf("could not source create map from config: %s", err.Error())
-	}
-
-	// remove zero values from the source to prevent overwriting items in the destination config
-	// and merge the src with dest
-	removeZeroValues(srcMap)
-	mergeMaps(destMap, srcMap)
-
-	// convert the map back to a config
-	if err := utils.ConvertFromMap(destMap, dest); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// mergeMaps combines the src map keys and values with the dest map keys and values if the key exists
-func mergeMaps(dest map[string]any, src map[string]any) {
-
-	var exists bool
-
-	for key, value := range src {
-		_, exists = dest[key]
-		if !exists {
-			dest[key] = value
-			continue
-		}
-
-		destVal, ok := dest[key].(map[string]any)
-		if ok {
-			mergeMaps(destVal, value.(map[string]any))
-			continue
-		}
-
-		dest[key] = value
-	}
-}
-
 // copyConfigurationStruct returns a copy of the passed in configuration interface
 func copyConfigurationStruct(config interfaces.Configuration) (interfaces.Configuration, error) {
 	rawCopy, err := copystructure.Copy(config)
@@ -990,30 +943,6 @@ func copyConfigurationStruct(config interfaces.Configuration) (interfaces.Config
 		return nil, errors.New("failed to cast the copy of the configuration")
 	}
 	return configCopy, nil
-}
-
-// removeZeroValues iterates over a map and removes any zero values it may have
-func removeZeroValues(target map[string]any) {
-	var removeKeys []string
-	for key, value := range target {
-		sub, ok := value.(map[string]any)
-		if ok {
-			removeZeroValues(sub)
-			if len(sub) == 0 {
-				removeKeys = append(removeKeys, key)
-			}
-			continue
-		}
-
-		if value == nil || reflect.ValueOf(value).IsZero() {
-			removeKeys = append(removeKeys, key)
-		}
-
-	}
-
-	for _, key := range removeKeys {
-		delete(target, key)
-	}
 }
 
 func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, changedKey string) string {
@@ -1070,7 +999,7 @@ func (cp *Processor) isKeyInPrivate(privateConfigClient configuration.Client, ch
 
 func buildNewKey(previousKey, currentKey string) string {
 	if previousKey != "" {
-		return fmt.Sprintf("%s/%s", previousKey, currentKey)
+		return fmt.Sprintf("%s%s%s", previousKey, pathSep, currentKey)
 	} else {
 		return currentKey
 	}

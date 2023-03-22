@@ -24,6 +24,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -296,89 +297,6 @@ func TestLoadCommonConfigFromFile(t *testing.T) {
 	}
 }
 
-func TestMergeConfigs(t *testing.T) {
-	// create the service config
-	serviceConfig := ConfigurationMockStruct{
-		Writable: WritableInfo{
-			LogLevel: "INFO",
-		},
-		Registry: config.RegistryInfo{
-			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
-		},
-	}
-	require.NotEmpty(t, serviceConfig.Writable.LogLevel)
-	require.NotEmpty(t, serviceConfig.Registry.Host)
-	require.NotZero(t, serviceConfig.Registry.Port)
-	require.NotEmpty(t, serviceConfig.Registry.Type)
-
-	// create the app config
-	appConfig := ConfigurationMockStruct{
-		Writable: WritableInfo{
-			StoreAndForward: StoreAndForwardInfo{
-				Enabled:       true,
-				RetryInterval: "5m",
-				MaxRetryCount: 10,
-			},
-		},
-		Trigger: TriggerInfo{
-			Type: "edgex-messagebus",
-		},
-	}
-	require.True(t, appConfig.Writable.StoreAndForward.Enabled)
-	require.NotEmpty(t, appConfig.Writable.StoreAndForward.RetryInterval)
-	require.NotZero(t, appConfig.Writable.StoreAndForward.MaxRetryCount)
-	require.NotEmpty(t, appConfig.Trigger.Type)
-
-	// merge the configs
-	err := mergeConfigs(&serviceConfig, &appConfig)
-	require.NoError(t, err)
-
-	// verify values
-	assert.True(t, serviceConfig.Writable.StoreAndForward.Enabled)
-	assert.NotEmpty(t, serviceConfig.Writable.StoreAndForward.RetryInterval)
-	assert.NotZero(t, serviceConfig.Writable.StoreAndForward.MaxRetryCount)
-	assert.NotEmpty(t, serviceConfig.Trigger.Type)
-}
-
-func TestMergeMaps(t *testing.T) {
-	destMap := map[string]any{
-		"Writable": WritableInfo{
-			StoreAndForward: StoreAndForwardInfo{
-				Enabled:       false,
-				RetryInterval: "5m",
-				MaxRetryCount: 10,
-			},
-		},
-		"Registry": config.RegistryInfo{
-			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
-		},
-		"Trigger": TriggerInfo{},
-	}
-	srcMap := map[string]any{
-		"Writable": WritableInfo{
-			StoreAndForward: StoreAndForwardInfo{
-				Enabled:       false,
-				RetryInterval: "5m",
-				MaxRetryCount: 10,
-			},
-		},
-		"Trigger": TriggerInfo{
-			Type: "edgex-messagebus",
-		},
-	}
-	mergeMaps(destMap, srcMap)
-
-	for key, value := range destMap {
-		if key == "StoreAndForwardInfo" || key == "Trigger" {
-			assert.NotEmpty(t, value)
-		}
-	}
-}
-
 func TestRemoveZeroValues(t *testing.T) {
 	config := ConfigurationMockStruct{
 		Registry: config.RegistryInfo{
@@ -395,7 +313,7 @@ func TestRemoveZeroValues(t *testing.T) {
 
 	assert.Len(t, configMap, 3)
 	assert.Len(t, configMap["Registry"], 3)
-	removeZeroValues(configMap)
+	utils.RemoveZeroValues(configMap)
 
 	assert.Len(t, configMap, 1)
 	assert.Len(t, configMap["Registry"], 2)
