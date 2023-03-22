@@ -16,6 +16,7 @@
 package environment
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -23,12 +24,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
 	"github.com/edgexfoundry/go-mod-configuration/v3/pkg/types"
-
-	"github.com/pelletier/go-toml"
 )
 
 const (
@@ -47,10 +47,9 @@ const (
 
 	noConfigProviderValue = "none"
 
-	tomlPathDotSeparator   = "."
-	tomlPathSlashSeparator = "/"
-	tomlNameSeparator      = "-"
-	envNameSeparator       = "_"
+	configPathSeparator = "/"
+	configNameSeparator = "-"
+	envNameSeparator    = "_"
 
 	// insecureSecretsRegexStr is a regex to look for toml keys that are under the Secrets sub-key of values within the
 	// Writable.InsecureSecrets topology.
@@ -115,38 +114,39 @@ func (e *Variables) UseRegistry() (bool, bool) {
 
 // OverrideConfiguration method replaces values in the configuration for matching Variables variable keys.
 // serviceConfig must be pointer to the service configuration.
-func (e *Variables) OverrideConfiguration(serviceConfig interface{}) (int, error) {
+func (e *Variables) OverrideConfiguration(serviceConfig any) (int, error) {
 
-	contents, err := toml.Marshal(reflect.ValueOf(serviceConfig).Elem().Interface())
+	contents, err := json.Marshal(reflect.ValueOf(serviceConfig).Elem().Interface())
 	if err != nil {
 		return 0, err
 	}
 
-	configTree, err := toml.LoadBytes(contents)
+	configMap := make(map[string]any)
+	err = json.Unmarshal(contents, &configMap)
 	if err != nil {
 		return 0, err
 	}
 
-	overrideCount, err := e.OverrideTomlValues(configTree)
+	overrideCount, err := e.OverrideConfigMapValues(configMap)
 	if err != nil {
 		return 0, err
 	}
 
 	// Put the configuration back into the services configuration struct with the overridden values
-	err = configTree.Unmarshal(serviceConfig)
+	err = utils.ConvertFromMap(configMap, serviceConfig)
 	if err != nil {
-		return 0, fmt.Errorf("could not marshal toml configTree to configuration: %s", err.Error())
+		return 0, fmt.Errorf("failed to convert map of configuratuion into service's configuration struct: %v", err)
 	}
 
 	return overrideCount, nil
 }
 
-func (e *Variables) OverrideTomlValues(configTree *toml.Tree) (int, error) {
+func (e *Variables) OverrideConfigMapValues(configMap map[string]any) (int, error) {
 	var overrideCount int
 
 	// The toml.Tree API keys() only return to top level keys, rather that paths.
 	// It is also missing a GetPaths so have to spin our own
-	paths := e.buildPaths(configTree.ToMap())
+	paths := e.buildPaths(configMap)
 	// Now that we have all the paths in the config tree, we need to create map of corresponding override names that
 	// could match override environment variable names.
 	overrideNames := e.buildOverrideNames(paths)
@@ -157,14 +157,14 @@ func (e *Variables) OverrideTomlValues(configTree *toml.Tree) (int, error) {
 			continue
 		}
 
-		oldValue := configTree.Get(path)
+		oldValue := getConfigMapValue(path, configMap)
 
 		newValue, err := e.convertToType(oldValue, envValue)
 		if err != nil {
 			return 0, fmt.Errorf("environment value override failed for %s=%s: %s", envVar, envValue, err.Error())
 		}
 
-		configTree.Set(path, newValue)
+		setConfigMapValue(path, newValue, configMap)
 		overrideCount++
 		logEnvironmentOverride(e.lc, path, envVar, envValue)
 	}
@@ -172,8 +172,64 @@ func (e *Variables) OverrideTomlValues(configTree *toml.Tree) (int, error) {
 	return overrideCount, nil
 }
 
-// buildPaths create the path strings for all settings in the Config tree's key map
-func (e *Variables) buildPaths(keyMap map[string]interface{}) []string {
+func getConfigMapValue(path string, configMap map[string]any) any {
+	// First check the case of flattened map where the path is the key
+	value, exists := configMap[path]
+	if exists {
+		return value
+	}
+
+	// Handle second case of not flattened map where the path is individual keys
+	keys := strings.Split(path, configPathSeparator)
+
+	currentMap := configMap
+
+	for _, key := range keys {
+		item := currentMap[key]
+		if item == nil {
+			return nil
+		}
+
+		itemMap, isMap := item.(map[string]any)
+		if !isMap {
+			return item
+		}
+
+		currentMap = itemMap
+		continue
+	}
+
+	return nil
+}
+
+func setConfigMapValue(path string, value any, configMap map[string]any) {
+	// First check the case of flattened map where the path is the key
+	_, exists := configMap[path]
+	if exists {
+		configMap[path] = value
+		return
+	}
+
+	// Handle second case of not flattened map where the path is individual keys
+	keys := strings.Split(path, configPathSeparator)
+
+	currentMap := configMap
+
+	for _, key := range keys {
+		item := currentMap[key]
+		itemMap, isMap := item.(map[string]any)
+		if !isMap {
+			currentMap[key] = value
+			return
+		}
+
+		currentMap = itemMap
+		continue
+	}
+}
+
+// buildPaths create the path strings for all settings in the Config key map
+func (e *Variables) buildPaths(keyMap map[string]any) []string {
 	var paths []string
 
 	for key, item := range keyMap {
@@ -182,11 +238,11 @@ func (e *Variables) buildPaths(keyMap map[string]interface{}) []string {
 			continue
 		}
 
-		subMap := item.(map[string]interface{})
+		subMap := item.(map[string]any)
 
 		subPaths := e.buildPaths(subMap)
 		for _, path := range subPaths {
-			paths = append(paths, fmt.Sprintf("%s.%s", key, path))
+			paths = append(paths, fmt.Sprintf("%s/%s", key, path))
 		}
 	}
 
@@ -203,10 +259,9 @@ func (e *Variables) buildOverrideNames(paths []string) map[string]string {
 }
 
 func (_ *Variables) getOverrideNameFor(path string) string {
-	// ".", "/" & "-" are the only special character allowed in path not allowed in environment variable Name
-	override := strings.ReplaceAll(path, tomlPathDotSeparator, envNameSeparator)
-	override = strings.ReplaceAll(override, tomlPathSlashSeparator, envNameSeparator)
-	override = strings.ReplaceAll(override, tomlNameSeparator, envNameSeparator)
+	// "/" & "-" are the only special character allowed in path not allowed in environment variable Name
+	override := strings.ReplaceAll(path, configPathSeparator, envNameSeparator)
+	override = strings.ReplaceAll(override, configNameSeparator, envNameSeparator)
 	override = strings.ToUpper(override)
 	return override
 }
@@ -232,11 +287,11 @@ func (e *Variables) OverrideConfigProviderInfo(configProviderInfo types.ServiceC
 }
 
 // convertToType attempts to convert the string value to the specified type of the old value
-func (_ *Variables) convertToType(oldValue interface{}, value string) (newValue interface{}, err error) {
+func (_ *Variables) convertToType(oldValue any, value string) (newValue any, err error) {
 	switch oldValue.(type) {
 	case []string:
 		newValue = parseCommaSeparatedSlice(value)
-	case []interface{}:
+	case []any:
 		newValue = parseCommaSeparatedSlice(value)
 	case string:
 		newValue = value
@@ -381,7 +436,7 @@ func GetCommonConfigFileName(lc logger.LoggingClient, commonConfigFileName strin
 }
 
 // parseCommaSeparatedSlice converts comma separated list to a string slice
-func parseCommaSeparatedSlice(value string) (values []interface{}) {
+func parseCommaSeparatedSlice(value string) (values []any) {
 	// Assumption is environment variable value is comma separated
 	// Whitespace can vary so must be trimmed out
 	result := strings.Split(strings.TrimSpace(value), ",")
