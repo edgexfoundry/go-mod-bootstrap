@@ -238,7 +238,7 @@ func (e *Variables) buildPaths(keyMap map[string]any) []string {
 			continue
 		}
 		
-		if reflect.TypeOf(item).Kind() != reflect.Map {
+		if item == nil || reflect.TypeOf(item).Kind() != reflect.Map {
 			paths = append(paths, key)
 			continue
 		}
