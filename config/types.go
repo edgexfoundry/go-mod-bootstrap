@@ -197,7 +197,7 @@ func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 
 type Database struct {
 	Type    string
-	Timeout int
+	Timeout string
 	Host    string
 	Port    int
 	Name    string
