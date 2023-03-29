@@ -17,8 +17,10 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
+	"strings"
 )
+
+const PathSep = "/"
 
 // ConvertToMap uses json to marshal and unmarshal a target type into a map
 func ConvertToMap(target any, m *map[string]any) error {
@@ -68,23 +70,35 @@ func MergeMaps(dest map[string]any, src map[string]any) {
 	}
 }
 
-// RemoveZeroValues iterates over a map and removes any zero values it may have
-func RemoveZeroValues(target map[string]any) {
+func RemoveUnusedSettings(src any, baseKey string, usedSettingKeys map[string]any) (map[string]any, error) {
+	srcMap := make(map[string]any)
+
+	if err := ConvertToMap(src, &srcMap); err != nil {
+		return nil, fmt.Errorf("could not create map from %T: %s", src, err.Error())
+	}
+
+	removeUnusedSettingsFromMap(srcMap, baseKey, usedSettingKeys)
+
+	return srcMap, nil
+}
+
+// removeMapUnusedSettings iterates over a map and removes any settings not in list of valid keys
+func removeUnusedSettingsFromMap(target map[string]any, baseKey string, validKeys map[string]any) {
 	var removeKeys []string
 	for key, value := range target {
+		nextBaseKey := BuildBaseKey(baseKey, key)
 		sub, ok := value.(map[string]any)
 		if ok {
-			RemoveZeroValues(sub)
+			removeUnusedSettingsFromMap(sub, nextBaseKey, validKeys)
 			if len(sub) == 0 {
 				removeKeys = append(removeKeys, key)
 			}
 			continue
 		}
-
-		if value == nil || reflect.ValueOf(value).IsZero() {
+		_, exists := validKeys[nextBaseKey]
+		if !exists {
 			removeKeys = append(removeKeys, key)
 		}
-
 	}
 
 	for _, key := range removeKeys {
@@ -92,21 +106,25 @@ func RemoveZeroValues(target map[string]any) {
 	}
 }
 
-// MergeValues combines src (zeros removed) with the dest
+// MergeValues combines src with the dest.
 func MergeValues(dest any, src any) error {
+	var ok bool
 	var destMap, srcMap map[string]any
 
-	if err := ConvertToMap(dest, &destMap); err != nil {
-		return fmt.Errorf("could not create destination map from %T: %s", dest, err.Error())
+	destMap, ok = dest.(map[string]any)
+	if !ok {
+		if err := ConvertToMap(dest, &destMap); err != nil {
+			return fmt.Errorf("could not create destination map from %T: %s", dest, err.Error())
+		}
 	}
 
-	if err := ConvertToMap(src, &srcMap); err != nil {
-		return fmt.Errorf("could not source create map from %T: %s", src, err.Error())
+	srcMap, ok = src.(map[string]any)
+	if !ok {
+		if err := ConvertToMap(src, &srcMap); err != nil {
+			return fmt.Errorf("could not source create map from %T: %s", src, err.Error())
+		}
 	}
 
-	// remove zero values from the source to prevent overwriting items in the destination
-	// and merge the src with dest
-	RemoveZeroValues(srcMap)
 	MergeMaps(destMap, srcMap)
 
 	// convert the map back to a dest
@@ -115,4 +133,18 @@ func MergeValues(dest any, src any) error {
 	}
 
 	return nil
+}
+
+func StringSliceToMap(src []string) map[string]any {
+	result := make(map[string]any)
+
+	for _, value := range src {
+		result[value] = nil
+	}
+
+	return result
+}
+
+func BuildBaseKey(keys ...string) string {
+	return strings.Join(keys, PathSep)
 }

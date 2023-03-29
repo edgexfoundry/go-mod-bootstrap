@@ -15,7 +15,8 @@
 package utils
 
 import (
-	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
@@ -25,6 +26,7 @@ import (
 
 type ConfigurationMockStruct struct {
 	Writable WritableInfo
+	Clients  map[string]config.ClientInfo
 	Registry config.RegistryInfo
 	Trigger  TriggerInfo
 }
@@ -45,44 +47,71 @@ type TriggerInfo struct {
 }
 
 func TestMergeMaps(t *testing.T) {
-	destMap := map[string]any{
-		"Writable": WritableInfo{
+	expectedTriggerType := "edgex-messagebus"
+	expectedCoreMetadataHost := "localhost"
+
+	initialConfig := ConfigurationMockStruct{
+		Writable: WritableInfo{
 			StoreAndForward: StoreAndForwardInfo{
 				Enabled:       false,
 				RetryInterval: "5m",
 				MaxRetryCount: 10,
 			},
 		},
-		"Registry": config.RegistryInfo{
+		Clients: map[string]config.ClientInfo{
+			"core-metadata": config.ClientInfo{
+				Host:     "edgex-core-metadata",
+				Port:     56981,
+				Protocol: "http",
+			},
+		},
+		Registry: config.RegistryInfo{
 			Host: "localhost",
 			Port: 8500,
 			Type: "consul",
 		},
-		"Trigger": TriggerInfo{},
+		Trigger: TriggerInfo{},
 	}
+	destMap := map[string]any{}
+	err := ConvertToMap(initialConfig, &destMap)
+	require.NoError(t, err)
+
 	srcMap := map[string]any{
-		"Writable": WritableInfo{
-			StoreAndForward: StoreAndForwardInfo{
-				Enabled:       false,
-				RetryInterval: "5m",
-				MaxRetryCount: 10,
+		"Writable": map[string]any{
+			"StoreAndForward": map[string]any{
+				"Enabled": true,
 			},
 		},
-		"Trigger": TriggerInfo{
-			Type: "edgex-messagebus",
+		"Trigger": map[string]any{
+			"Type": expectedTriggerType,
+		},
+		"Clients": map[string]any{
+			"core-metadata": map[string]any{
+				"Host": "localhost",
+			},
 		},
 	}
 
 	MergeMaps(destMap, srcMap)
 
-	for key, value := range destMap {
-		if key == "StoreAndForwardInfo" || key == "Trigger" {
-			assert.NotEmpty(t, value)
-		}
-	}
+	actualConfig := ConfigurationMockStruct{}
+	err = ConvertFromMap(destMap, &actualConfig)
+	require.NoError(t, err)
+
+	assert.True(t, actualConfig.Writable.StoreAndForward.Enabled)
+	assert.Equal(t, expectedTriggerType, actualConfig.Trigger.Type)
+	assert.Equal(t, expectedCoreMetadataHost, actualConfig.Clients["core-metadata"].Host)
+
+	assert.Equal(t, initialConfig.Clients["core-metadata"].Port, actualConfig.Clients["core-metadata"].Port)
+	assert.Equal(t, initialConfig.Clients["core-metadata"].Protocol, actualConfig.Clients["core-metadata"].Protocol)
+	assert.Equal(t, initialConfig.Writable.StoreAndForward.RetryInterval, actualConfig.Writable.StoreAndForward.RetryInterval)
+	assert.Equal(t, initialConfig.Writable.StoreAndForward.MaxRetryCount, actualConfig.Writable.StoreAndForward.MaxRetryCount)
+	assert.Equal(t, initialConfig.Registry.Host, actualConfig.Registry.Host)
+	assert.Equal(t, initialConfig.Registry.Port, actualConfig.Registry.Port)
+	assert.Equal(t, initialConfig.Registry.Type, actualConfig.Registry.Type)
 }
 
-func TestMergeConfigs(t *testing.T) {
+func TestMergeValues(t *testing.T) {
 	// create the service config
 	serviceConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
@@ -104,7 +133,7 @@ func TestMergeConfigs(t *testing.T) {
 		Writable: WritableInfo{
 			StoreAndForward: StoreAndForwardInfo{
 				Enabled:       true,
-				RetryInterval: "5m",
+				RetryInterval: "",
 				MaxRetryCount: 10,
 			},
 		},
@@ -113,7 +142,7 @@ func TestMergeConfigs(t *testing.T) {
 		},
 	}
 	require.True(t, appConfig.Writable.StoreAndForward.Enabled)
-	require.NotEmpty(t, appConfig.Writable.StoreAndForward.RetryInterval)
+	require.Empty(t, appConfig.Writable.StoreAndForward.RetryInterval)
 	require.NotZero(t, appConfig.Writable.StoreAndForward.MaxRetryCount)
 	require.NotEmpty(t, appConfig.Trigger.Type)
 
@@ -123,32 +152,82 @@ func TestMergeConfigs(t *testing.T) {
 
 	// verify values
 	assert.True(t, serviceConfig.Writable.StoreAndForward.Enabled)
-	assert.NotEmpty(t, serviceConfig.Writable.StoreAndForward.RetryInterval)
+	assert.Empty(t, serviceConfig.Writable.StoreAndForward.RetryInterval)
 	assert.NotZero(t, serviceConfig.Writable.StoreAndForward.MaxRetryCount)
 	assert.NotEmpty(t, serviceConfig.Trigger.Type)
 }
 
-func TestRemoveZeroValues(t *testing.T) {
-	config := ConfigurationMockStruct{
-		Registry: config.RegistryInfo{
-			Host: "localhost",
-			Port: 8500,
+func TestRemoveUnusedSettings(t *testing.T) {
+	testConfig := ConfigurationMockStruct{
+		Writable: WritableInfo{
+			StoreAndForward: StoreAndForwardInfo{
+				Enabled:       true,
+				RetryInterval: "",
+				MaxRetryCount: 10,
+			},
+		},
+		Trigger: TriggerInfo{
+			Type: "edgex-messagebus",
 		},
 	}
 
-	jbytes, err := json.Marshal(config)
-	require.NoError(t, err)
-	configMap := map[string]any{}
-	err = json.Unmarshal(jbytes, &configMap)
-	require.NoError(t, err)
+	keys := map[string]any{
+		"edgex/v3/app-something/Writable/StoreAndForward/Enabled":       nil,
+		"edgex/v3/app-something/Writable/StoreAndForward/RetryInterval": nil,
+		"edgex/v3/app-something/Writable/StoreAndForward/MaxRetryCount": nil,
+		"edgex/v3/app-something/Trigger/Type":                           nil,
+	}
 
-	assert.Len(t, configMap, 3)
-	assert.Len(t, configMap["Registry"], 3)
-	RemoveZeroValues(configMap)
+	actual, err := RemoveUnusedSettings(testConfig, "edgex/v3/app-something", keys)
 
-	assert.Len(t, configMap, 1)
-	assert.Len(t, configMap["Registry"], 2)
-	regMap := configMap["Registry"].(map[string]interface{})
-	assert.NotEmpty(t, regMap["Host"])
-	assert.NotZero(t, regMap["Port"])
+	require.NoError(t, err)
+	require.NotNil(t, actual)
+	assertMapSettingValueExists(t, actual, "Writable/StoreAndForward/MaxRetryCount")
+	assertMapSettingValueExists(t, actual, "Writable/StoreAndForward/RetryInterval")
+	assertMapSettingValueExists(t, actual, "Writable/StoreAndForward/Enabled")
+	assertMapSettingValueExists(t, actual, "Trigger/Type")
+	assertMapSettingValueNotExist(t, actual, "Writable/LogLevel")
+	assertMapSettingValueNotExist(t, actual, "Registry/Host")
+	assertMapSettingValueNotExist(t, actual, "Registry/Port")
+	assertMapSettingValueNotExist(t, actual, "Registry/Type")
+}
+
+func assertMapSettingValueExists(t *testing.T, actual map[string]any, actualPath string) bool {
+	keys := strings.Split(actualPath, PathSep)
+	target := actual
+	for _, key := range keys {
+		value, exists := target[key]
+		if !exists {
+			return assert.Fail(t, fmt.Sprintf("Setting value at %s does not exist", actualPath))
+		}
+
+		sub, ok := value.(map[string]any)
+		if ok {
+			target = sub
+			continue
+		}
+	}
+
+	return true
+}
+
+func assertMapSettingValueNotExist(t *testing.T, actual map[string]any, actualPath string) bool {
+	keys := strings.Split(actualPath, PathSep)
+	target := actual
+	for _, key := range keys {
+		value, exists := target[key]
+		if !exists {
+			return true
+		}
+
+		sub, ok := value.(map[string]any)
+		if ok {
+			target = sub
+			continue
+		}
+
+		return assert.Fail(t, fmt.Sprintf("Setting value at %s exists", actualPath))
+	}
+
+	return true
 }
