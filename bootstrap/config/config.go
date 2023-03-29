@@ -236,7 +236,7 @@ func (cp *Processor) Process(
 
 	// listen for changes on Writable
 	if useProvider {
-		cp.listenForChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
+		cp.listenForPrivateChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
 		cp.lc.Infof("listening for private config changes")
 		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
 		cp.lc.Infof("listening for all services common config changes")
@@ -471,8 +471,9 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 					"unable to get custom configuration from Configuration Provider: %s", err.Error())
 			}
 
-			if ok := updatableConfig.UpdateFromRaw(rawConfig); !ok {
-				return fmt.Errorf("unable to update custom configuration from Configuration Provider")
+			err = utils.MergeValues(updatableConfig, rawConfig)
+			if err != nil {
+				return fmt.Errorf("unable to merge custom configuration from Configuration Provider")
 			}
 
 			cp.lc.Info("Loaded custom configuration from Configuration Provider, no overrides applied")
@@ -483,15 +484,25 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 				return err
 			}
 
+			if err := utils.MergeValues(updatableConfig, configMap); err != nil {
+				return err
+			}
+
 			// Must apply override before pushing into Configuration Provider
-			overrideCount, err := cp.envVars.OverrideConfigMapValues(configMap)
+			overrideCount, err := cp.envVars.OverrideConfiguration(updatableConfig)
 			if err != nil {
 				return fmt.Errorf("unable to apply environment overrides: %s", err.Error())
 			}
 
-			cp.lc.Info("Loaded custom configuration from File (%d envVars overrides applied)", overrideCount)
+			cp.lc.Infof("Loaded custom configuration from File (%d envVars overrides applied)", overrideCount)
 
-			err = configClient.PutConfigurationMap(configMap, true)
+			mapToPush := make(map[string]any)
+			err = utils.ConvertToMap(updatableConfig, &mapToPush)
+			if err != nil {
+				return err
+			}
+
+			err = configClient.PutConfigurationMap(mapToPush, true)
 			if err != nil {
 				return fmt.Errorf("error pushing custom config to Configuration Provider: %s", err.Error())
 			}
@@ -621,11 +632,11 @@ func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
 	return filepath.Join(configDir, profileDir, configFileName)
 }
 
-// listenForChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
+// listenForPrivateChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
 // service's configuration writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
-func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client, baseKey string) {
+func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configuration, configClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
 
@@ -685,9 +696,12 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 	privateConfigClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
+	baseKey = utils.BuildBaseKey(baseKey, writableKey)
 
 	cp.wg.Add(1)
-	go func() {
+	go func(fullServiceConfig interfaces.Configuration,
+		commonConfigClient configuration.Client,
+		privateConfigClient configuration.Client, baseKey string) {
 		defer cp.wg.Done()
 
 		var previousCommonWritable any
@@ -745,7 +759,7 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 				previousCommonWritable = raw
 			}
 		}
-	}()
+	}(fullServiceConfig, commonConfigClient, privateConfigClient, baseKey)
 }
 
 func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Configuration, previousCommonWritable any, raw any, privateConfigClient configuration.Client) error {

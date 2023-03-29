@@ -95,7 +95,6 @@ func removeUnusedSettingsFromMap(target map[string]any, baseKey string, validKey
 			}
 			continue
 		}
-
 		_, exists := validKeys[nextBaseKey]
 		if !exists {
 			removeKeys = append(removeKeys, key)
