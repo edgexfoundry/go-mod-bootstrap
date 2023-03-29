@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -617,7 +618,7 @@ func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
 	profileDir := environment.GetProfileDir(lc, flags.Profile())
 	configFileName := environment.GetConfigFileName(lc, flags.ConfigFileName())
 
-	return configDir + utils.PathSep + profileDir + configFileName
+	return filepath.Join(configDir, profileDir, configFileName)
 }
 
 // listenForChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the

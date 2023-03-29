@@ -17,7 +17,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -378,4 +380,22 @@ func TestIsPrivateConfig(t *testing.T) {
 			require.NotNil(t, cancel)
 		})
 	}
+}
+
+func TestGetConfigFileLocation(t *testing.T) {
+	dir := "myRes"
+	profile := "myProfile"
+	file := "myFile.yaml"
+	expected := filepath.Join(dir, profile, file)
+	defer os.Clearenv()
+
+	lc := logger.NewMockClient()
+	flags := flags.New()
+
+	os.Setenv("EDGEX_CONFIG_DIR", dir)
+	os.Setenv("EDGEX_PROFILE", profile)
+	os.Setenv("EDGEX_CONFIG_FILE", file)
+
+	actual := GetConfigFileLocation(lc, flags)
+	assert.Equal(t, expected, actual)
 }

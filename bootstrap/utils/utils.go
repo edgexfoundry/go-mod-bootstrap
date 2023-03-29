@@ -77,19 +77,19 @@ func RemoveUnusedSettings(src any, baseKey string, usedSettingKeys map[string]an
 		return nil, fmt.Errorf("could not create map from %T: %s", src, err.Error())
 	}
 
-	removeMapUnusedSettings(srcMap, baseKey, usedSettingKeys)
+	removeUnusedSettingsFromMap(srcMap, baseKey, usedSettingKeys)
 
 	return srcMap, nil
 }
 
 // removeMapUnusedSettings iterates over a map and removes any settings not in list of valid keys
-func removeMapUnusedSettings(target map[string]any, baseKey string, validKeys map[string]any) {
+func removeUnusedSettingsFromMap(target map[string]any, baseKey string, validKeys map[string]any) {
 	var removeKeys []string
 	for key, value := range target {
 		nextBaseKey := BuildBaseKey(baseKey, key)
 		sub, ok := value.(map[string]any)
 		if ok {
-			removeMapUnusedSettings(sub, nextBaseKey, validKeys)
+			removeUnusedSettingsFromMap(sub, nextBaseKey, validKeys)
 			if len(sub) == 0 {
 				removeKeys = append(removeKeys, key)
 			}
