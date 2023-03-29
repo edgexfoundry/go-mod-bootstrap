@@ -222,6 +222,22 @@ func TestLoadCommonConfig(t *testing.T) {
 			}
 			if tc.serviceType == config.ServiceTypeApp || tc.serviceType == config.ServiceTypeDevice {
 				providerClientMock.On("GetConfiguration", &serviceConfigMock).Return(tc.serviceTypeConfig, tc.getConfigErr).Once()
+				var configKeys []string
+				switch tc.serviceType {
+				case config.ServiceTypeApp:
+					configKeys = []string{
+						"edgex/v3/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/Enabled",
+						"edgex/v3/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/RetryInterval",
+						"edgex/v3/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/MaxRetryCount",
+					}
+				case config.ServiceTypeDevice:
+					configKeys = []string{
+						"edgex/v3/core-common-config-bootstrapper/device-services/Writable/Telemetry/Metrics/EventsSent",
+						"edgex/v3/core-common-config-bootstrapper/device-services/Writable/Telemetry/Metrics/ReadingsSent",
+					}
+				}
+
+				providerClientMock.On("GetConfigurationKeys", mock.Anything).Return(configKeys, nil).Once()
 			}
 			// call load common config
 			err = proc.loadCommonConfig(common.ConfigStemAll, getAccessToken, &ProviderInfo{}, &serviceConfigMock, tc.serviceType, providerClientCreator)

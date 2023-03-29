@@ -48,11 +48,10 @@ import (
 )
 
 const (
-	writableKey       = "/Writable"
+	writableKey       = "Writable"
 	allServicesKey    = "all-services"
 	appServicesKey    = "app-services"
 	deviceServicesKey = "device-services"
-	pathSep           = "/"
 )
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
@@ -169,7 +168,20 @@ func (cp *Processor) Process(
 			if err := cp.loadConfigFromProvider(privateServiceConfig, privateConfigClient); err != nil {
 				return err
 			}
-			if err := utils.MergeValues(serviceConfig, privateServiceConfig); err != nil {
+			configKeys, err := privateConfigClient.GetConfigurationKeys("")
+			if err != nil {
+				return err
+			}
+
+			// Must remove any settings in the config that are not actually present in the Config Provider
+			privateConfigKeys := utils.StringSliceToMap(configKeys)
+			privateConfigMap, err := utils.RemoveUnusedSettings(privateServiceConfig, utils.BuildBaseKey(configStem, serviceKey), privateConfigKeys)
+			if err != nil {
+				return fmt.Errorf("could not remove unused settings from private configurations: %s", err.Error())
+			}
+
+			// Now merge only the actual present value with the existing configuration from common.
+			if err := utils.MergeValues(serviceConfig, privateConfigMap); err != nil {
 				return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
 			}
 
@@ -208,7 +220,7 @@ func (cp *Processor) Process(
 		}
 		cp.lc.Infof("Private configuration loaded from file with %d overrides applied", overrideCount)
 
-		if err := cp.mergeMapWithConfig(serviceConfig, configMap); err != nil {
+		if err := utils.MergeValues(serviceConfig, configMap); err != nil {
 			return err
 		}
 
@@ -223,16 +235,16 @@ func (cp *Processor) Process(
 
 	// listen for changes on Writable
 	if useProvider {
-		cp.listenForChanges(serviceConfig, privateConfigClient)
+		cp.listenForChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
 		cp.lc.Infof("listening for private config changes")
-		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient)
+		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
 		cp.lc.Infof("listening for all services common config changes")
 		if cp.appConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient)
+			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
 			cp.lc.Infof("listening for application service common config changes")
 		}
 		if cp.deviceConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient)
+			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
 			cp.lc.Infof("listening for device service common config changes")
 		}
 	}
@@ -266,7 +278,7 @@ func (cp *Processor) loadCommonConfig(
 	// check that common config is loaded into the provider
 	// this need a separate config provider client here because the config ready variable is stored at the common config level
 	// load the all services section of the common config
-	cp.commonConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+pathSep+allServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+	cp.commonConfigClient, err = createProvider(cp.lc, utils.BuildBaseKey(common.CoreCommonConfigServiceKey, allServicesKey), configStem, getAccessToken, configProviderInfo.ServiceConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create provider for %s: %s", allServicesKey, err.Error())
 	}
@@ -282,14 +294,18 @@ func (cp *Processor) loadCommonConfig(
 
 	// use the service type to determine which additional sections to load into the common configuration
 	var serviceTypeConfig interfaces.Configuration
+	var serviceTypeConfigKeys []string
+	var serviceTypeSectionKey string
+
 	switch serviceType {
 	case config.ServiceTypeApp:
+		serviceTypeSectionKey = utils.BuildBaseKey(common.CoreCommonConfigServiceKey, appServicesKey)
 		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", appServicesKey, err.Error())
 		}
-		cp.appConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+pathSep+appServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		cp.appConfigClient, err = createProvider(cp.lc, serviceTypeSectionKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create provider for %s: %s", appServicesKey, err.Error())
 		}
@@ -297,13 +313,19 @@ func (cp *Processor) loadCommonConfig(
 		if err != nil {
 			return fmt.Errorf("failed to load the common configuration for %s: %s", appServicesKey, err.Error())
 		}
+		serviceTypeConfigKeys, err = cp.appConfigClient.GetConfigurationKeys("")
+		if err != nil {
+			return fmt.Errorf("failed to load the common configuration keys for %s: %s", deviceServicesKey, err.Error())
+		}
+
 	case config.ServiceTypeDevice:
+		serviceTypeSectionKey = utils.BuildBaseKey(common.CoreCommonConfigServiceKey, deviceServicesKey)
 		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", deviceServicesKey, err.Error())
 		}
-		cp.deviceConfigClient, err = createProvider(cp.lc, common.CoreCommonConfigServiceKey+pathSep+deviceServicesKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		cp.deviceConfigClient, err = createProvider(cp.lc, serviceTypeSectionKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create provider for %s: %s", deviceServicesKey, err.Error())
 		}
@@ -311,13 +333,25 @@ func (cp *Processor) loadCommonConfig(
 		if err != nil {
 			return fmt.Errorf("failed to load the common configuration for %s: %s", deviceServicesKey, err.Error())
 		}
+		serviceTypeConfigKeys, err = cp.deviceConfigClient.GetConfigurationKeys("")
+		if err != nil {
+			return fmt.Errorf("failed to load the common configuration keys for %s: %s", deviceServicesKey, err.Error())
+		}
+
 	default:
 		// this case is covered by the initial call to get the common config for all-services
 	}
 
 	// merge together the common config and the service type config
 	if serviceTypeConfig != nil {
-		if err := utils.MergeValues(serviceConfig, serviceTypeConfig); err != nil {
+		// Must remove any settings in the config that are not actually present in the Config Provider
+		serviceTypeConfigMap, err := utils.RemoveUnusedSettings(serviceTypeConfig, utils.BuildBaseKey(configStem, serviceTypeSectionKey), utils.StringSliceToMap(serviceTypeConfigKeys))
+		if err != nil {
+			return fmt.Errorf("failed to remove unused setting from %s common config: %s", serviceType, err.Error())
+		}
+
+		// merge common config and the service type common config's actually used settings
+		if err := utils.MergeValues(serviceConfig, serviceTypeConfigMap); err != nil {
 			return fmt.Errorf("failed to merge %s config with common config: %s", serviceType, err.Error())
 		}
 	}
@@ -577,36 +611,20 @@ func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, er
 	return data, nil
 }
 
-func (cp *Processor) mergeMapWithConfig(config any, configMap map[string]any) error {
-	// convert the common config passed in to a map[string]any
-	var destConfigMap map[string]any
-	if err := utils.ConvertToMap(config, &destConfigMap); err != nil {
-		return fmt.Errorf("failed to mergre configuration: %v", err)
-	}
-
-	utils.MergeMaps(destConfigMap, configMap)
-
-	if err := utils.ConvertFromMap(configMap, config); err != nil {
-		return fmt.Errorf("failed to mergre configuration: %v", err)
-	}
-
-	return nil
-}
-
 // GetConfigFileLocation uses the environment variables and flags to determine the location of the configuration
 func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
 	configDir := environment.GetConfigDir(lc, flags.ConfigDirectory())
 	profileDir := environment.GetProfileDir(lc, flags.Profile())
 	configFileName := environment.GetConfigFileName(lc, flags.ConfigFileName())
 
-	return configDir + pathSep + profileDir + configFileName
+	return configDir + utils.PathSep + profileDir + configFileName
 }
 
 // listenForChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
 // service's configuration writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
-func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client) {
+func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, configClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
 
@@ -637,6 +655,16 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					return
 				}
 
+				usedKeys, err := configClient.GetConfigurationKeys(writableKey)
+				if err != nil {
+					lc.Errorf("failed to get list of private configuration keys for %s: %v", writableKey, err)
+				}
+
+				rawMap, err := utils.RemoveUnusedSettings(raw, utils.BuildBaseKey(baseKey, writableKey), utils.StringSliceToMap(usedKeys))
+				if err != nil {
+					lc.Errorf("failed to remove unused private settings in %s: %v", writableKey, err)
+				}
+
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
 				// any changes to the configuration. This causes an issue during start-up if there is an
 				// envVars override of one of the Writable fields, so we must ignore the first update.
@@ -644,7 +672,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 					isFirstUpdate = false
 					continue
 				}
-				cp.applyWritableUpdates(serviceConfig, raw)
+				cp.applyWritableUpdates(serviceConfig, rawMap)
 			}
 		}
 	}()
@@ -653,7 +681,7 @@ func (cp *Processor) listenForChanges(serviceConfig interfaces.Configuration, co
 // listenForCommonChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
 // service's common configuration writable sub-struct.
 func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configuration, commonConfigClient configuration.Client,
-	privateConfigClient configuration.Client) {
+	privateConfigClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
 
@@ -686,19 +714,32 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 					return
 				}
 
+				usedKeys, err := commonConfigClient.GetConfigurationKeys(writableKey)
+				if err != nil {
+					if err != nil {
+						lc.Errorf("failed to get list of common configuration keys for %s: %v", writableKey, err)
+					}
+				}
+
+				rawMap, err := utils.RemoveUnusedSettings(raw, baseKey, utils.StringSliceToMap(usedKeys))
+				if err != nil {
+					lc.Errorf("failed to remove unused common settings in %s: %v", writableKey, err)
+				}
+
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
 				// any changes to the configuration. This causes an issue during start-up if there is an
 				// envVars override of one of the Writable fields, so on the first update we can just save a copy of the
 				// common writable for comparison for future writable updates.
 				if isFirstUpdate {
 					isFirstUpdate = false
-					previousCommonWritable = raw
+					previousCommonWritable = rawMap
 					continue
 				}
 
-				if err := cp.processCommonConfigChange(fullServiceConfig, previousCommonWritable, raw, privateConfigClient); err != nil {
+				if err := cp.processCommonConfigChange(fullServiceConfig, previousCommonWritable, rawMap, privateConfigClient); err != nil {
 					lc.Error(err.Error())
 				}
+
 				// ensure that the local copy of the common writable gets updated no matter what
 				previousCommonWritable = raw
 			}
@@ -712,18 +753,7 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 		return nil
 	}
 
-	// merge raw with fullServiceConfig and call it changedConfig
-	changedConfig, err := copyConfigurationStruct(fullServiceConfig)
-	if err != nil {
-		return fmt.Errorf("could not copy config while watching for common config writable: %s", err.Error())
-	}
-	changedWritable := changedConfig.GetWritablePtr()
-
-	if err := utils.MergeValues(changedWritable, raw); err != nil {
-		return fmt.Errorf("could not merge configs while watching for common config writable: %s", err.Error())
-	}
-
-	cp.applyWritableUpdates(fullServiceConfig, changedWritable)
+	cp.applyWritableUpdates(fullServiceConfig, raw)
 	return nil
 }
 
@@ -756,15 +786,13 @@ func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigC
 }
 
 func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration, raw any) {
-
 	lc := cp.lc
 	previousInsecureSecrets := serviceConfig.GetInsecureSecrets()
 	previousLogLevel := serviceConfig.GetLogLevel()
 	previousTelemetryInterval := serviceConfig.GetTelemetryInfo().Interval
 
-	if !serviceConfig.UpdateWritableFromRaw(raw) {
-		lc.Error("ListenForChanges() type check failed")
-		return
+	if err := utils.MergeValues(serviceConfig.GetWritablePtr(), raw); err != nil {
+		lc.Errorf("failed to apply Writable change to service configuration: %v", err)
 	}
 
 	currentInsecureSecrets := serviceConfig.GetInsecureSecrets()
@@ -999,7 +1027,7 @@ func (cp *Processor) isKeyInPrivate(privateConfigClient configuration.Client, ch
 
 func buildNewKey(previousKey, currentKey string) string {
 	if previousKey != "" {
-		return fmt.Sprintf("%s%s%s", previousKey, pathSep, currentKey)
+		return utils.BuildBaseKey(previousKey, currentKey)
 	} else {
 		return currentKey
 	}
