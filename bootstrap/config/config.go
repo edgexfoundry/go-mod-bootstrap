@@ -141,7 +141,12 @@ func (cp *Processor) Process(
 			return err
 		}
 
-		cp.lc.Info("Common configuration loaded from the Configuration Provider. No overrides applied")
+		overrideCount, err := cp.envVars.OverrideConfiguration(serviceConfig)
+		if err != nil {
+			return fmt.Errorf("failed to apply environment overrides to common configuration loaded from the Configuration Provider: %v", err)
+		}
+
+		cp.lc.Infof("Common configuration loaded from the Configuration Provider with %d overrides applied", overrideCount)
 
 		privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
 		if err != nil {
@@ -186,7 +191,12 @@ func (cp *Processor) Process(
 				return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
 			}
 
-			cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
+			overrideCount, err = cp.envVars.OverrideConfiguration(serviceConfig)
+			if err != nil {
+				return fmt.Errorf("failed to apply environment overrides to private configuration loaded from the Configuration Provider: %v", err)
+			}
+
+			cp.lc.Infof("Private configuration loaded from the Configuration Provider with %d overrides applied", overrideCount)
 		}
 	} else {
 		// Now load common configuration from local file if not using config provider and -cc/--commonConfig flag is used.
@@ -301,7 +311,6 @@ func (cp *Processor) loadCommonConfig(
 	switch serviceType {
 	case config.ServiceTypeApp:
 		serviceTypeSectionKey = utils.BuildBaseKey(common.CoreCommonConfigServiceKey, appServicesKey)
-		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", appServicesKey, err.Error())
@@ -321,7 +330,6 @@ func (cp *Processor) loadCommonConfig(
 
 	case config.ServiceTypeDevice:
 		serviceTypeSectionKey = utils.BuildBaseKey(common.CoreCommonConfigServiceKey, deviceServicesKey)
-		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
 		serviceTypeConfig, err = copyConfigurationStruct(serviceConfig)
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", deviceServicesKey, err.Error())
@@ -381,13 +389,13 @@ func (cp *Processor) loadCommonConfigFromFile(
 	var serviceTypeConfig map[string]any
 	switch serviceType {
 	case config.ServiceTypeApp:
-		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
+		cp.lc.Infof("loading the common configuration for service type %s from file", serviceType)
 		serviceTypeConfig, ok = commonConfig[appServicesKey].(map[string]any)
 		if !ok {
 			return fmt.Errorf("could not find %s section in common config %s", appServicesKey, configFile)
 		}
 	case config.ServiceTypeDevice:
-		cp.lc.Infof("loading the common configuration for service type %s", serviceType)
+		cp.lc.Infof("loading the common configuration for service type %s from file", serviceType)
 		serviceTypeConfig, ok = commonConfig[deviceServicesKey].(map[string]any)
 		if !ok {
 			return fmt.Errorf("could not find %s section in common config %s", deviceServicesKey, configFile)
@@ -476,7 +484,12 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 				return fmt.Errorf("unable to merge custom configuration from Configuration Provider")
 			}
 
-			cp.lc.Info("Loaded custom configuration from Configuration Provider, no overrides applied")
+			overrideCount, err := cp.envVars.OverrideConfiguration(updatableConfig)
+			if err != nil {
+				return fmt.Errorf("failed to apply environment overrides to custom configuration loaded from the Configuration Provider: %v", err)
+			}
+
+			cp.lc.Infof("Custom configuration loaded from the Configuration Provider with %d overrides applied", overrideCount)
 		} else {
 			filePath := GetConfigFileLocation(cp.lc, cp.flags)
 			configMap, err := cp.loadConfigYamlFromFile(filePath)
