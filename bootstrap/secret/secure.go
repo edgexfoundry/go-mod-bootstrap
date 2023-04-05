@@ -65,6 +65,8 @@ type SecureProvider struct {
 	securitySecretsStored         gometrics.Counter
 	securityConsulTokensRequested gometrics.Counter
 	securityConsulTokenDuration   gometrics.Timer
+	securitySecretTokenDuration   gometrics.Timer
+	securityGetSecretDuration     gometrics.Timer
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -86,6 +88,8 @@ func NewSecureProvider(ctx context.Context, secretStoreInfo *config.SecretStoreI
 		securitySecretsStored:         gometrics.NewCounter(),
 		securityConsulTokensRequested: gometrics.NewCounter(),
 		securityConsulTokenDuration:   gometrics.NewTimer(),
+		securitySecretTokenDuration:   gometrics.NewTimer(),
+		securityGetSecretDuration:     gometrics.NewTimer(),
 	}
 	return provider
 }
@@ -101,6 +105,8 @@ func (p *SecureProvider) SetClient(client secrets.SecretClient) {
 // specified secretName will be returned.
 func (p *SecureProvider) GetSecret(secretName string, keys ...string) (map[string]string, error) {
 	p.securitySecretsRequested.Inc(1)
+	started := time.Now()
+	defer p.securityGetSecretDuration.UpdateSince(started)
 
 	if cachedSecrets := p.getSecretsCache(secretName, keys...); cachedSecrets != nil {
 		return cachedSecrets, nil
@@ -459,6 +465,8 @@ func (p *SecureProvider) GetMetricsToRegister() map[string]interface{} {
 		secretsStoredMetricName:           p.securitySecretsStored,
 		securityConsulTokensRequestedName: p.securityConsulTokensRequested,
 		securityConsulTokenDurationName:   p.securityConsulTokenDuration,
+		securitySecretTokenDurationName:   p.securitySecretTokenDuration,
+		securityGetSecretDurationName:     p.securityGetSecretDuration,
 	}
 }
 
