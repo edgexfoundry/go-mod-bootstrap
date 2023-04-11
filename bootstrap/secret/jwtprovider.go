@@ -14,10 +14,10 @@ import (
 )
 
 type jwtSecretProvider struct {
-	secretProvider interfaces.SecretProvider
+	secretProvider interfaces.SecretProviderExt
 }
 
-func NewJWTSecretProvider(secretProvider interfaces.SecretProvider) clientInterfaces.AuthenticationInjector {
+func NewJWTSecretProvider(secretProvider interfaces.SecretProviderExt) clientInterfaces.AuthenticationInjector {
 	return &jwtSecretProvider{
 		secretProvider: secretProvider,
 	}

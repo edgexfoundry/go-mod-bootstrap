@@ -58,7 +58,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	lc := container.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
 	cb.registry = container.RegistryFrom(dic.Get)
-	jwtSecretProvider := secret.NewJWTSecretProvider(container.SecretProviderFrom(dic.Get))
+	jwtSecretProvider := secret.NewJWTSecretProvider(container.SecretProviderExtFrom(dic.Get))
 
 	for serviceKey, serviceInfo := range config.GetBootstrap().Clients {
 		var url string

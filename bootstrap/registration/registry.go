@@ -45,7 +45,7 @@ func createRegistryClient(
 	var accessToken string
 	var getAccessToken registryTypes.GetAccessTokenCallback
 
-	secretProvider := container.SecretProviderFrom(dic.Get)
+	secretProvider := container.SecretProviderExtFrom(dic.Get)
 	// secretProvider will be nil if not configured to be used. In that case, no access token required.
 	if secretProvider != nil {
 		// Define the callback function to retrieve the Access Token

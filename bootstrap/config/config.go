@@ -115,7 +115,7 @@ func (cp *Processor) Process(
 	serviceType string,
 	configStem string,
 	serviceConfig interfaces.Configuration,
-	secretProvider interfaces.SecretProvider) error {
+	secretProvider interfaces.SecretProviderExt) error {
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
 	configProviderUrl := cp.flags.ConfigProviderUrl()
@@ -407,7 +407,7 @@ func (cp *Processor) loadCommonConfigFromFile(
 	return err
 }
 
-func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider interfaces.SecretProvider, err error, configProviderInfo *ProviderInfo) (types.GetAccessTokenCallback, error) {
+func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider interfaces.SecretProviderExt, err error, configProviderInfo *ProviderInfo) (types.GetAccessTokenCallback, error) {
 	var accessToken string
 	var getAccessToken types.GetAccessTokenCallback
 
@@ -827,7 +827,7 @@ func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration
 	case currentInsecureSecrets != nil &&
 		!reflect.DeepEqual(currentInsecureSecrets, previousInsecureSecrets):
 		lc.Info("Insecure Secrets have been updated")
-		secretProvider := container.SecretProviderFrom(cp.dic.Get)
+		secretProvider := container.SecretProviderExtFrom(cp.dic.Get)
 		if secretProvider != nil {
 			// Find the updated secret's path and perform call backs.
 			updatedSecrets := getSecretNamesChanged(previousInsecureSecrets, currentInsecureSecrets)

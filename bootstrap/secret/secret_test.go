@@ -39,15 +39,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	expectedUsername   = "admin"
-	expectedPassword   = "password"
-	expectedSecretName = "redisdb"
-)
+const expectedUsername = "admin"
+const expectedPassword = "password"
+const expectedSecretName = "redisdb"
+const expectedInsecureJWT = "" // Empty when in non-secure mode
+const expectedSecureJWT = "secureJwtToken"
 
 // nolint: gosec
 var testTokenResponse = `{"auth":{"accessor":"9OvxnrjgV0JTYMeBreak7YJ9","client_token":"s.oPJ8uuJCkTRb2RDdcNova8wg","entity_id":"","lease_duration":3600,"metadata":{"edgex-service-name":"edgex-core-data"},"orphan":true,"policies":["default","edgex-service-edgex-core-data"],"renewable":true,"token_policies":["default","edgex-service-edgex-core-data"],"token_type":"service"},"data":null,"lease_duration":0,"lease_id":"","renewable":false,"request_id":"ee749ee1-c8bf-6fa9-3ed5-644181fc25b0","warnings":null,"wrap_info":null}`
 var expectedSecrets = map[string]string{UsernameKey: expectedUsername, PasswordKey: expectedPassword}
+var expectedSecureJwtData = map[string]string{"token": expectedSecureJWT}
 
 func TestNewSecretProvider(t *testing.T) {
 	tests := []struct {
@@ -73,6 +74,7 @@ func TestNewSecretProvider(t *testing.T) {
 			})
 
 			var configuration interfaces.Configuration
+			expectedJWT := expectedInsecureJWT
 
 			if tc.Secure == "true" {
 				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +86,12 @@ func TestNewSecretProvider(t *testing.T) {
 						w.WriteHeader(http.StatusOK)
 						data := make(map[string]interface{})
 						data["data"] = expectedSecrets
+						response, _ := json.Marshal(data)
+						_, _ = w.Write(response)
+					case "/v1/identity/oidc/token/testServiceKey":
+						w.WriteHeader(http.StatusOK)
+						data := make(map[string]interface{})
+						data["data"] = expectedSecureJwtData
 						response, _ := json.Marshal(data)
 						_, _ = w.Write(response)
 					default:
@@ -103,6 +111,8 @@ func TestNewSecretProvider(t *testing.T) {
 						return mockTokenLoader
 					},
 				})
+
+				expectedJWT = expectedSecureJWT
 			} else {
 				configuration = TestConfig{
 					map[string]bootstrapConfig.InsecureSecretsInfo{
@@ -119,13 +129,20 @@ func TestNewSecretProvider(t *testing.T) {
 			actual, err := NewSecretProvider(configuration, envVars, context.Background(), timer, dic, "testServiceKey")
 			require.NoError(t, err)
 			require.NotNil(t, actual)
+
 			actualProvider := container.SecretProviderFrom(dic.Get)
 			assert.NotNil(t, actualProvider)
-
 			actualSecrets, err := actualProvider.GetSecret(expectedSecretName)
 			require.NoError(t, err)
 			assert.Equal(t, expectedUsername, actualSecrets[UsernameKey])
 			assert.Equal(t, expectedPassword, actualSecrets[PasswordKey])
+
+			actualProviderExt := container.SecretProviderExtFrom(dic.Get)
+			assert.NotNil(t, actualProviderExt)
+
+			actualJWT, err := actualProviderExt.GetSelfJWT()
+			require.NoError(t, err)
+			assert.Equal(t, expectedJWT, actualJWT)
 		})
 	}
 }

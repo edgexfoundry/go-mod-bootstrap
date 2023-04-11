@@ -12,12 +12,11 @@
  * the License.
  *******************************************************************************/package interfaces
 
-import (
-	"time"
-)
+import "time"
 
 // SecretProvider defines the contract for secret provider implementations that
-// allow secrets to be retrieved/stored from/to a services Secret Store.
+// allow secrets to be retrieved/stored from/to a services Secret Store and other secret related APIs.
+// This interface is limited to the APIs that individual service code need.
 type SecretProvider interface {
 	// StoreSecret stores new secrets into the service's SecretStore at the specified secretName.
 	StoreSecret(secretName string, secrets map[string]string) error
@@ -25,15 +24,8 @@ type SecretProvider interface {
 	// GetSecret retrieves secrets from the service's SecretStore at the specified secretName.
 	GetSecret(secretName string, keys ...string) (map[string]string, error)
 
-	// SecretsUpdated sets the secrets last updated time to current time.
-	SecretsUpdated()
-
 	// SecretsLastUpdated returns the last time secrets were updated
 	SecretsLastUpdated() time.Time
-
-	// GetAccessToken return an access token for the specified token type and service key.
-	// Service key is use as the access token role which must have be previously setup.
-	GetAccessToken(tokenType string, serviceKey string) (string, error)
 
 	// ListSecretNames returns a list of secretNames for the current service from an insecure/secure secret store.
 	ListSecretNames() ([]string, error)
@@ -44,11 +36,24 @@ type SecretProvider interface {
 	// RegisteredSecretUpdatedCallback registers a callback for a secret.
 	RegisteredSecretUpdatedCallback(secretName string, callback func(path string)) error
 
-	// SecretUpdatedAtSecretName performs updates and callbacks for an updated secret or secretName.
-	SecretUpdatedAtSecretName(secretName string)
-
 	// DeregisterSecretUpdatedCallback removes a secret's registered callback secretName.
 	DeregisterSecretUpdatedCallback(secretName string)
+}
+
+// SecretProviderExt defines the extended contract for secret provider implementations that
+// provide additional APIs needed only from the bootstrap code.
+type SecretProviderExt interface {
+	SecretProvider
+
+	// SecretsUpdated sets the secrets last updated time to current time.
+	SecretsUpdated()
+
+	// GetAccessToken return an access token for the specified token type and service key.
+	// Service key is use as the access token role which must have be previously setup.
+	GetAccessToken(tokenType string, serviceKey string) (string, error)
+
+	// SecretUpdatedAtSecretName performs updates and callbacks for an updated secret or secretName.
+	SecretUpdatedAtSecretName(secretName string)
 
 	// GetMetricsToRegister returns all metric objects that needs to be registered.
 	GetMetricsToRegister() map[string]interface{}
