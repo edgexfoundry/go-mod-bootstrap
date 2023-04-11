@@ -43,7 +43,7 @@ import (
 //
 // For typical usage, it is preferred to use AutoConfigAuthenticationFunc which
 // will automatically select between a real and a fake JWT validation handler.
-func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProvider, lc logger.LoggingClient) func(inner http.HandlerFunc) http.HandlerFunc {
+func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) func(inner http.HandlerFunc) http.HandlerFunc {
 	return func(inner http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -89,7 +89,7 @@ func NilAuthenticationHandlerFunc() func(inner http.HandlerFunc) http.HandlerFun
 // to disable JWT validation.  This might be wanted for an EdgeX
 // adopter that wanted to only validate JWT's at the proxy layer,
 // or as an escape hatch for a caller that cannot authenticate.
-func AutoConfigAuthenticationFunc(secretProvider interfaces.SecretProvider, lc logger.LoggingClient) func(inner http.HandlerFunc) http.HandlerFunc {
+func AutoConfigAuthenticationFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) func(inner http.HandlerFunc) http.HandlerFunc {
 	// Golang standard library treats an error as false
 	disableJWTValidation, _ := strconv.ParseBool(os.Getenv("EDGEX_DISABLE_JWT_VALIDATION"))
 	authenticationHook := NilAuthenticationHandlerFunc()

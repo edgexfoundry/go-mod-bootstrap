@@ -111,7 +111,7 @@ func RunAndReturnWaitGroup(
 
 	envVars := environment.NewVariables(lc)
 
-	var secretProvider interfaces.SecretProvider
+	var secretProvider interfaces.SecretProviderExt
 	if useSecretProvider {
 		secretProvider, err = secret.NewSecretProvider(serviceConfig, envVars, ctx, startupTimer, dic, serviceKey)
 		if err != nil {
@@ -180,7 +180,7 @@ func RunAndReturnWaitGroup(
 		// opportunity for the MetricsManager to have been created.
 		metricsManager := container.MetricsManagerFrom(dic.Get)
 		if metricsManager != nil {
-			secretProvider := container.SecretProviderFrom(dic.Get)
+			secretProvider := container.SecretProviderExtFrom(dic.Get)
 			if secretProvider != nil {
 				metrics := secretProvider.GetMetricsToRegister()
 				registerMetrics(metricsManager, metrics, lc)
