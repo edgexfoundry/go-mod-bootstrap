@@ -253,6 +253,35 @@ func (cp *Processor) Process(
 	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
 	err = cp.lc.SetLogLevel(serviceConfig.GetLogLevel())
 
+	if cp.flags.InDevMode() {
+		// Dev mode is for when running service with Config Provider in hybrid mode (all other service running in Docker).
+		// All the host values are set to the docker names in the common configuration, so must be overridden here with "localhost"
+		host := "localhost"
+		config := serviceConfig.GetBootstrap()
+
+		if config.Service != nil {
+			config.Service.Host = host
+		}
+
+		if config.MessageBus != nil {
+			config.MessageBus.Host = host
+		}
+
+		if config.Registry != nil {
+			config.Registry.Host = host
+		}
+
+		if config.Database != nil {
+			config.Database.Host = host
+		}
+
+		if config.Clients != nil {
+			for _, client := range *config.Clients {
+				client.Host = host
+			}
+		}
+	}
+
 	return err
 }
 

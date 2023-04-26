@@ -30,6 +30,7 @@ const (
 type Common interface {
 	OverwriteConfig() bool
 	UseRegistry() bool
+	InDevMode() bool
 	ConfigProviderUrl() string
 	Profile() string
 	ConfigDirectory() string
@@ -45,6 +46,7 @@ type Default struct {
 	additionalUsage   string
 	overwriteConfig   bool
 	useRegistry       bool
+	devMode           bool
 	configProviderUrl string
 	commonConfig      string
 	profile           string
@@ -97,6 +99,8 @@ func (d *Default) Parse(arguments []string) {
 	d.FlagSet.StringVar(&d.configDir, "cd", "", "")
 	d.FlagSet.BoolVar(&d.useRegistry, "registry", false, "")
 	d.FlagSet.BoolVar(&d.useRegistry, "r", false, "")
+	d.FlagSet.BoolVar(&d.devMode, "dev", false, "")
+	d.FlagSet.BoolVar(&d.devMode, "d", false, "")
 
 	d.FlagSet.Usage = d.helpCallback
 
@@ -115,6 +119,11 @@ func (d *Default) OverwriteConfig() bool {
 // UseRegistry returns whether the Registry should be used or not
 func (d *Default) UseRegistry() bool {
 	return d.useRegistry
+}
+
+// InDevMode returns whether running in dev mode or not
+func (d *Default) InDevMode() bool {
+	return d.devMode
 }
 
 // ConfigProviderUrl returns the url for the Configuration Provider, if one was specified.
@@ -163,6 +172,8 @@ func (d *Default) helpCallback() {
 			"    -p, --profile <name>            Indicate configuration profile other than default\n"+
 			"    -cd, --configDir                Specify local configuration directory\n"+
 			"    -r, --registry                  Indicates service should use Registry.\n"+
+			"    -d, --dev                       Indicates service to run in developer mode which causes Host configuration values to be overridden.\n"+
+			"                                    with `localhost`. This is so that it will run with other services running in Docker (aka hybrid mode)\n"+
 			"%s\n"+
 			"Common Options:\n"+
 			"	-h, --help                      Show this message\n",

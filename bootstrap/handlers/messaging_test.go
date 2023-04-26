@@ -84,7 +84,7 @@ func TestBootstrapHandler(t *testing.T) {
 			providerMock.On("GetSecret", test.MessageBus.SecretName).Return(usernameSecretData, nil)
 			configMock := &mocks.Configuration{}
 			configMock.On("GetBootstrap").Return(config.BootstrapConfiguration{
-				MessageBus: test.MessageBus,
+				MessageBus: &test.MessageBus,
 			})
 
 			dic.Update(di.ServiceConstructorMap{
