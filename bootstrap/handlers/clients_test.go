@@ -173,7 +173,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			clients := make(map[string]*config.ClientInfo)
+			clients := make(config.ClientsCollection)
 
 			if test.CoreDataClientInfo != nil {
 				clients[common.CoreDataServiceKey] = test.CoreDataClientInfo
@@ -199,7 +199,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				Service: &config.ServiceInfo{
 					RequestTimeout: "30s",
 				},
-				Clients:    clients,
+				Clients:    &clients,
 				MessageBus: &config.MessageBusInfo{},
 			}
 
@@ -309,7 +309,7 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 
 			mockMessaging := &messagingMocks.MessageClient{}
 
-			clients := make(map[string]*config.ClientInfo)
+			clients := make(config.ClientsCollection)
 			clients[common.CoreCommandServiceKey] = &config.ClientInfo{
 				UseMessageBus: true,
 			}
@@ -318,7 +318,7 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 				Service: &config.ServiceInfo{
 					RequestTimeout: test.TimeoutDuration,
 				},
-				Clients: clients,
+				Clients: &clients,
 			}
 
 			configMock := &mocks.Configuration{}

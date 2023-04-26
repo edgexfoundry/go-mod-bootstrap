@@ -63,98 +63,99 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	cb.registry = container.RegistryFrom(dic.Get)
 	jwtSecretProvider := secret.NewJWTSecretProvider(container.SecretProviderExtFrom(dic.Get))
 
-	for serviceKey, serviceInfo := range config.GetBootstrap().Clients {
-		var url string
-		var err error
+	if config.GetBootstrap().Clients != nil {
+		for serviceKey, serviceInfo := range *config.GetBootstrap().Clients {
+			var url string
+			var err error
 
-		if !serviceInfo.UseMessageBus {
-			url, err = cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, lc)
-			if err != nil {
-				lc.Error(err.Error())
-				return false
-			}
-		}
-
-		switch serviceKey {
-		case common.CoreDataServiceKey:
-			dic.Update(di.ServiceConstructorMap{
-				container.EventClientName: func(get di.Get) interface{} {
-					return clients.NewEventClient(url, jwtSecretProvider)
-				},
-			})
-		case common.CoreMetaDataServiceKey:
-			dic.Update(di.ServiceConstructorMap{
-				container.DeviceClientName: func(get di.Get) interface{} {
-					return clients.NewDeviceClient(url, jwtSecretProvider)
-				},
-				container.DeviceServiceClientName: func(get di.Get) interface{} {
-					return clients.NewDeviceServiceClient(url, jwtSecretProvider)
-				},
-				container.DeviceProfileClientName: func(get di.Get) interface{} {
-					return clients.NewDeviceProfileClient(url, jwtSecretProvider)
-				},
-				container.ProvisionWatcherClientName: func(get di.Get) interface{} {
-					return clients.NewProvisionWatcherClient(url, jwtSecretProvider)
-				},
-			})
-
-		case common.CoreCommandServiceKey:
-			var client interfaces.CommandClient
-
-			if serviceInfo.UseMessageBus {
-				// TODO: Move following outside loop when multiple messaging based clients exist
-				messageClient := container.MessagingClientFrom(dic.Get)
-				if messageClient == nil {
-					lc.Errorf("Unable to create Command client using MessageBus: %s", "MessageBus Client was not created")
-					return false
-				}
-
-				// TODO: Move following outside loop when multiple messaging based clients exist
-				timeout, err := time.ParseDuration(config.GetBootstrap().Service.RequestTimeout)
+			if !serviceInfo.UseMessageBus {
+				url, err = cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, lc)
 				if err != nil {
-					lc.Errorf("Unable to parse Service.RequestTimeout as a time duration: %v", err)
+					lc.Error(err.Error())
 					return false
 				}
-
-				baseTopic := config.GetBootstrap().MessageBus.GetBaseTopicPrefix()
-				client = clientsMessaging.NewCommandClient(messageClient, baseTopic, timeout)
-
-				lc.Infof("Using messaging for '%s' clients", serviceKey)
-			} else {
-				client = clients.NewCommandClient(url, jwtSecretProvider)
 			}
 
-			dic.Update(di.ServiceConstructorMap{
-				container.CommandClientName: func(get di.Get) interface{} {
-					return client
-				},
-			})
+			switch serviceKey {
+			case common.CoreDataServiceKey:
+				dic.Update(di.ServiceConstructorMap{
+					container.EventClientName: func(get di.Get) interface{} {
+						return clients.NewEventClient(url, jwtSecretProvider)
+					},
+				})
+			case common.CoreMetaDataServiceKey:
+				dic.Update(di.ServiceConstructorMap{
+					container.DeviceClientName: func(get di.Get) interface{} {
+						return clients.NewDeviceClient(url, jwtSecretProvider)
+					},
+					container.DeviceServiceClientName: func(get di.Get) interface{} {
+						return clients.NewDeviceServiceClient(url, jwtSecretProvider)
+					},
+					container.DeviceProfileClientName: func(get di.Get) interface{} {
+						return clients.NewDeviceProfileClient(url, jwtSecretProvider)
+					},
+					container.ProvisionWatcherClientName: func(get di.Get) interface{} {
+						return clients.NewProvisionWatcherClient(url, jwtSecretProvider)
+					},
+				})
 
-		case common.SupportNotificationsServiceKey:
-			dic.Update(di.ServiceConstructorMap{
-				container.NotificationClientName: func(get di.Get) interface{} {
-					return clients.NewNotificationClient(url, jwtSecretProvider)
-				},
-				container.SubscriptionClientName: func(get di.Get) interface{} {
-					return clients.NewSubscriptionClient(url, jwtSecretProvider)
-				},
-			})
+			case common.CoreCommandServiceKey:
+				var client interfaces.CommandClient
 
-		case common.SupportSchedulerServiceKey:
-			dic.Update(di.ServiceConstructorMap{
-				container.IntervalClientName: func(get di.Get) interface{} {
-					return clients.NewIntervalClient(url, jwtSecretProvider)
-				},
-				container.IntervalActionClientName: func(get di.Get) interface{} {
-					return clients.NewIntervalActionClient(url, jwtSecretProvider)
-				},
-			})
+				if serviceInfo.UseMessageBus {
+					// TODO: Move following outside loop when multiple messaging based clients exist
+					messageClient := container.MessagingClientFrom(dic.Get)
+					if messageClient == nil {
+						lc.Errorf("Unable to create Command client using MessageBus: %s", "MessageBus Client was not created")
+						return false
+					}
 
-		default:
+					// TODO: Move following outside loop when multiple messaging based clients exist
+					timeout, err := time.ParseDuration(config.GetBootstrap().Service.RequestTimeout)
+					if err != nil {
+						lc.Errorf("Unable to parse Service.RequestTimeout as a time duration: %v", err)
+						return false
+					}
 
+					baseTopic := config.GetBootstrap().MessageBus.GetBaseTopicPrefix()
+					client = clientsMessaging.NewCommandClient(messageClient, baseTopic, timeout)
+
+					lc.Infof("Using messaging for '%s' clients", serviceKey)
+				} else {
+					client = clients.NewCommandClient(url, jwtSecretProvider)
+				}
+
+				dic.Update(di.ServiceConstructorMap{
+					container.CommandClientName: func(get di.Get) interface{} {
+						return client
+					},
+				})
+
+			case common.SupportNotificationsServiceKey:
+				dic.Update(di.ServiceConstructorMap{
+					container.NotificationClientName: func(get di.Get) interface{} {
+						return clients.NewNotificationClient(url, jwtSecretProvider)
+					},
+					container.SubscriptionClientName: func(get di.Get) interface{} {
+						return clients.NewSubscriptionClient(url, jwtSecretProvider)
+					},
+				})
+
+			case common.SupportSchedulerServiceKey:
+				dic.Update(di.ServiceConstructorMap{
+					container.IntervalClientName: func(get di.Get) interface{} {
+						return clients.NewIntervalClient(url, jwtSecretProvider)
+					},
+					container.IntervalActionClientName: func(get di.Get) interface{} {
+						return clients.NewIntervalActionClient(url, jwtSecretProvider)
+					},
+				})
+
+			default:
+
+			}
 		}
 	}
-
 	return true
 }
 

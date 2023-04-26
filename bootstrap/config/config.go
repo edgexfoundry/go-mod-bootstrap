@@ -276,7 +276,7 @@ func (cp *Processor) Process(
 		}
 
 		if config.Clients != nil {
-			for _, client := range config.Clients {
+			for _, client := range *config.Clients {
 				client.Host = host
 			}
 		}

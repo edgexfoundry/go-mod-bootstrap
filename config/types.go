@@ -224,15 +224,18 @@ type InsecureSecretsInfo struct {
 	SecretData map[string]string
 }
 
+// ClientsCollection is a collection of Client information for communicating to dependent clients.
+type ClientsCollection map[string]*ClientInfo
+
 // BootstrapConfiguration defines the configuration elements required by the bootstrap.
 type BootstrapConfiguration struct {
-	Clients      map[string]*ClientInfo
+	Clients      *ClientsCollection
 	Service      *ServiceInfo
-	Config       ConfigProviderInfo
+	Config       *ConfigProviderInfo
 	Registry     *RegistryInfo
 	MessageBus   *MessageBusInfo
 	Database     *Database
-	ExternalMQTT ExternalMQTTInfo
+	ExternalMQTT *ExternalMQTTInfo
 }
 
 // MessageBusInfo provides parameters related to connecting to the EdgeX MessageBus
