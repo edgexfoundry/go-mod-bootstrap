@@ -64,8 +64,7 @@ func (c *ConfigurationMockStruct) UpdateWritableFromRaw(rawWritable interface{})
 
 func (c *ConfigurationMockStruct) GetBootstrap() config.BootstrapConfiguration {
 	return config.BootstrapConfiguration{
-		Service:  c.transformToBootstrapServiceInfo(),
-		Registry: c.Registry,
+		Registry: &c.Registry,
 	}
 }
 
@@ -83,10 +82,6 @@ func (c *ConfigurationMockStruct) GetInsecureSecrets() config.InsecureSecrets {
 
 func (c *ConfigurationMockStruct) GetTelemetryInfo() *config.TelemetryInfo {
 	return &c.Writable.Telemetry
-}
-
-func (c *ConfigurationMockStruct) transformToBootstrapServiceInfo() config.ServiceInfo {
-	return config.ServiceInfo{}
 }
 
 func (c *ConfigurationMockStruct) GetWritablePtr() any {

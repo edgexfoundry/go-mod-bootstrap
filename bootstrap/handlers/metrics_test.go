@@ -50,7 +50,9 @@ func TestServiceMetrics_BootstrapHandler(t *testing.T) {
 
 			mockMessagingClient := &mocks.MessageClient{}
 			mockConfiguration := &mocks2.Configuration{}
-			mockConfiguration.On("GetBootstrap").Return(config.BootstrapConfiguration{})
+			mockConfiguration.On("GetBootstrap").Return(config.BootstrapConfiguration{
+				MessageBus: &config.MessageBusInfo{},
+			})
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {

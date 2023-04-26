@@ -81,8 +81,8 @@ func (ut unitTestConfiguration) UpdateWritableFromRaw(_ interface{}) bool {
 
 func (ut unitTestConfiguration) GetBootstrap() config.BootstrapConfiguration {
 	return config.BootstrapConfiguration{
-		Service:  ut.Service,
-		Registry: ut.Registry,
+		Service:  &ut.Service,
+		Registry: &ut.Registry,
 	}
 }
 

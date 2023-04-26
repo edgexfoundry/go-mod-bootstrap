@@ -47,7 +47,7 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 	}
 
 	// Make sure the MessageBus password is not leaked into the Service Config that can be retrieved via the /config endpoint
-	messageBusInfo := deepCopy(messageBus)
+	messageBusInfo := deepCopy(*messageBus)
 
 	if len(messageBusInfo.AuthMode) > 0 &&
 		!strings.EqualFold(strings.TrimSpace(messageBusInfo.AuthMode), boostrapMessaging.AuthModeNone) {

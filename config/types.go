@@ -226,11 +226,12 @@ type InsecureSecretsInfo struct {
 
 // BootstrapConfiguration defines the configuration elements required by the bootstrap.
 type BootstrapConfiguration struct {
-	Clients      map[string]ClientInfo
-	Service      ServiceInfo
+	Clients      map[string]*ClientInfo
+	Service      *ServiceInfo
 	Config       ConfigProviderInfo
-	Registry     RegistryInfo
-	MessageBus   MessageBusInfo
+	Registry     *RegistryInfo
+	MessageBus   *MessageBusInfo
+	Database     *Database
 	ExternalMQTT ExternalMQTTInfo
 }
 

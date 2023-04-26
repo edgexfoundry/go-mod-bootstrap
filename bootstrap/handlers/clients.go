@@ -37,12 +37,15 @@ import (
 
 // ClientsBootstrap contains data to boostrap the configured clients
 type ClientsBootstrap struct {
-	registry registry.Client
+	registry  registry.Client
+	inDevMode bool
 }
 
 // NewClientsBootstrap is a factory method that returns the initialized "ClientsBootstrap" receiver struct.
-func NewClientsBootstrap() *ClientsBootstrap {
-	return &ClientsBootstrap{}
+func NewClientsBootstrap(devMode bool) *ClientsBootstrap {
+	return &ClientsBootstrap{
+		inDevMode: devMode,
+	}
 }
 
 // BootstrapHandler fulfills the BootstrapHandler contract.
@@ -156,7 +159,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 }
 
 func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, lc logger.LoggingClient) (string, error) {
-	if cb.registry == nil {
+	if cb.registry == nil || cb.inDevMode {
 		lc.Infof("Using REST for '%s' clients @ %s", serviceKey, defaultUrl)
 		return defaultUrl, nil
 	}

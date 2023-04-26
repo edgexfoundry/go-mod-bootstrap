@@ -173,33 +173,34 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			clients := make(map[string]config.ClientInfo)
+			clients := make(map[string]*config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
-				clients[common.CoreDataServiceKey] = *test.CoreDataClientInfo
+				clients[common.CoreDataServiceKey] = test.CoreDataClientInfo
 			}
 
 			if test.CommandClientInfo != nil {
-				clients[common.CoreCommandServiceKey] = *test.CommandClientInfo
+				clients[common.CoreCommandServiceKey] = test.CommandClientInfo
 			}
 
 			if test.MetadataClientInfo != nil {
-				clients[common.CoreMetaDataServiceKey] = *test.MetadataClientInfo
+				clients[common.CoreMetaDataServiceKey] = test.MetadataClientInfo
 			}
 
 			if test.NotificationClientInfo != nil {
-				clients[common.SupportNotificationsServiceKey] = *test.NotificationClientInfo
+				clients[common.SupportNotificationsServiceKey] = test.NotificationClientInfo
 			}
 
 			if test.SchedulerClientInfo != nil {
-				clients[common.SupportSchedulerServiceKey] = *test.SchedulerClientInfo
+				clients[common.SupportSchedulerServiceKey] = test.SchedulerClientInfo
 			}
 
 			bootstrapConfig := config.BootstrapConfiguration{
-				Service: config.ServiceInfo{
+				Service: &config.ServiceInfo{
 					RequestTimeout: "30s",
 				},
-				Clients: clients,
+				Clients:    clients,
+				MessageBus: &config.MessageBusInfo{},
 			}
 
 			configMock := &mocks.Configuration{}
@@ -223,7 +224,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				},
 			})
 
-			actualResult := NewClientsBootstrap().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			actualResult := NewClientsBootstrap(false).BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
 			require.Equal(t, actualResult, test.ExpectedResult)
 			if test.ExpectedResult == false {
 				return
@@ -308,13 +309,13 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 
 			mockMessaging := &messagingMocks.MessageClient{}
 
-			clients := make(map[string]config.ClientInfo)
-			clients[common.CoreCommandServiceKey] = config.ClientInfo{
+			clients := make(map[string]*config.ClientInfo)
+			clients[common.CoreCommandServiceKey] = &config.ClientInfo{
 				UseMessageBus: true,
 			}
 
 			bootstrapConfig := config.BootstrapConfiguration{
-				Service: config.ServiceInfo{
+				Service: &config.ServiceInfo{
 					RequestTimeout: test.TimeoutDuration,
 				},
 				Clients: clients,
@@ -340,7 +341,7 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 			})
 
 			startupTimer := startup.NewTimer(1, 1)
-			actualResult := NewClientsBootstrap().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			actualResult := NewClientsBootstrap(false).BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
 			require.False(t, actualResult)
 
 			mockLogger.AssertNumberOfCalls(t, "Errorf", 1)
