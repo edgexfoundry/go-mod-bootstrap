@@ -16,6 +16,7 @@
 # IDE
 /.idea
 .vscode
+*.iml
 
 VERSION
 

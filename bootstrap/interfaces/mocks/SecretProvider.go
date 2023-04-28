@@ -18,46 +18,6 @@ func (_m *SecretProvider) DeregisterSecretUpdatedCallback(secretName string) {
 	_m.Called(secretName)
 }
 
-// GetAccessToken provides a mock function with given fields: tokenType, serviceKey
-func (_m *SecretProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
-	ret := _m.Called(tokenType, serviceKey)
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (string, error)); ok {
-		return rf(tokenType, serviceKey)
-	}
-	if rf, ok := ret.Get(0).(func(string, string) string); ok {
-		r0 = rf(tokenType, serviceKey)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(tokenType, serviceKey)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetMetricsToRegister provides a mock function with given fields:
-func (_m *SecretProvider) GetMetricsToRegister() map[string]interface{} {
-	ret := _m.Called()
-
-	var r0 map[string]interface{}
-	if rf, ok := ret.Get(0).(func() map[string]interface{}); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]interface{})
-		}
-	}
-
-	return r0
-}
-
 // GetSecret provides a mock function with given fields: secretName, keys
 func (_m *SecretProvider) GetSecret(secretName string, keys ...string) (map[string]string, error) {
 	_va := make([]interface{}, len(keys))
@@ -91,30 +51,6 @@ func (_m *SecretProvider) GetSecret(secretName string, keys ...string) (map[stri
 	return r0, r1
 }
 
-// GetSelfJWT provides a mock function with given fields:
-func (_m *SecretProvider) GetSelfJWT() (string, error) {
-	ret := _m.Called()
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func() (string, error)); ok {
-		return rf()
-	}
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // HasSecret provides a mock function with given fields: secretName
 func (_m *SecretProvider) HasSecret(secretName string) (bool, error) {
 	ret := _m.Called(secretName)
@@ -132,30 +68,6 @@ func (_m *SecretProvider) HasSecret(secretName string) (bool, error) {
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(secretName)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// IsJWTValid provides a mock function with given fields: jwt
-func (_m *SecretProvider) IsJWTValid(jwt string) (bool, error) {
-	ret := _m.Called(jwt)
-
-	var r0 bool
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return rf(jwt)
-	}
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(jwt)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(jwt)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -189,8 +101,8 @@ func (_m *SecretProvider) ListSecretNames() ([]string, error) {
 	return r0, r1
 }
 
-// RegisteredSecretUpdatedCallback provides a mock function with given fields: secretName, callback
-func (_m *SecretProvider) RegisteredSecretUpdatedCallback(secretName string, callback func(string)) error {
+// RegisterSecretUpdatedCallback provides a mock function with given fields: secretName, callback
+func (_m *SecretProvider) RegisterSecretUpdatedCallback(secretName string, callback func(string)) error {
 	ret := _m.Called(secretName, callback)
 
 	var r0 error
@@ -201,11 +113,6 @@ func (_m *SecretProvider) RegisteredSecretUpdatedCallback(secretName string, cal
 	}
 
 	return r0
-}
-
-// SecretUpdatedAtSecretName provides a mock function with given fields: secretName
-func (_m *SecretProvider) SecretUpdatedAtSecretName(secretName string) {
-	_m.Called(secretName)
 }
 
 // SecretsLastUpdated provides a mock function with given fields:
@@ -220,11 +127,6 @@ func (_m *SecretProvider) SecretsLastUpdated() time.Time {
 	}
 
 	return r0
-}
-
-// SecretsUpdated provides a mock function with given fields:
-func (_m *SecretProvider) SecretsUpdated() {
-	_m.Called()
 }
 
 // StoreSecret provides a mock function with given fields: secretName, secrets
