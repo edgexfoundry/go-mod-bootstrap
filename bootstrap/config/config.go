@@ -831,9 +831,13 @@ func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigC
 
 func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration, raw any) {
 	lc := cp.lc
-	previousInsecureSecrets := serviceConfig.GetInsecureSecrets()
 	previousLogLevel := serviceConfig.GetLogLevel()
 	previousTelemetryInterval := serviceConfig.GetTelemetryInfo().Interval
+
+	var previousInsecureSecrets config.InsecureSecrets
+	if err := utils.DeepCopy(serviceConfig.GetInsecureSecrets(), &previousInsecureSecrets); err != nil {
+		lc.Errorf("failed to deep copy insecure secrets: %v", err)
+	}
 
 	if err := utils.MergeValues(serviceConfig.GetWritablePtr(), raw); err != nil {
 		lc.Errorf("failed to apply Writable change to service configuration: %v", err)
