@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 
@@ -313,26 +312,20 @@ func TestLoadCommonConfigFromFile(t *testing.T) {
 	}
 }
 
-func TestIsPrivateConfig(t *testing.T) {
-	commonConfig := ConfigurationMockStruct{
+func TestFindChangedKey(t *testing.T) {
+	previousConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
 			Telemetry: config.TelemetryInfo{
 				Interval: "30s",
 			},
 		},
 	}
-	commonWritable := commonConfig.GetWritablePtr()
 
-	updatedCommonConfig := ConfigurationMockStruct{
-		Writable: WritableInfo{
-			Telemetry: config.TelemetryInfo{
-				Interval: "10s",
-			},
-		},
-	}
-	updatedCommonWritable := updatedCommonConfig.GetWritablePtr()
+	previousWritable := previousConfig.GetWritablePtr()
 
-	updatedCommonKeyConfig := ConfigurationMockStruct{
+	noUpdatesWritable := previousConfig.GetWritablePtr()
+
+	updatedConfigNeyKey := ConfigurationMockStruct{
 		Writable: WritableInfo{
 			Telemetry: config.TelemetryInfo{
 				Interval: "30s",
@@ -340,20 +333,24 @@ func TestIsPrivateConfig(t *testing.T) {
 			},
 		},
 	}
-	updatedCommonKeyWritable := updatedCommonKeyConfig.GetWritablePtr()
+	updatedWritableNewKey := updatedConfigNeyKey.GetWritablePtr()
+
+	valueChangedConfig := previousConfig
+	valueChangedConfig.Writable.Telemetry.Interval = "45s"
+
+	valueChangedConfigWritable := valueChangedConfig.GetWritablePtr()
 
 	tests := []struct {
-		Name        string
-		previous    any
-		updated     any
-		privateKeys []string
-		expectedOut bool
+		Name          string
+		previous      any
+		updated       any
+		expectedFound bool
+		expectedKey   string
 	}{
-		{"happy path - updated key in common", commonWritable, updatedCommonWritable, []string{strings.Join([]string{writableKey, "Telemetry", "Metrics", "bogus"}, "/")}, false},
-		{"happy path - new key in common", commonWritable, updatedCommonKeyWritable, nil, false},
-		{"happy path - remove in common", updatedCommonKeyWritable, commonWritable, nil, false},
-		{"happy path - updated override privateKeys", commonWritable, updatedCommonWritable, []string{strings.Join([]string{writableKey, "Telemetry", "Interval"}, "/")}, true},
-		// new key in common - already exists in privateKeys
+		{"happy path - Value changed", previousWritable, valueChangedConfigWritable, true, "Telemetry/Interval"},
+		{"happy path - new key in map", previousWritable, updatedWritableNewKey, true, "Telemetry/Metrics/NewKey"},
+		{"happy path - key removed from map", updatedWritableNewKey, previousWritable, true, "Telemetry/Metrics"},
+		{"happy path - No Updates", previousWritable, noUpdatesWritable, false, ""},
 	}
 
 	for _, tc := range tests {
@@ -368,15 +365,13 @@ func TestIsPrivateConfig(t *testing.T) {
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} { return mockLogger },
 			})
-			providerClientMock := &mocks.Client{}
-			providerClientMock.On("GetConfigurationKeys", mock.Anything, mock.Anything).Return(tc.privateKeys, nil)
 
 			// create the processor
 			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
 			// set up mocks
-			result := proc.isPrivateOverride(tc.previous, tc.updated, providerClientMock)
-			require.Equal(t, tc.expectedOut, result)
-			providerClientMock.AssertExpectations(t)
+			actualKey, actualFound := proc.findChangedKey(tc.previous, tc.updated)
+			assert.Equal(t, tc.expectedFound, actualFound)
+			assert.Equal(t, tc.expectedKey, actualKey)
 			require.NotNil(t, cancel)
 		})
 	}

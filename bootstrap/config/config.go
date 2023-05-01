@@ -721,7 +721,7 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 
 // listenForCommonChanges leverages the Configuration Provider client's WatchForChanges() method to receive changes to and update the
 // service's common configuration writable sub-struct.
-func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configuration, commonConfigClient configuration.Client,
+func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configuration, configClient configuration.Client,
 	privateConfigClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
@@ -780,7 +780,7 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 					continue
 				}
 
-				if err := cp.processCommonConfigChange(fullServiceConfig, previousCommonWritable, rawMap, privateConfigClient); err != nil {
+				if err := cp.processCommonConfigChange(fullServiceConfig, previousCommonWritable, rawMap, privateConfigClient, configClient); err != nil {
 					lc.Error(err.Error())
 				}
 
@@ -788,29 +788,51 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 				previousCommonWritable = raw
 			}
 		}
-	}(fullServiceConfig, commonConfigClient, privateConfigClient, baseKey)
+	}(fullServiceConfig, configClient, privateConfigClient, baseKey)
 }
 
-func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Configuration, previousCommonWritable any, raw any, privateConfigClient configuration.Client) error {
-	// check if changed value is a private override
-	if cp.isPrivateOverride(previousCommonWritable, raw, privateConfigClient) {
-		return nil
+func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Configuration, previousCommonWritable any, raw any, privateConfigClient configuration.Client, configClient configuration.Client) error {
+	changedKey, found := cp.findChangedKey(previousCommonWritable, raw)
+	if found {
+		// Only need to check App/Device writable if change was made to the all-services writable
+		if configClient == cp.commonConfigClient {
+			// check if changed value (from all-services) is an App or Device common override
+			otherConfigClient := cp.appConfigClient
+			if otherConfigClient == nil {
+				otherConfigClient = cp.deviceConfigClient
+			}
+
+			// This case should not happen at this point, but need to guard against nil pointer
+			if otherConfigClient != nil {
+				if cp.isKeyInConfig(configClient, changedKey) {
+					cp.lc.Warnf("ignoring changed writable key %s overwritten in App or Device common writable", changedKey)
+					return nil
+				}
+			}
+
+		}
+
+		// check if changed value is a private override
+		if cp.isKeyInConfig(privateConfigClient, changedKey) {
+			cp.lc.Warnf("ignoring changed writable key %s overwritten in private writable", changedKey)
+			return nil
+		}
 	}
 
 	cp.applyWritableUpdates(fullServiceConfig, raw)
 	return nil
 }
 
-func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigClient configuration.Client) bool {
+func (cp *Processor) findChangedKey(previous any, updated any) (string, bool) {
 	var changedKey string
 	var previousMap, updatedMap map[string]any
 	if err := utils.ConvertToMap(previous, &previousMap); err != nil {
 		cp.lc.Errorf("could not convert previous interface to map: %s", err.Error())
-		return true
+		return "", false
 	}
 	if err := utils.ConvertToMap(updated, &updatedMap); err != nil {
 		cp.lc.Errorf("could not convert updated interface to map: %s", err.Error())
-		return true
+		return "", false
 	}
 	changedKey = walkMapForChange(previousMap, updatedMap, "")
 	if changedKey == "" {
@@ -818,15 +840,10 @@ func (cp *Processor) isPrivateOverride(previous any, updated any, privateConfigC
 		changedKey = walkMapForChange(updatedMap, previousMap, "")
 		if changedKey == "" {
 			cp.lc.Error("could not find updated writable key or an error occurred")
-			return true
+			return "", false
 		}
 	}
-	// check to see if that setting is in the private config
-	if cp.isKeyInPrivate(privateConfigClient, changedKey) {
-		cp.lc.Infof("ignoring changed writable key %s overwritten in private writable", changedKey)
-		return true
-	}
-	return false
+	return changedKey, true
 }
 
 func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration, raw any) {
@@ -1055,10 +1072,10 @@ func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, cha
 	return ""
 }
 
-func (cp *Processor) isKeyInPrivate(privateConfigClient configuration.Client, changedKey string) bool {
-	keys, err := privateConfigClient.GetConfigurationKeys(writableKey)
+func (cp *Processor) isKeyInConfig(configClient configuration.Client, changedKey string) bool {
+	keys, err := configClient.GetConfigurationKeys(writableKey)
 	if err != nil {
-		cp.lc.Errorf("could not get writable keys from private configuration: %s", err.Error())
+		cp.lc.Errorf("could not get writable keys from configuration: %s", err.Error())
 		// return true because shouldn't change an overridden value
 		// error means it is undetermined, so don't override to be safe
 		return true
