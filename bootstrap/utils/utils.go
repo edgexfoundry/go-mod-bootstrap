@@ -148,3 +148,16 @@ func StringSliceToMap(src []string) map[string]any {
 func BuildBaseKey(keys ...string) string {
 	return strings.Join(keys, PathSep)
 }
+
+// DeepCopy creates a deep copy/clone of a struct by using json to marshal the original struct, and then unmarshal it
+// back into the new copy. Note that this will only copy the exported fields.
+func DeepCopy(src any, dest any) error {
+	jsonBytes, err := json.Marshal(src)
+	if err != nil {
+		return fmt.Errorf("could not marshal %T to JSON: %v", src, err)
+	}
+	if err = json.Unmarshal(jsonBytes, &dest); err != nil {
+		return fmt.Errorf("could not unmarshal JSON (from %T) into type %T: %v", src, dest, err)
+	}
+	return nil
+}

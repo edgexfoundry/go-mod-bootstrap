@@ -231,3 +231,50 @@ func assertMapSettingValueNotExist(t *testing.T, actual map[string]any, actualPa
 
 	return true
 }
+
+func TestDeepCopy(t *testing.T) {
+	// create some nested data
+	orig := ConfigurationMockStruct{
+		Writable: WritableInfo{
+			LogLevel: "INFO",
+		},
+		Registry: config.RegistryInfo{
+			Host: "localhost",
+			Port: 8500,
+			Type: "consul",
+		},
+		Clients: map[string]config.ClientInfo{
+			"a": {
+				Host:          "localhost",
+				Port:          9000,
+				Protocol:      "tcp",
+				UseMessageBus: false,
+			},
+			"b": {
+				Host:          "localhost",
+				Port:          9001,
+				Protocol:      "udp",
+				UseMessageBus: false,
+			},
+			"c": {
+				Host:          "localhost",
+				Port:          9002,
+				Protocol:      "tcp",
+				UseMessageBus: true,
+			},
+		},
+	}
+
+	var clone ConfigurationMockStruct
+	err := DeepCopy(orig, &clone)
+	require.NoError(t, err)
+
+	// sanity check
+	assert.Equal(t, orig, clone)
+
+	// make sure that changes to the clone do not affect the original
+	clone.Writable.LogLevel = "DEBUG"
+	delete(clone.Clients, "b")
+	assert.NotEqual(t, orig, clone)
+
+}
