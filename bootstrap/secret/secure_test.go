@@ -409,50 +409,64 @@ func TestSecureProvider_ListSecretPathsSecrets(t *testing.T) {
 
 func TestSecureProvider_SecretUpdatedAtPath(t *testing.T) {
 	callbackCalled := false
-	callback := func(path string) {
+	callback := func(secretName string) {
 		callbackCalled = true
 	}
 
+	wildcardCalled := false
+	wildcard := func(secretName string) {
+		wildcardCalled = true
+	}
+
 	tests := []struct {
-		Name     string
-		Config   TestConfig
-		Path     string
-		Callback func(path string)
+		Name             string
+		Config           TestConfig
+		SecretName       string
+		Callback         func(secretName string)
+		WildcardCallback func(secretName string)
 	}{
-		{"Valid Secure", TestConfig{}, expectedSecretName, callback},
-		{"Valid No Callbacks", TestConfig{}, expectedSecretName, nil},
+		{"Valid With Callback", TestConfig{}, expectedSecretName, callback, nil},
+		{"Valid No Callbacks", TestConfig{}, expectedSecretName, nil, nil},
+		{"Valid Wildcard Only", TestConfig{}, expectedSecretName, nil, wildcard},
+		{"Valid With Callback and Wildcard", TestConfig{}, expectedSecretName, callback, wildcard},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			callbackCalled = false
+			wildcardCalled = false
 			target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.NewMockClient(), nil, nil, "testService")
 
 			if tc.Callback != nil {
-				target.registeredSecretCallbacks[tc.Path] = tc.Callback
+				target.registeredSecretCallbacks[tc.SecretName] = tc.Callback
+			}
+			if tc.WildcardCallback != nil {
+				target.registeredSecretCallbacks[WildcardName] = tc.WildcardCallback
 			}
 
-			target.SecretUpdatedAtSecretName(tc.Path)
+			target.SecretUpdatedAtSecretName(tc.SecretName)
 			assert.Equal(t, tc.Callback != nil, callbackCalled)
+			assert.Equal(t, tc.WildcardCallback != nil && tc.Callback == nil, wildcardCalled)
 		})
 	}
 }
 
-func TestSecureProvider_RegisteredSecretUpdatedCallback(t *testing.T) {
+func TestSecureProvider_RegisterSecretUpdatedCallback(t *testing.T) {
 	tests := []struct {
 		Name     string
 		Config   TestConfig
 		Path     string
-		Callback func(path string)
+		Callback func(secretName string)
 	}{
-		{"Valid Secure", TestConfig{}, expectedSecretName, func(path string) {}},
+		{"Valid Secure", TestConfig{}, expectedSecretName, func(secretName string) {}},
 		{"Valid No Callbacks", TestConfig{}, expectedSecretName, nil},
+		{"Valid Wildcard", TestConfig{}, WildcardName, func(secretName string) {}},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.NewMockClient(), nil, nil, "testService")
-			err := target.RegisteredSecretUpdatedCallback(tc.Path, tc.Callback)
+			err := target.RegisterSecretUpdatedCallback(tc.Path, tc.Callback)
 			assert.NoError(t, err)
 
 			if tc.Callback != nil {
@@ -469,20 +483,20 @@ func TestSecureProvider_DeregisterSecretUpdatedCallback(t *testing.T) {
 		Name     string
 		Config   TestConfig
 		Path     string
-		Callback func(path string)
+		Callback func(secretName string)
 	}{
-		{"Valid Secure", TestConfig{}, expectedSecretName, func(path string) {}},
+		{"Valid Secure", TestConfig{}, expectedSecretName, func(secretName string) {}},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.NewMockClient(), nil, nil, "testService")
 
-			// Register a path.
-			err := target.RegisteredSecretUpdatedCallback(tc.Path, tc.Callback)
+			// Register a callback.
+			err := target.RegisterSecretUpdatedCallback(tc.Path, tc.Callback)
 			assert.NoError(t, err)
 
-			// Deregister a path.
+			// Deregister a callback.
 			target.DeregisterSecretUpdatedCallback(tc.Path)
 			assert.Empty(t, target.registeredSecretCallbacks)
 		})

@@ -10,7 +10,9 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- *******************************************************************************/package interfaces
+ *******************************************************************************/
+
+package interfaces
 
 import "time"
 
@@ -33,8 +35,11 @@ type SecretProvider interface {
 	// HasSecret returns true if the service's SecretStore contains a secret at the specified secretName.
 	HasSecret(secretName string) (bool, error)
 
-	// RegisteredSecretUpdatedCallback registers a callback for a secret.
-	RegisteredSecretUpdatedCallback(secretName string, callback func(path string)) error
+	// RegisterSecretUpdatedCallback registers a callback for a secret. If you specify 'SecretNameWildcard'
+	// as the secretName, then the callback will be called for any updated secret. Callbacks set for a specific
+	// secretName are given a higher precedence over wildcard ones, and will be called instead of the wildcard one
+	// if both are present.
+	RegisterSecretUpdatedCallback(secretName string, callback func(secretName string)) error
 
 	// DeregisterSecretUpdatedCallback removes a secret's registered callback secretName.
 	DeregisterSecretUpdatedCallback(secretName string)

@@ -43,6 +43,8 @@ const (
 	AccessTokenAuthError = "HTTP response with status code 403"
 	//nolint: gosec
 	SecretsAuthError = "Received a '403' response"
+	// WildcardName is a special secret name that can be used to register a secret callback for any secret.
+	WildcardName = "*"
 )
 
 // SecureProvider implements the SecretProvider interface
@@ -388,7 +390,7 @@ func (p *SecureProvider) HasSecret(secretName string) (bool, error) {
 	return true, nil
 }
 
-// ListSecretSecretNames returns a list of secretNames for the current service from an insecure/secure secret store.
+// ListSecretNames returns a list of secretNames for the current service from an insecure/secure secret store.
 func (p *SecureProvider) ListSecretNames() ([]string, error) {
 
 	if p.secretClient == nil {
@@ -410,8 +412,11 @@ func (p *SecureProvider) ListSecretNames() ([]string, error) {
 	return secureSecrets, nil
 }
 
-// RegisteredSecretUpdatedCallback registers a callback for a secret.
-func (p *SecureProvider) RegisteredSecretUpdatedCallback(secretName string, callback func(secretName string)) error {
+// RegisterSecretUpdatedCallback registers a callback for a secret. If you specify secret.WildcardName
+// as the secretName, then the callback will be called for any updated secret. Callbacks set for a specific
+// secretName are given a higher precedence over wildcard ones, and will be called instead of the wildcard one
+// if both are present.
+func (p *SecureProvider) RegisterSecretUpdatedCallback(secretName string, callback func(secretName string)) error {
 	if _, ok := p.registeredSecretCallbacks[secretName]; ok {
 		return fmt.Errorf("there is a callback already registered for secretName '%v'", secretName)
 	}
@@ -425,15 +430,19 @@ func (p *SecureProvider) RegisteredSecretUpdatedCallback(secretName string, call
 // SecretUpdatedAtSecretName performs updates and callbacks for an updated secret or secretName.
 func (p *SecureProvider) SecretUpdatedAtSecretName(secretName string) {
 	p.lastUpdated = time.Now()
-	if p.registeredSecretCallbacks != nil {
-		// Execute Callback for provided secretName.
-		for k, v := range p.registeredSecretCallbacks {
-			if k == secretName {
-				p.lc.Debugf("invoking callback registered for secretName: '%s'", secretName)
-				v(secretName)
-				return
-			}
-		}
+	if p.registeredSecretCallbacks == nil {
+		return
+	}
+
+	// Execute Callback for provided secretName.
+	if callback, ok := p.registeredSecretCallbacks[secretName]; ok {
+		p.lc.Debugf("invoking callback registered for secretName: '%s'", secretName)
+		callback(secretName)
+
+		// if no callback is registered for secretName, see if wildcard callback is provided.
+	} else if callback, ok = p.registeredSecretCallbacks[WildcardName]; ok {
+		p.lc.Debugf("invoking wildcard callback for secretName: '%s'", secretName)
+		callback(secretName)
 	}
 }
 
