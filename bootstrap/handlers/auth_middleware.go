@@ -61,7 +61,7 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 					http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 					return
 				}
-				lc.Debug("Request to '%s' authorized", r.URL.Path)
+				lc.Debugf("Request to '%s' authorized", r.URL.Path)
 				inner(w, r)
 				return
 			}

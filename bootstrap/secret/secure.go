@@ -43,8 +43,6 @@ const (
 	AccessTokenAuthError = "HTTP response with status code 403"
 	//nolint: gosec
 	SecretsAuthError = "Received a '403' response"
-	// WildcardName is a special secret name that can be used to register a secret callback for any secret.
-	WildcardName = "*"
 )
 
 // SecureProvider implements the SecretProvider interface
