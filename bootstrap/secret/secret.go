@@ -41,12 +41,12 @@ import (
 
 // secret service Metric Names
 const (
-	secretsRequestedMetricName        = "SecuritySecretsRequested"
-	secretsStoredMetricName           = "SecuritySecretsStored"
-	securityConsulTokensRequestedName = "SecurityConsulTokensRequested"
-	securityConsulTokenDurationName   = "SecurityConsulTokenDuration"
-	securitySecretTokenDurationName   = "SecuritySecretTokenDuration"
-	securityGetSecretDurationName     = "SecurityGetSecretDuration"
+	secretsRequestedMetricName             = "SecuritySecretsRequested"
+	secretsStoredMetricName                = "SecuritySecretsStored"
+	securityConsulTokensRequestedName      = "SecurityConsulTokensRequested"
+	securityConsulTokenDurationName        = "SecurityConsulTokenDuration"
+	securityRuntimeSecretTokenDurationName = "SecurityRuntimeSecretTokenDuration"
+	securityGetSecretDurationName          = "SecurityGetSecretDuration"
 )
 
 // NewSecretProvider creates a new fully initialized the Secret Provider.
@@ -89,11 +89,13 @@ func NewSecretProvider(
 					secretStoreConfig.RuntimeTokenProvider)
 			}
 
-			securitySecretTokenDuration := gometrics.NewTimer()
-			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader, runtimeTokenLoader, serviceKey, lc, securitySecretTokenDuration)
+			// We need to create securityRuntimeSecretTokenDuration here because we want to measure the time taken
+			// to get the secret config, but the secureProvider instance is created after this step.
+			securityRuntimeSecretTokenDuration := gometrics.NewTimer()
+			secretConfig, err = getSecretConfig(secretStoreConfig, tokenLoader, runtimeTokenLoader, serviceKey, lc, securityRuntimeSecretTokenDuration)
 			if err == nil {
 				secureProvider := NewSecureProvider(ctx, secretStoreConfig, lc, tokenLoader, runtimeTokenLoader, serviceKey)
-				secureProvider.securitySecretTokenDuration = securitySecretTokenDuration
+				secureProvider.securityRuntimeSecretTokenDuration = securityRuntimeSecretTokenDuration
 				var secretClient secrets.SecretClient
 
 				lc.Info("Attempting to create secret client")
@@ -178,7 +180,7 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 	runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
 	serviceKey string,
 	lc logger.LoggingClient,
-	securitySecretTokenDuration gometrics.Timer) (types.SecretConfig, error) {
+	securityRuntimeSecretTokenDuration gometrics.Timer) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
 		Type:                 secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
 		Host:                 secretStoreInfo.Host,
@@ -209,7 +211,7 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 		// call spiffe token provider to get token on the fly
 		started := time.Now()
 		token, err = runtimeTokenLoader.GetRawToken(serviceKey)
-		securitySecretTokenDuration.UpdateSince(started)
+		securityRuntimeSecretTokenDuration.UpdateSince(started)
 	} else {
 		lc.Info("load token from file")
 		// else obtain the token from TokenFile

@@ -53,20 +53,20 @@ type SecureProvider struct {
 	lc           logger.LoggingClient
 	loader       authtokenloader.AuthTokenLoader
 	// runtimeTokenProvider is for delayed start services
-	runtimeTokenProvider          runtimetokenprovider.RuntimeTokenProvider
-	serviceKey                    string
-	secretStoreInfo               config.SecretStoreInfo
-	secretsCache                  map[string]map[string]string // secret's secretName, key, value
-	cacheMutex                    *sync.RWMutex
-	lastUpdated                   time.Time
-	ctx                           context.Context
-	registeredSecretCallbacks     map[string]func(secretName string)
-	securitySecretsRequested      gometrics.Counter
-	securitySecretsStored         gometrics.Counter
-	securityConsulTokensRequested gometrics.Counter
-	securityConsulTokenDuration   gometrics.Timer
-	securitySecretTokenDuration   gometrics.Timer
-	securityGetSecretDuration     gometrics.Timer
+	runtimeTokenProvider               runtimetokenprovider.RuntimeTokenProvider
+	serviceKey                         string
+	secretStoreInfo                    config.SecretStoreInfo
+	secretsCache                       map[string]map[string]string // secret's secretName, key, value
+	cacheMutex                         *sync.RWMutex
+	lastUpdated                        time.Time
+	ctx                                context.Context
+	registeredSecretCallbacks          map[string]func(secretName string)
+	securitySecretsRequested           gometrics.Counter
+	securitySecretsStored              gometrics.Counter
+	securityConsulTokensRequested      gometrics.Counter
+	securityConsulTokenDuration        gometrics.Timer
+	securityRuntimeSecretTokenDuration gometrics.Timer
+	securityGetSecretDuration          gometrics.Timer
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -74,22 +74,22 @@ func NewSecureProvider(ctx context.Context, secretStoreInfo *config.SecretStoreI
 	loader authtokenloader.AuthTokenLoader, runtimeTokenLoader runtimetokenprovider.RuntimeTokenProvider,
 	serviceKey string) *SecureProvider {
 	provider := &SecureProvider{
-		lc:                            lc,
-		loader:                        loader,
-		runtimeTokenProvider:          runtimeTokenLoader,
-		serviceKey:                    serviceKey,
-		secretStoreInfo:               *secretStoreInfo,
-		secretsCache:                  make(map[string]map[string]string),
-		cacheMutex:                    &sync.RWMutex{},
-		lastUpdated:                   time.Now(),
-		ctx:                           ctx,
-		registeredSecretCallbacks:     make(map[string]func(secretName string)),
-		securitySecretsRequested:      gometrics.NewCounter(),
-		securitySecretsStored:         gometrics.NewCounter(),
-		securityConsulTokensRequested: gometrics.NewCounter(),
-		securityConsulTokenDuration:   gometrics.NewTimer(),
-		securitySecretTokenDuration:   gometrics.NewTimer(),
-		securityGetSecretDuration:     gometrics.NewTimer(),
+		lc:                                 lc,
+		loader:                             loader,
+		runtimeTokenProvider:               runtimeTokenLoader,
+		serviceKey:                         serviceKey,
+		secretStoreInfo:                    *secretStoreInfo,
+		secretsCache:                       make(map[string]map[string]string),
+		cacheMutex:                         &sync.RWMutex{},
+		lastUpdated:                        time.Now(),
+		ctx:                                ctx,
+		registeredSecretCallbacks:          make(map[string]func(secretName string)),
+		securitySecretsRequested:           gometrics.NewCounter(),
+		securitySecretsStored:              gometrics.NewCounter(),
+		securityConsulTokensRequested:      gometrics.NewCounter(),
+		securityConsulTokenDuration:        gometrics.NewTimer(),
+		securityRuntimeSecretTokenDuration: gometrics.NewTimer(),
+		securityGetSecretDuration:          gometrics.NewTimer(),
 	}
 	return provider
 }
@@ -461,12 +461,12 @@ func (p *SecureProvider) DeregisterSecretUpdatedCallback(secretName string) {
 // GetMetricsToRegister returns all metric objects that needs to be registered.
 func (p *SecureProvider) GetMetricsToRegister() map[string]interface{} {
 	return map[string]interface{}{
-		secretsRequestedMetricName:        p.securitySecretsRequested,
-		secretsStoredMetricName:           p.securitySecretsStored,
-		securityConsulTokensRequestedName: p.securityConsulTokensRequested,
-		securityConsulTokenDurationName:   p.securityConsulTokenDuration,
-		securitySecretTokenDurationName:   p.securitySecretTokenDuration,
-		securityGetSecretDurationName:     p.securityGetSecretDuration,
+		secretsRequestedMetricName:             p.securitySecretsRequested,
+		secretsStoredMetricName:                p.securitySecretsStored,
+		securityConsulTokensRequestedName:      p.securityConsulTokensRequested,
+		securityConsulTokenDurationName:        p.securityConsulTokenDuration,
+		securityRuntimeSecretTokenDurationName: p.securityRuntimeSecretTokenDuration,
+		securityGetSecretDurationName:          p.securityGetSecretDuration,
 	}
 }
 
