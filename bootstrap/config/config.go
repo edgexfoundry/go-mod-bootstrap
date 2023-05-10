@@ -259,10 +259,6 @@ func (cp *Processor) Process(
 		host := "localhost"
 		config := serviceConfig.GetBootstrap()
 
-		if config.Service != nil {
-			config.Service.Host = host
-		}
-
 		if config.MessageBus != nil {
 			config.MessageBus.Host = host
 		}
