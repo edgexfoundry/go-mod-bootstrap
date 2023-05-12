@@ -113,7 +113,7 @@ func TestMessageBusReporter_Report(t *testing.T) {
 		expectedTags)
 	require.NoError(t, err)
 
-	reg := gometrics.DefaultRegistry
+	reg := gometrics.NewRegistry()
 
 	counter := gometrics.NewCounter()
 	counter.Inc(intValue)
