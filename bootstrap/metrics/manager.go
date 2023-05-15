@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2022 Intel Corp.
+ * Copyright 2022-2023 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -51,7 +51,7 @@ func (m *manager) ResetInterval(interval time.Duration) {
 func NewManager(lc logger.LoggingClient, interval time.Duration, reporter interfaces.MetricsReporter) interfaces.MetricsManager {
 	m := &manager{
 		lc:         lc,
-		registry:   gometrics.DefaultRegistry,
+		registry:   gometrics.NewRegistry(),
 		reporter:   reporter,
 		interval:   interval,
 		metricTags: make(map[string]map[string]string),
@@ -100,9 +100,10 @@ func (m *manager) Run(ctx context.Context, wg *sync.WaitGroup) {
 	m.ticker = time.NewTicker(m.interval)
 
 	wg.Add(1)
-	defer wg.Done()
 
 	go func() {
+		defer wg.Done()
+
 		for {
 			select {
 			case <-ctx.Done():
