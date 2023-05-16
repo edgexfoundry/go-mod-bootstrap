@@ -116,15 +116,14 @@ func (p *InsecureProvider) StoreSecret(secretName string, secrets map[string]str
 	p.securitySecretsStored.Inc(1)
 
 	// insert the top-level data about the secret name
-	secretPath := fmt.Sprintf("%s/%s", config.InsecureSecretsKey, secretName)
-	err := configClient.PutConfigurationValue(fmt.Sprintf("%s/%s", secretPath, config.SecretNameKey), []byte(secretName))
+	err := configClient.PutConfigurationValue(config.GetInsecureSecretNameFullPath(secretName), []byte(secretName))
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretName value in the config provider", err)
 	}
 
 	// insert each secret  key/value pair
 	for key, value := range secrets {
-		err = configClient.PutConfigurationValue(fmt.Sprintf("%s/%s/%s", secretPath, config.SecretDataKey, key), []byte(value))
+		err = configClient.PutConfigurationValue(config.GetInsecureSecretDataFullPath(secretName, key), []byte(value))
 		if err != nil {
 			return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretData key/value pair in the config provider", err)
 		}

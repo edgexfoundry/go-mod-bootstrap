@@ -394,3 +394,55 @@ func TestGetConfigFileLocation(t *testing.T) {
 	actual := GetConfigFileLocation(lc, flags)
 	assert.Equal(t, expected, actual)
 }
+
+func TestGetInsecureSecretNameFullPath(t *testing.T) {
+	tests := []struct {
+		secretName string
+		expected   string
+	}{
+		{
+			secretName: "credentials001",
+			expected:   writableKey + "/" + insecureSecretsKey + "/credentials001/" + secretNameKey,
+		},
+		{
+			secretName: "my-secret",
+			expected:   writableKey + "/" + insecureSecretsKey + "/my-secret/" + secretNameKey,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.secretName, func(t *testing.T) {
+			actual := GetInsecureSecretNameFullPath(test.secretName)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func TestGetInsecureSecretDataFullPath(t *testing.T) {
+	tests := []struct {
+		secretName string
+		key        string
+		expected   string
+	}{
+		{
+			secretName: "credentials001",
+			key:        "username",
+			expected:   writableKey + "/" + insecureSecretsKey + "/credentials001/" + secretDataKey + "/username",
+		},
+		{
+			secretName: "credentials001",
+			key:        "password",
+			expected:   writableKey + "/" + insecureSecretsKey + "/credentials001/" + secretDataKey + "/password",
+		},
+		{
+			secretName: "my-secret",
+			key:        "password",
+			expected:   writableKey + "/" + insecureSecretsKey + "/my-secret/" + secretDataKey + "/password",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.secretName+"_"+test.key, func(t *testing.T) {
+			actual := GetInsecureSecretDataFullPath(test.secretName, test.key)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}

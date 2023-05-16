@@ -139,21 +139,21 @@ func TestInsecureProvider_StoreSecrets(t *testing.T) {
 
 	// make sure the secret name is stored exactly once
 	testMocks.configClient.On("PutConfigurationValue",
-		fmt.Sprintf("%s/%s/%s", config.InsecureSecretsKey, secretName, config.SecretNameKey),
+		config.GetInsecureSecretNameFullPath(secretName),
 		[]uint8(secretName)). // need to use uint8 because byte is just an alias
 		Return(nil).
 		Once()
 
 	// make sure the proper key1/value1 pair is stored exactly once
 	testMocks.configClient.On("PutConfigurationValue",
-		fmt.Sprintf("%s/%s/%s/%s", config.InsecureSecretsKey, secretName, config.SecretDataKey, key1),
+		config.GetInsecureSecretDataFullPath(secretName, key1),
 		[]uint8(value1)). // need to use uint8 because byte is just an alias
 		Return(nil).
 		Once()
 
 	// make sure the proper key2/value2 pair is stored exactly once
 	testMocks.configClient.On("PutConfigurationValue",
-		fmt.Sprintf("%s/%s/%s/%s", config.InsecureSecretsKey, secretName, config.SecretDataKey, key2),
+		config.GetInsecureSecretDataFullPath(secretName, key2),
 		[]uint8(value2)). // need to use uint8 because byte is just an alias
 		Return(nil).
 		Once()

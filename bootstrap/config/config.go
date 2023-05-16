@@ -49,10 +49,10 @@ import (
 )
 
 const (
-	WritableKey        = "Writable"
-	InsecureSecretsKey = WritableKey + "/InsecureSecrets"
-	SecretNameKey      = "SecretName"
-	SecretDataKey      = "SecretData"
+	writableKey        = "Writable"
+	insecureSecretsKey = "InsecureSecrets"
+	secretNameKey      = "SecretName"
+	secretDataKey      = "SecretData"
 
 	allServicesKey    = "all-services"
 	appServicesKey    = "app-services"
@@ -679,13 +679,13 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 		updateStream := make(chan any)
 		defer close(updateStream)
 
-		go configClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), WritableKey)
+		go configClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey)
 
 		for {
 			select {
 			case <-cp.ctx.Done():
 				configClient.StopWatching()
-				lc.Infof("Watching for '%s' configuration changes has stopped", WritableKey)
+				lc.Infof("Watching for '%s' configuration changes has stopped", writableKey)
 				return
 
 			case ex := <-errorStream:
@@ -696,14 +696,14 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 					return
 				}
 
-				usedKeys, err := configClient.GetConfigurationKeys(WritableKey)
+				usedKeys, err := configClient.GetConfigurationKeys(writableKey)
 				if err != nil {
-					lc.Errorf("failed to get list of private configuration keys for %s: %v", WritableKey, err)
+					lc.Errorf("failed to get list of private configuration keys for %s: %v", writableKey, err)
 				}
 
-				rawMap, err := utils.RemoveUnusedSettings(raw, utils.BuildBaseKey(baseKey, WritableKey), utils.StringSliceToMap(usedKeys))
+				rawMap, err := utils.RemoveUnusedSettings(raw, utils.BuildBaseKey(baseKey, writableKey), utils.StringSliceToMap(usedKeys))
 				if err != nil {
-					lc.Errorf("failed to remove unused private settings in %s: %v", WritableKey, err)
+					lc.Errorf("failed to remove unused private settings in %s: %v", writableKey, err)
 				}
 
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
@@ -725,7 +725,7 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 	privateConfigClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
-	baseKey = utils.BuildBaseKey(baseKey, WritableKey)
+	baseKey = utils.BuildBaseKey(baseKey, writableKey)
 
 	cp.wg.Add(1)
 	go func(fullServiceConfig interfaces.Configuration,
@@ -741,13 +741,13 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 		updateStream := make(chan any)
 		defer close(updateStream)
 
-		go commonConfigClient.WatchForChanges(updateStream, errorStream, fullServiceConfig.EmptyWritablePtr(), WritableKey)
+		go commonConfigClient.WatchForChanges(updateStream, errorStream, fullServiceConfig.EmptyWritablePtr(), writableKey)
 
 		for {
 			select {
 			case <-cp.ctx.Done():
 				commonConfigClient.StopWatching()
-				lc.Infof("Watching for '%s' configuration changes has stopped", WritableKey)
+				lc.Infof("Watching for '%s' configuration changes has stopped", writableKey)
 				return
 
 			case ex := <-errorStream:
@@ -758,16 +758,16 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 					return
 				}
 
-				usedKeys, err := commonConfigClient.GetConfigurationKeys(WritableKey)
+				usedKeys, err := commonConfigClient.GetConfigurationKeys(writableKey)
 				if err != nil {
 					if err != nil {
-						lc.Errorf("failed to get list of common configuration keys for %s: %v", WritableKey, err)
+						lc.Errorf("failed to get list of common configuration keys for %s: %v", writableKey, err)
 					}
 				}
 
 				rawMap, err := utils.RemoveUnusedSettings(raw, baseKey, utils.StringSliceToMap(usedKeys))
 				if err != nil {
-					lc.Errorf("failed to remove unused common settings in %s: %v", WritableKey, err)
+					lc.Errorf("failed to remove unused common settings in %s: %v", writableKey, err)
 				}
 
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
@@ -1073,14 +1073,14 @@ func walkMapForChange(previousMap map[string]any, updatedMap map[string]any, cha
 }
 
 func (cp *Processor) isKeyInConfig(configClient configuration.Client, changedKey string) bool {
-	keys, err := configClient.GetConfigurationKeys(WritableKey)
+	keys, err := configClient.GetConfigurationKeys(writableKey)
 	if err != nil {
 		cp.lc.Errorf("could not get writable keys from configuration: %s", err.Error())
 		// return true because shouldn't change an overridden value
 		// error means it is undetermined, so don't override to be safe
 		return true
 	}
-	changedKey = fmt.Sprintf("%s/%s", WritableKey, changedKey)
+	changedKey = fmt.Sprintf("%s/%s", writableKey, changedKey)
 
 	for _, key := range keys {
 		if strings.Contains(key, changedKey) {
@@ -1096,4 +1096,18 @@ func buildNewKey(previousKey, currentKey string) string {
 	} else {
 		return currentKey
 	}
+}
+
+// GetInsecureSecretNameFullPath returns the full configuration path of an InsecureSecret's SecretName field.
+// example: Writable/InsecureSecrets/credentials001/SecretName
+func GetInsecureSecretNameFullPath(secretName string) string {
+	return fmt.Sprintf("%s/%s/%s/%s",
+		writableKey, insecureSecretsKey, secretName, secretNameKey)
+}
+
+// GetInsecureSecretDataFullPath returns the full configuration path of an InsecureSecret's SecretData for a specific key.
+// example: Writable/InsecureSecrets/credentials001/SecretData/username
+func GetInsecureSecretDataFullPath(secretName, key string) string {
+	return fmt.Sprintf("%s/%s/%s/%s/%s",
+		writableKey, insecureSecretsKey, secretName, secretDataKey, key)
 }
