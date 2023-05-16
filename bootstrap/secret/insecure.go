@@ -16,6 +16,7 @@ package secret
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
@@ -26,12 +27,6 @@ import (
 	gometrics "github.com/rcrowley/go-metrics"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-)
-
-const (
-	// todo: should these be in `common` package?
-	writableKey        = "Writable"
-	insecureSecretsKey = writableKey + "/InsecureSecrets"
 )
 
 // InsecureProvider implements the SecretProvider interface for insecure secrets
@@ -121,15 +116,15 @@ func (p *InsecureProvider) StoreSecret(secretName string, secrets map[string]str
 	p.securitySecretsStored.Inc(1)
 
 	// insert the top-level data about the secret name
-	basePath := fmt.Sprintf("%s/%s", insecureSecretsKey, secretName)
-	err := configClient.PutConfigurationValue(basePath+"/SecretName", []byte(secretName))
+	secretPath := fmt.Sprintf("%s/%s", config.InsecureSecretsKey, secretName)
+	err := configClient.PutConfigurationValue(fmt.Sprintf("%s/%s", secretPath, config.SecretNameKey), []byte(secretName))
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretName value in the config provider", err)
 	}
 
 	// insert each secret  key/value pair
 	for key, value := range secrets {
-		err = configClient.PutConfigurationValue(fmt.Sprintf("%s/SecretData/%s", basePath, key), []byte(value))
+		err = configClient.PutConfigurationValue(fmt.Sprintf("%s/%s/%s", secretPath, config.SecretDataKey, key), []byte(value))
 		if err != nil {
 			return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretData key/value pair in the config provider", err)
 		}

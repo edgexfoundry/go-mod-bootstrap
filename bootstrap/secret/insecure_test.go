@@ -16,6 +16,7 @@ package secret
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/stretchr/testify/mock"
@@ -138,21 +139,21 @@ func TestInsecureProvider_StoreSecrets(t *testing.T) {
 
 	// make sure the secret name is stored exactly once
 	testMocks.configClient.On("PutConfigurationValue",
-		fmt.Sprintf("%s/%s/SecretName", insecureSecretsKey, secretName),
+		fmt.Sprintf("%s/%s/%s", config.InsecureSecretsKey, secretName, config.SecretNameKey),
 		[]uint8(secretName)). // need to use uint8 because byte is just an alias
 		Return(nil).
 		Once()
 
 	// make sure the proper key1/value1 pair is stored exactly once
 	testMocks.configClient.On("PutConfigurationValue",
-		fmt.Sprintf("%s/%s/SecretData/%s", insecureSecretsKey, secretName, key1),
+		fmt.Sprintf("%s/%s/%s/%s", config.InsecureSecretsKey, secretName, config.SecretDataKey, key1),
 		[]uint8(value1)). // need to use uint8 because byte is just an alias
 		Return(nil).
 		Once()
 
 	// make sure the proper key2/value2 pair is stored exactly once
 	testMocks.configClient.On("PutConfigurationValue",
-		fmt.Sprintf("%s/%s/SecretData/%s", insecureSecretsKey, secretName, key2),
+		fmt.Sprintf("%s/%s/%s/%s", config.InsecureSecretsKey, secretName, config.SecretDataKey, key2),
 		[]uint8(value2)). // need to use uint8 because byte is just an alias
 		Return(nil).
 		Once()
