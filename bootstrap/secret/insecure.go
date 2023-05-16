@@ -106,7 +106,9 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 	return results, nil
 }
 
-// StoreSecret stores the secrets, but is not supported for Insecure Secrets
+// StoreSecret stores the secrets in the ConfigurationProvider's InsecureSecrets. If no ConfigurationProvider is in use,
+// it will return an error. This does not explicitly call SecretUpdatedAtSecretName because that will get called when
+// the ConfigurationProvider tells the service that the configuration has updated.
 func (p *InsecureProvider) StoreSecret(secretName string, secrets map[string]string) error {
 	configClient := container.ConfigClientFrom(p.dic.Get)
 	if configClient == nil {
@@ -121,7 +123,7 @@ func (p *InsecureProvider) StoreSecret(secretName string, secrets map[string]str
 		return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretName value in the config provider", err)
 	}
 
-	// insert each secret  key/value pair
+	// insert each secret key/value pair
 	for key, value := range secrets {
 		err = configClient.PutConfigurationValue(config.GetInsecureSecretDataFullPath(secretName, key), []byte(value))
 		if err != nil {
