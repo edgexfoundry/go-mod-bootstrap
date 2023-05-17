@@ -15,8 +15,11 @@
 package secret
 
 import (
-	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"strings"
 	"time"
 
@@ -34,10 +37,11 @@ type InsecureProvider struct {
 	registeredSecretCallbacks map[string]func(secretName string)
 	securitySecretsRequested  gometrics.Counter
 	securitySecretsStored     gometrics.Counter
+	dic                       *di.Container
 }
 
 // NewInsecureProvider creates, initializes Provider for insecure secrets.
-func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClient) *InsecureProvider {
+func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClient, dic *di.Container) *InsecureProvider {
 	return &InsecureProvider{
 		configuration:             config,
 		lc:                        lc,
@@ -45,6 +49,7 @@ func NewInsecureProvider(config interfaces.Configuration, lc logger.LoggingClien
 		registeredSecretCallbacks: make(map[string]func(secretName string)),
 		securitySecretsRequested:  gometrics.NewCounter(),
 		securitySecretsStored:     gometrics.NewCounter(),
+		dic:                       dic,
 	}
 }
 
@@ -101,9 +106,31 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 	return results, nil
 }
 
-// StoreSecret stores the secrets, but is not supported for Insecure Secrets
-func (p *InsecureProvider) StoreSecret(_ string, _ map[string]string) error {
-	return errors.New("storing secrets is not supported when running in insecure mode")
+// StoreSecret attempts to store the secrets in the ConfigurationProvider's InsecureSecrets. If no ConfigurationProvider
+// is in use, it will return an error.
+//
+// Note: This does not call SecretUpdatedAtSecretName, SecretsUpdated, or increase the secrets stored metric because
+// those will all occur once the ConfigurationProvider tells the service that the configuration has updated.
+func (p *InsecureProvider) StoreSecret(secretName string, secrets map[string]string) error {
+	configClient := container.ConfigClientFrom(p.dic.Get)
+	if configClient == nil {
+		return errors.NewCommonEdgeX(errors.KindNotAllowed, "can't store secrets. ConfigurationProvider is not in use or has not been properly initialized", nil)
+	}
+
+	// insert the top-level data about the secret name
+	err := configClient.PutConfigurationValue(config.GetInsecureSecretNameFullPath(secretName), []byte(secretName))
+	if err != nil {
+		return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretName value in the config provider", err)
+	}
+
+	// insert each secret key/value pair
+	for key, value := range secrets {
+		err = configClient.PutConfigurationValue(config.GetInsecureSecretDataFullPath(secretName, key), []byte(value))
+		if err != nil {
+			return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretData key/value pair in the config provider", err)
+		}
+	}
+	return nil
 }
 
 // SecretsUpdated resets LastUpdate time for the Insecure Secrets.

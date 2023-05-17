@@ -138,7 +138,7 @@ func NewSecretProvider(
 		}
 
 	case false:
-		provider = NewInsecureProvider(configuration, lc)
+		provider = NewInsecureProvider(configuration, lc, dic)
 	}
 
 	dic.Update(di.ServiceConstructorMap{

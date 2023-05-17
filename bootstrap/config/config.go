@@ -49,7 +49,11 @@ import (
 )
 
 const (
-	writableKey       = "Writable"
+	writableKey        = "Writable"
+	insecureSecretsKey = "InsecureSecrets"
+	secretNameKey      = "SecretName"
+	secretDataKey      = "SecretData"
+
 	allServicesKey    = "all-services"
 	appServicesKey    = "app-services"
 	deviceServicesKey = "device-services"
@@ -860,7 +864,7 @@ func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration
 	currentLogLevel := serviceConfig.GetLogLevel()
 	currentTelemetryInterval := serviceConfig.GetTelemetryInfo().Interval
 
-	lc.Info("Writeable configuration has been updated from the Configuration Provider")
+	lc.Info("Writable configuration has been updated from the Configuration Provider")
 
 	// Note: Updates occur one setting at a time so only have to look for single changes
 	switch {
@@ -1092,4 +1096,18 @@ func buildNewKey(previousKey, currentKey string) string {
 	} else {
 		return currentKey
 	}
+}
+
+// GetInsecureSecretNameFullPath returns the full configuration path of an InsecureSecret's SecretName field.
+// example: Writable/InsecureSecrets/credentials001/SecretName
+func GetInsecureSecretNameFullPath(secretName string) string {
+	return fmt.Sprintf("%s/%s/%s/%s",
+		writableKey, insecureSecretsKey, secretName, secretNameKey)
+}
+
+// GetInsecureSecretDataFullPath returns the full configuration path of an InsecureSecret's SecretData for a specific key.
+// example: Writable/InsecureSecrets/credentials001/SecretData/username
+func GetInsecureSecretDataFullPath(secretName, key string) string {
+	return fmt.Sprintf("%s/%s/%s/%s/%s",
+		writableKey, insecureSecretsKey, secretName, secretDataKey, key)
 }
