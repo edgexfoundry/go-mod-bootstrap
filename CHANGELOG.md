@@ -11,6 +11,105 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) 
 
+## [v3.0.0] - 2023-05-31
+
+### Features ✨
+- Add support for wildcard in secret updated callback and rename RegisteredSecretUpdatedCallback  ([#d335988](https://github.com/edgexfoundry/go-mod-bootstrap/commit/d3359882e7a0b8fc3808c94e27140267c7d8c1a0))
+  ```text
+  BREAKING CHANGE: Renamed RegisteredSecretUpdatedCallback to RegisterSecretUpdatedCallback
+  ```
+- Apply env overrides only when config loaded from file ([#99b3ee9](https://github.com/edgexfoundry/go-mod-bootstrap/commit/99b3ee95f87e24d2dc939cb57e681beebcc2188f))
+  ```text
+  BREAKING CHANGE: Overrides are no longer applied to values pulled from Configuration Provider. Configuration Provider is now the system of record for configuration, when used.
+  ```
+- Load common configuration ([#e74b4a8](https://github.com/edgexfoundry/go-mod-bootstrap/commit/e74b4a89c702c02832bb8216fdda8847bedc2ac3))
+  ```text
+  BREAKING CHANGE: calls to bootstrap.RunAndReturnWaitGroup must include the service type
+  ```
+- Rename environment variables for the sake of consistency ([#402](https://github.com/edgexfoundry/go-mod-bootstrap/issues/402)) ([#ff25685](https://github.com/edgexfoundry/go-mod-bootstrap/commits/ff25685))
+  ```
+  BREAKING CHANGE:
+  - `EDGEX_CONFIGURTION_PROVIDER` is replaced by `EDGEX_CONFIG_PROVIDER`
+  - `EDGEX_CONF_DIR` is replaced by `EDGEX_CONFIG_DIR`
+  ```
+- Support /api/v3/secret endpoint in non-secure mode ([#542](https://github.com/edgexfoundry/go-mod-bootstrap/issues/542)) ([#77722ae](https://github.com/edgexfoundry/go-mod-bootstrap/commits/77722ae))
+- Add Metrics for getting secret token and getting secret  ([#8d6813b](https://github.com/edgexfoundry/go-mod-bootstrap/commits/8d6813b))
+- Add -d/--dev common command-line flag to put service in Dev Mode ([#516](https://github.com/edgexfoundry/go-mod-bootstrap/issues/516)) ([#0c0b475](https://github.com/edgexfoundry/go-mod-bootstrap/commits/0c0b475))
+- Add command line/environment flag for commonConfig ([#487](https://github.com/edgexfoundry/go-mod-bootstrap/issues/487)) ([#fed18d9](https://github.com/edgexfoundry/go-mod-bootstrap/commits/fed18d9))
+- Implement watch for common config writable ([#456](https://github.com/edgexfoundry/go-mod-bootstrap/issues/456)) ([#f5fe044](https://github.com/edgexfoundry/go-mod-bootstrap/commits/f5fe044))
+- Implement new IsRegistered API for MetricsManager ([#446](https://github.com/edgexfoundry/go-mod-bootstrap/issues/446)) ([#8ddd9e2](https://github.com/edgexfoundry/go-mod-bootstrap/commits/8ddd9e2))
+- Add go-mod-bootstrap hooks for JWT generation and verification ([#a31da98](https://github.com/edgexfoundry/go-mod-bootstrap/commits/a31da98))
+- Add go-mod-bootstrap hooks for JWT generation and verification ([#8d2d623](https://github.com/edgexfoundry/go-mod-bootstrap/commits/8d2d623))
+
+
+### Bug Fixes 🐛
+
+- Check nil pointer in `buildPaths()` ([#495](https://github.com/edgexfoundry/go-mod-bootstrap/issues/495)) ([#02bbd1b](https://github.com/edgexfoundry/go-mod-bootstrap/commits/02bbd1b))
+- InsecureSecrets change detection ([#525](https://github.com/edgexfoundry/go-mod-bootstrap/issues/525)) ([#a09e027](https://github.com/edgexfoundry/go-mod-bootstrap/commits/a09e027))
+- Don't attempt to wrap error to LoggingClient ([#3bc6273](https://github.com/edgexfoundry/go-mod-bootstrap/commits/3bc6273))
+- **metrics:** do not use shared DefaultRegistry and fix wg.Done call ([#543](https://github.com/edgexfoundry/go-mod-bootstrap/issues/543)) ([#4aa258a](https://github.com/edgexfoundry/go-mod-bootstrap/commits/4aa258a))
+
+### Code Refactoring ♻
+- Rework SecretProvider interface so App/Device Services have limited API ([#d95cec14](https://github.com/edgexfoundry/go-mod-bootstrap/commit/d95cec14f58e3cd099609bcde1004459619ca645))
+  ```text
+  BREAKING CHANGE: Services that need full SecretProvider API now use SecretProviderExt. Extra APIs have been removed for App/Device Services.
+  ```
+- Change Database timeout to a duration string ([#0c6b57a](https://github.com/edgexfoundry/go-mod-bootstrap/commit/0c6b57a37e828911869d3f8fcd99d2372771f96c))
+  ```text
+  BREAKING CHANGE: Database Timeout type has changed from `int` to duration`string`. Update configuration appropriately.
+  ```
+- Rework to remove use of TOML package ([#4f2cfc7](https://github.com/edgexfoundry/go-mod-bootstrap/commit/4f2cfc7b2138f8cecea866b1db01387ccea9e17f))
+  ```text
+  BREAKING CHANGE: OverrideTomlValues changed to OverrideConfigMapValues and GetConfigLocation changed to GetConfigFileLocation
+  ```
+- Switch to loading configuation files as YAML ([#9d98d1e](https://github.com/edgexfoundry/go-mod-bootstrap/commit/9d98d1e0776d9318972cb8a0c851d1c9cce628cc))
+  ```text
+  BREAKING CHANGE: All configruation file must now be in YAML format. The default file name has changed to be configuration.yaml
+  ```
+- Remove unused AuthModeKey and SecretNameKey ([#91df2ca](https://github.com/edgexfoundry/go-mod-bootstrap/commit/91df2cab5fbaba815e995a6abf77c007eaf8ddcd))
+  ```text
+  BREAKING CHANGE: AuthModeKey and SecretNameKey public constants have been removed
+  ```
+- Refactor all usages of path to be secretName in APIs ([#7449463](https://github.com/edgexfoundry/go-mod-bootstrap/commit/744946316a829875f36ac6478fef32162c01b121))
+  ```text
+  BREAKING CHANGE: path parameter has been renamed to secretName in all APIs
+  ```
+- Replace topics from config with new constants ([#45461fa](https://github.com/edgexfoundry/go-mod-bootstrap/commit/45461fad361632d16a9d7c5ffe600ba7f8b7715b))
+  ```text
+  BREAKING CHANGE: Topics no longer in configuration
+  ```
+- Rework MessageBus configuration for all services to use consistently ([#3599fd1](https://github.com/edgexfoundry/go-mod-bootstrap/commit/3599fd1662e5f817d604f170f0af8865bbfd19f0))
+  ```text
+  BREAKING CHANGE: MessageQueue renamed to MessageBus and fields changed. See v3 Migration guide.
+  ```
+- Replace SecretStore service config with default values and overrides ([#4709c62](https://github.com/edgexfoundry/go-mod-bootstrap/commit/4709c6263787ef6556c1d7017b033b47cb029bd0))
+  ```text
+  BREAKING CHANGE: SecretStore config no longer in service configuration file. Changes must be done via use of environment variable overrides of default values
+
+  ```
+- Rename command line flags for the sake of consistency ([#010e84a](https://github.com/edgexfoundry/go-mod-bootstrap/commit/010e84a4f5c9fb5bad160c9a325d4b1cd0611808))
+  ```text
+  BREAKING CHANGE:
+    - `-c/--confdir` to `-cd/--configDir`
+    - `-f/--file` to `-cf/--configFile`
+  ```
+- Don't add version to Config Stem ([#6cf9e04](https://github.com/edgexfoundry/go-mod-bootstrap/commit/6cf9e040e289ca8ddff99a8dd7769029d70563ed))
+  ```text
+  BREAKING CHANGE: Service configuration location in Consul has changed
+  ```
+- Update module to v3 ([#608b320](https://github.com/edgexfoundry/go-mod-bootstrap/commit/608b3207a4485660e9bf4596eb36916c67f542cc))
+  ```text
+  BREAKING CHANGE: Import paths will need to change to v3
+  ```
+- Use updated config provider function for isCommonConfigReady ([#450](https://github.com/edgexfoundry/go-mod-bootstrap/issues/450)) ([#e72e993](https://github.com/edgexfoundry/go-mod-bootstrap/commits/e72e993))
+- Move configuration location code to public helper function ([#422](https://github.com/edgexfoundry/go-mod-bootstrap/issues/422)) ([#7c7ee01](https://github.com/edgexfoundry/go-mod-bootstrap/commits/7c7ee01))
+- Config processor createProviderClient from receiver to helper ([#421](https://github.com/edgexfoundry/go-mod-bootstrap/issues/421)) ([#a9675b9](https://github.com/edgexfoundry/go-mod-bootstrap/commits/a9675b9))
+- Adjust to MessageBus config with single broker host info ([#407](https://github.com/edgexfoundry/go-mod-bootstrap/issues/407)) ([#cd249ec](https://github.com/edgexfoundry/go-mod-bootstrap/commits/cd249ec))
+
+### Build 👷
+
+- Update to Go 1.20 and linter v1.51.2 ([#470](https://github.com/edgexfoundry/go-mod-bootstrap/issues/470)) ([#86c0411](https://github.com/edgexfoundry/go-mod-bootstrap/commits/86c0411))
+
 ## [v2.3.0] - 2022-11-09
 
 ### Features ✨
