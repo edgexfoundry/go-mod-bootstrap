@@ -72,14 +72,14 @@ func (e *ExternalMQTT) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup,
 	}
 
 	//get the secrets from the secret provider and populate the struct
-	secretData, err := messaging.GetSecretData(authMode, brokerConfig.SecretPath, secretProvider)
+	secretData, err := messaging.GetSecretData(authMode, brokerConfig.SecretName, secretProvider)
 	if err != nil {
 		lc.Errorf("Failed to retrieve secret data: %s", err.Error())
 		return false
 	}
 	//ensure that the AuthMode selected has the required secret values
 	if secretData != nil {
-		err = messaging.ValidateSecretData(authMode, brokerConfig.SecretPath, secretData)
+		err = messaging.ValidateSecretData(authMode, brokerConfig.SecretName, secretData)
 		if err != nil {
 			lc.Errorf("Invalid secret data: %s", err.Error())
 			return false
