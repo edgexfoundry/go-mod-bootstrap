@@ -1,0 +1,10 @@
+{
+    "data": [{
+        "config": 1,
+        "name": "myService"
+    }, 
+    {
+        "config": 2,
+        "name": "myOtherService"
+    }]
+}

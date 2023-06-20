@@ -16,6 +16,7 @@ package utils
 
 import (
 	"fmt"
+	"path"
 	"strings"
 	"testing"
 
@@ -277,4 +278,38 @@ func TestDeepCopy(t *testing.T) {
 	delete(clone.Clients, "b")
 	assert.NotEqual(t, orig, clone)
 
+}
+
+func TestLoadFile(t *testing.T) {
+	// Types
+	var configuration map[string]any
+
+	tests := []struct {
+		Name        string
+		Path        string
+		Contents    any
+		ExpectedErr string
+	}{
+		{"Valid - load from YAML file", path.Join("..", "config", "testdata", "configuration.yaml"), configuration, ""},
+		{"Valid - load from JSON file", path.Join(".", "testdata", "configuration.json"), configuration, ""},
+		{"Valid - load from HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", configuration, ""},
+		{"Invalid - File not found", "bogus", nil, "Could not read file"},
+		{"Invalid - load invalid file type", path.Join("..", "bootstrap.go"), nil, "Could not load unknown file type"},
+		// {"Invalid - load from YAML file", path.Join("..", "config", "testdata", "bogus.yaml"), configuration, "Could not unmarshal YAML"},
+		{"Invalid - load from JSON file", path.Join(".", "testdata", "bogus.json"), configuration, "Could not unmarshal JSON"},
+		{"Invalid - load from invalid HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/configuration.yaml", configuration, "Invalid status code"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			err := LoadFile(tc.Path, &tc.Contents)
+			if tc.ExpectedErr != "" {
+				assert.Contains(t, err.Error(), tc.ExpectedErr)
+				return
+			}
+
+			assert.NotNil(t, tc.Contents)
+			tc.Contents = make(map[string]any)
+		})
+	}
 }

@@ -17,7 +17,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 const PathSep = "/"
@@ -158,6 +164,50 @@ func DeepCopy(src any, dest any) error {
 	}
 	if err = json.Unmarshal(jsonBytes, &dest); err != nil {
 		return fmt.Errorf("could not unmarshal JSON (from %T) into type %T: %v", src, dest, err)
+	}
+	return nil
+}
+
+func LoadFile(path string, contents *any) error {
+	var fileBytes []byte
+	var err error
+
+	lowerPath := strings.ToLower(path)
+
+	if strings.Contains(lowerPath, "http") {
+		resp, err := http.Get(lowerPath)
+		if err != nil {
+			return fmt.Errorf("Could not get remote file")
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode >= 400 {
+			return fmt.Errorf("Invalid status code %d loading remote file", resp.StatusCode)
+		}
+
+		fileBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("Could not read remote file: %v", err)
+		}
+	} else {
+		fileBytes, err = os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("Could not read file %s: %v", path, err)
+		}
+	}
+
+	pathExtension := filepath.Ext(lowerPath)
+	switch pathExtension {
+	case ".json":
+		if err = json.Unmarshal(fileBytes, &contents); err != nil {
+			return fmt.Errorf("Could not unmarshal JSON (from %T) into type %T: %v", fileBytes, contents, err)
+		}
+	case ".yaml":
+		if err = yaml.Unmarshal(fileBytes, &contents); err != nil {
+			return fmt.Errorf("Could not unmarshal YAML (from %T) into type %T: %v", fileBytes, contents, err)
+		}
+	default:
+		return fmt.Errorf("Could not load unknown file type %s", pathExtension)
 	}
 	return nil
 }
