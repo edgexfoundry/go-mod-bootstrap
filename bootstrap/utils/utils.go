@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
-
-	"gopkg.in/yaml.v2"
+	"time"
 )
 
 const PathSep = "/"
@@ -168,46 +167,41 @@ func DeepCopy(src any, dest any) error {
 	return nil
 }
 
-func LoadFile(path string, contents *any) error {
+func LoadFile(path string, timeout time.Duration) ([]byte, error) {
 	var fileBytes []byte
 	var err error
 
-	lowerPath := strings.ToLower(path)
+	client := &http.Client{
+		Timeout: timeout,
+	}
 
-	if strings.Index(lowerPath, "http") == 0 {
-		resp, err := http.Get(lowerPath)
+	parsedUrl, err := url.Parse(path)
+	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
+		// resp, err := http.Get(path)
+		req, err := http.NewRequest("GET", path, nil)
+		// Set request header
+		//req.Header.Add("", "")
+		resp, err := client.Do(req)
+
 		if err != nil {
-			return fmt.Errorf("Could not get remote file")
+			return nil, fmt.Errorf("Could not get remote file: %s", parsedUrl.Host)
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode >= 400 {
-			return fmt.Errorf("Invalid status code %d loading remote file", resp.StatusCode)
+		if resp.StatusCode >= 300 {
+			return nil, fmt.Errorf("Invalid status code %d loading remote file: %s", resp.StatusCode, parsedUrl.Host)
 		}
 
 		fileBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Could not read remote file: %v", err)
+			return nil, fmt.Errorf("Could not read remote file: : %s", parsedUrl.Host)
 		}
 	} else {
 		fileBytes, err = os.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("Could not read file %s: %v", path, err)
+			return nil, fmt.Errorf("Could not read file %s: %v", path, err)
 		}
 	}
 
-	pathExtension := filepath.Ext(lowerPath)
-	switch pathExtension {
-	case ".json":
-		if err = json.Unmarshal(fileBytes, &contents); err != nil {
-			return fmt.Errorf("Could not unmarshal JSON (from %T) into type %T: %v", fileBytes, contents, err)
-		}
-	case ".yaml":
-		if err = yaml.Unmarshal(fileBytes, &contents); err != nil {
-			return fmt.Errorf("Could not unmarshal YAML (from %T) into type %T: %v", fileBytes, contents, err)
-		}
-	default:
-		return fmt.Errorf("Could not load unknown file type %s", pathExtension)
-	}
-	return nil
+	return fileBytes, nil
 }

@@ -19,6 +19,7 @@ import (
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/stretchr/testify/assert"
@@ -281,35 +282,28 @@ func TestDeepCopy(t *testing.T) {
 }
 
 func TestLoadFile(t *testing.T) {
-	// Types
-	var configuration map[string]any
-
 	tests := []struct {
-		Name        string
-		Path        string
-		Contents    any
-		ExpectedErr string
+		Name          string
+		Path          string
+		ContentLength int
+		ExpectedErr   string
 	}{
-		{"Valid - load from YAML file", path.Join("..", "config", "testdata", "configuration.yaml"), configuration, ""},
-		{"Valid - load from JSON file", path.Join(".", "testdata", "configuration.json"), configuration, ""},
-		{"Valid - load from HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", configuration, ""},
-		{"Invalid - File not found", "bogus", nil, "Could not read file"},
-		{"Invalid - load invalid file type", path.Join("..", "bootstrap.go"), nil, "Could not load unknown file type"},
-		// {"Invalid - load from YAML file", path.Join("..", "config", "testdata", "bogus.yaml"), configuration, "Could not unmarshal YAML"},
-		{"Invalid - load from JSON file", path.Join(".", "testdata", "bogus.json"), configuration, "Could not unmarshal JSON"},
-		{"Invalid - load from invalid HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/configuration.yaml", configuration, "Invalid status code"},
+		{"Valid - load from YAML file", path.Join("..", "config", "testdata", "configuration.yaml"), 4533, ""},
+		{"Valid - load from JSON file", path.Join(".", "testdata", "configuration.json"), 142, ""},
+		{"Valid - load from HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", 4533, ""},
+		{"Invalid - File not found", "bogus", 0, "Could not read file"},
+		{"Invalid - load from invalid HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/configuration.yaml", 1, "Invalid status code"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
-			err := LoadFile(tc.Path, &tc.Contents)
+			bytesOut, err := LoadFile(tc.Path, 10*time.Second)
 			if tc.ExpectedErr != "" {
 				assert.Contains(t, err.Error(), tc.ExpectedErr)
 				return
 			}
 
-			assert.NotNil(t, tc.Contents)
-			tc.Contents = make(map[string]any)
+			assert.Equal(t, tc.ContentLength, len(bytesOut))
 		})
 	}
 }
