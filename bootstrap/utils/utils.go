@@ -174,7 +174,7 @@ func LoadFile(path string, contents *any) error {
 
 	lowerPath := strings.ToLower(path)
 
-	if strings.Contains(lowerPath, "http") {
+	if strings.Index(lowerPath, "http") == 0 {
 		resp, err := http.Get(lowerPath)
 		if err != nil {
 			return fmt.Errorf("Could not get remote file")
