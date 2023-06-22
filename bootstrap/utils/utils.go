@@ -17,12 +17,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
 	"strings"
-	"time"
 )
 
 const PathSep = "/"
@@ -165,43 +160,4 @@ func DeepCopy(src any, dest any) error {
 		return fmt.Errorf("could not unmarshal JSON (from %T) into type %T: %v", src, dest, err)
 	}
 	return nil
-}
-
-func LoadFile(path string, timeout time.Duration) ([]byte, error) {
-	var fileBytes []byte
-	var err error
-
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
-	parsedUrl, err := url.Parse(path)
-	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
-		// resp, err := http.Get(path)
-		req, err := http.NewRequest("GET", path, nil)
-		// Set request header
-		//req.Header.Add("", "")
-		resp, err := client.Do(req)
-
-		if err != nil {
-			return nil, fmt.Errorf("Could not get remote file: %s", parsedUrl.Host)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode >= 300 {
-			return nil, fmt.Errorf("Invalid status code %d loading remote file: %s", resp.StatusCode, parsedUrl.Host)
-		}
-
-		fileBytes, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("Could not read remote file: : %s", parsedUrl.Host)
-		}
-	} else {
-		fileBytes, err = os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("Could not read file %s: %v", path, err)
-		}
-	}
-
-	return fileBytes, nil
 }
