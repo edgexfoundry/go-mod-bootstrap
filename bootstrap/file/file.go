@@ -25,6 +25,9 @@ func Load(path string, timeout time.Duration, provider interfaces.SecretProvider
 			Timeout: timeout,
 		}
 		req, err := http.NewRequest("GET", path, nil)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to create new request: %v", err)
+		}
 
 		// Get httpheader secret
 		params := parsedUrl.Query()
