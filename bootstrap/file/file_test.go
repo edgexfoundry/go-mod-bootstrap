@@ -46,7 +46,7 @@ func TestLoadFile(t *testing.T) {
 		})
 
 		t.Run(tc.Name, func(t *testing.T) {
-			bytesOut, err := LoadFile(tc.Path, 10*time.Second, mockSecretProvider)
+			bytesOut, err := Load(tc.Path, 10*time.Second, mockSecretProvider)
 			if tc.ExpectedErr != "" {
 				assert.Contains(t, err.Error(), tc.ExpectedErr)
 				return

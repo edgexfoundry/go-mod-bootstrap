@@ -11,12 +11,16 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 )
 
-func LoadFile(path string, timeout time.Duration, provider interfaces.SecretProvider) ([]byte, error) {
+func Load(path string, timeout time.Duration, provider interfaces.SecretProvider) ([]byte, error) {
 	var fileBytes []byte
 	var err error
 
 	parsedUrl, err := url.Parse(path)
-	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
+	if err != nil {
+		return nil, fmt.Errorf("Could not parse file path: %v", err)
+	}
+
+	if (parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https") {
 		client := &http.Client{
 			Timeout: timeout,
 		}
@@ -33,7 +37,13 @@ func LoadFile(path string, timeout time.Duration, provider interfaces.SecretProv
 
 			// Set request header
 			if len(secrets) > 0 && secrets["type"] == "httpheader" {
-				req.Header.Add(secrets["headername"], secrets["headercontents"])
+				if secrets["headername"] != "" && secrets["headercontents"] != "" {
+					req.Header.Add(secrets["headername"], secrets["headercontents"])
+				} else {
+					return nil, fmt.Errorf("Secret headername and headercontents can not be empty")
+				}
+			} else {
+				return nil, fmt.Errorf("Secret type is not httpheader")
 			}
 		}
 
