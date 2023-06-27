@@ -26,7 +26,7 @@ func Load(path string, timeout time.Duration, provider interfaces.SecretProvider
 		}
 		req, err := http.NewRequest("GET", path, nil)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to create new request: %v", err)
+			return nil, fmt.Errorf("Unable to create new request for remote file: %s: %v", parsedUrl.Redacted(), err)
 		}
 
 		// Get httpheader secret
@@ -54,7 +54,7 @@ func Load(path string, timeout time.Duration, provider interfaces.SecretProvider
 		resp, err := client.Do(req)
 
 		if err != nil {
-			return nil, fmt.Errorf("Could not get remote file: %s", parsedUrl.Redacted())
+			return nil, fmt.Errorf("Could not get remote file: %s: %v", parsedUrl.Redacted(), err)
 		}
 		defer resp.Body.Close()
 
@@ -64,7 +64,7 @@ func Load(path string, timeout time.Duration, provider interfaces.SecretProvider
 
 		fileBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("Could not read remote file: : %s", parsedUrl.Redacted())
+			return nil, fmt.Errorf("Could not read remote file: %s: %v", parsedUrl.Redacted(), err)
 		}
 	} else {
 		fileBytes, err = os.ReadFile(path)
