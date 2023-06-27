@@ -20,7 +20,7 @@ func Load(path string, timeout time.Duration, provider interfaces.SecretProvider
 		return nil, fmt.Errorf("Could not parse file path: %v", err)
 	}
 
-	if (parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https") {
+	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		client := &http.Client{
 			Timeout: timeout,
 		}
