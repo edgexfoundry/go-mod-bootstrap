@@ -1,7 +1,6 @@
 package file
 
 import (
-	"errors"
 	"path"
 	"testing"
 	"time"
@@ -24,19 +23,19 @@ func TestLoadFile(t *testing.T) {
 	}{
 		{"Valid - load from YAML file", path.Join("..", "config", "testdata", "configuration.yaml"), 4533, "", nil},
 		{"Valid - load from JSON file", path.Join(".", "testdata", "configuration.json"), 142, "", nil},
+		{"Valid - load from HTTP", "http://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", 4533, "", nil},
 		{"Valid - load from HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", 4533, "", nil},
 		{"Invalid - File not found", "bogus", 0, "Could not read file", nil},
+		{"Invalid - load from invalid HTTP", "http://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/configuration.yaml", 1, "Invalid status code", nil},
 		{"Invalid - load from invalid HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/configuration.yaml", 1, "Invalid status code", nil},
 		{"Valid - load from HTTPS with secret", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml?edgexSecretName=mySecretName", 4533, "", map[string]string{"type": "httpheader", "headername": "Authorization", "headercontents": "Basic 1234567890"}},
-		{"Invalid - load from HTTPS with invalid secret", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml?edgexSecretName=mySecretName", 4533, "", map[string]string{"type": "invalidheader", "headername": "Authorization", "headercontents": "Basic 1234567890"}},
+		{"Invalid - load from HTTPS with invalid secret", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml?edgexSecretName=mySecretName", 4533, "Secret type is not httpheader", map[string]string{"type": "invalidheader", "headername": "Authorization", "headercontents": "Basic 1234567890"}},
 	}
 
-	mockSecretProvider := &mocks.SecretProvider{}
-	mockSecretProvider.On("GetSecret", "").Return(nil)
-	mockSecretProvider.On("GetSecret", "notfound").Return(nil, errors.New("Not Found"))
-
 	for _, tc := range tests {
+		mockSecretProvider := &mocks.SecretProvider{}
 		if tc.expectedSecretData != nil {
+			mockSecretProvider.On("GetSecret", "").Return(nil)
 			mockSecretProvider.On("GetSecret", "mySecretName").Return(tc.expectedSecretData, nil)
 		}
 		dic = di.NewContainer(di.ServiceConstructorMap{
