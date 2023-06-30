@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
+	"net/url"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/mitchellh/copystructure"
@@ -61,6 +62,8 @@ const (
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
 type UpdatedStream chan struct{}
+
+var defaultTimeout = 15 * time.Second
 
 type Processor struct {
 	lc                 logger.LoggingClient
@@ -197,7 +200,7 @@ func (cp *Processor) Process(
 		// NOTE: Some security services don't use any common configuration and don't use the configuration provider.
 		commonConfigLocation := environment.GetCommonConfigFileName(cp.lc, cp.flags.CommonConfig())
 		if commonConfigLocation != "" {
-			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType)
+			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType, secretProvider)
 			if err != nil {
 				return err
 			}
@@ -213,7 +216,7 @@ func (cp *Processor) Process(
 	// Now load the private config from a local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath)
+		configMap, err := cp.loadConfigYamlFromFile(filePath, defaultTimeout, secretProvider)
 		if err != nil {
 			return err
 		}
@@ -393,11 +396,12 @@ func (cp *Processor) loadCommonConfig(
 func (cp *Processor) loadCommonConfigFromFile(
 	configFile string,
 	serviceConfig interfaces.Configuration,
-	serviceType string) error {
+	serviceType string,
+	secretProvider interfaces.SecretProviderExt) error {
 
 	var err error
 
-	commonConfig, err := cp.loadConfigYamlFromFile(configFile)
+	commonConfig, err := cp.loadConfigYamlFromFile(configFile, defaultTimeout, secretProvider)
 	if err != nil {
 		return err
 	}
@@ -465,7 +469,7 @@ func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider in
 // LoadCustomConfigSection loads the specified custom configuration section from file or Configuration provider.
 // Section will be seed if Configuration provider does yet have it. This is used for structures custom configuration
 // in App and Device services
-func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.UpdatableConfig, sectionName string) error {
+func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.UpdatableConfig, sectionName string, secretProvider interfaces.SecretProviderExt) error {
 	if cp.envVars == nil {
 		cp.envVars = environment.NewVariables(cp.lc)
 	}
@@ -474,7 +478,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 	if configClient == nil {
 		cp.lc.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath)
+		configMap, err := cp.loadConfigYamlFromFile(filePath, defaultTimeout, secretProvider)
 		if err != nil {
 			return err
 		}
@@ -508,7 +512,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 			cp.lc.Info("Loaded custom configuration from Configuration Provider, no overrides applied")
 		} else {
 			filePath := GetConfigFileLocation(cp.lc, cp.flags)
-			configMap, err := cp.loadConfigYamlFromFile(filePath)
+			configMap, err := cp.loadConfigYamlFromFile(filePath, defaultTimeout, secretProvider)
 			if err != nil {
 				return err
 			}
@@ -636,9 +640,9 @@ func CreateProviderClient(
 }
 
 // loadConfigYamlFromFile attempts to read the specified configuration yaml file
-func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, error) {
+func (cp *Processor) loadConfigYamlFromFile(yamlFile string, timeout time.Duration, provider interfaces.SecretProvider) (map[string]any, error) {
 	cp.lc.Infof("Loading configuration file from %s", yamlFile)
-	contents, err := os.ReadFile(yamlFile)
+	contents, err := file.Load(yamlFile, timeout, provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration file %s: %s", yamlFile, err.Error())
 	}
@@ -654,10 +658,21 @@ func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, er
 
 // GetConfigFileLocation uses the environment variables and flags to determine the location of the configuration
 func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
-	configDir := environment.GetConfigDir(lc, flags.ConfigDirectory())
-	profileDir := environment.GetProfileDir(lc, flags.Profile())
 	configFileName := environment.GetConfigFileName(lc, flags.ConfigFileName())
 
+	// Check for uri path
+	parsedUrl, err := url.Parse(configFileName)
+	if err != nil {
+		lc.Errorf("Could not parse file path: %v", err)
+		return ""
+	}
+	lc.Infof("name %s, parsedurl: %v", configFileName, parsedUrl)
+	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
+		return configFileName
+	}
+
+	configDir := environment.GetConfigDir(lc, flags.ConfigDirectory())
+	profileDir := environment.GetProfileDir(lc, flags.Profile())
 	return filepath.Join(configDir, profileDir, configFileName)
 }
 

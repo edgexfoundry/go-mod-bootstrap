@@ -299,7 +299,7 @@ func TestLoadCommonConfigFromFile(t *testing.T) {
 			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
 
 			// call load common config
-			err := proc.loadCommonConfigFromFile(tc.config, tc.serviceConfig, tc.serviceType)
+			err := proc.loadCommonConfigFromFile(tc.config, tc.serviceConfig, tc.serviceType, nil)
 			// make assertions
 			require.NotNil(t, cancel)
 			if tc.expectedErr == "" {
@@ -378,21 +378,51 @@ func TestFindChangedKey(t *testing.T) {
 }
 
 func TestGetConfigFileLocation(t *testing.T) {
-	dir := "myRes"
-	profile := "myProfile"
-	file := "myFile.yaml"
-	expected := filepath.Join(dir, profile, file)
-	defer os.Clearenv()
+	tests := []struct {
+		name       string
+		dir        string
+		profile    string
+		path       string
+		secretName string
+		expected   string
+	}{
+		{
+			name:     "valid - file",
+			dir:      "myRes",
+			profile:  "myProfile",
+			path:     "myFile.yaml",
+			expected: filepath.Join("myRes", "myProfile", "myFile.yaml"),
+		},
+		{
+			name:     "valid - url",
+			dir:      "",
+			profile:  "",
+			path:     "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml",
+			expected: "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml",
+		},
+		{
+			name:     "invalid - url",
+			dir:      "",
+			profile:  "",
+			path:     "{test:\"test\"}",
+			expected: "",
+		},
+	}
 
-	lc := logger.NewMockClient()
-	flags := flags.New()
+	for _, test := range tests {
+		t.Run(test.secretName, func(t *testing.T) {
+			lc := logger.NewMockClient()
+			flags := flags.New()
 
-	os.Setenv("EDGEX_CONFIG_DIR", dir)
-	os.Setenv("EDGEX_PROFILE", profile)
-	os.Setenv("EDGEX_CONFIG_FILE", file)
+			defer os.Clearenv()
+			os.Setenv("EDGEX_CONFIG_DIR", test.dir)
+			os.Setenv("EDGEX_PROFILE", test.profile)
+			os.Setenv("EDGEX_CONFIG_FILE", test.path)
 
-	actual := GetConfigFileLocation(lc, flags)
-	assert.Equal(t, expected, actual)
+			actual := GetConfigFileLocation(lc, flags)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
 }
 
 func TestGetInsecureSecretNameFullPath(t *testing.T) {
