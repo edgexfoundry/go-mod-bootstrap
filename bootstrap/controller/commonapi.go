@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
@@ -46,8 +45,6 @@ type config struct {
 
 func NewCommonController(dic *di.Container, r *echo.Echo, serviceName string, serviceVersion string) *CommonController {
 	lc := container.LoggingClientFrom(dic.Get)
-	secretProvider := container.SecretProviderExtFrom(dic.Get)
-	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
 	configuration := container.ConfigurationFrom(dic.Get)
 	c := CommonController{
 		dic:         dic,
@@ -62,9 +59,9 @@ func NewCommonController(dic *di.Container, r *echo.Echo, serviceName string, se
 		},
 	}
 	r.GET(common.ApiPingRoute, c.Ping) // Health check is always unauthenticated
-	r.GET(common.ApiVersionRoute, c.Version, authenticationHook)
-	r.GET(common.ApiConfigRoute, c.Config, authenticationHook)
-	r.POST(common.ApiSecretRoute, c.AddSecret, authenticationHook)
+	r.GET(common.ApiVersionRoute, c.Version)
+	r.GET(common.ApiConfigRoute, c.Config)
+	r.POST(common.ApiSecretRoute, c.AddSecret)
 
 	return &c
 }
