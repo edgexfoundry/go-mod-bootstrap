@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2021-2022 IOTech Ltd
+ * Copyright 2021-2023 IOTech Ltd
  * Copyright 2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -34,18 +34,19 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 // HttpServer contains references to dependencies required by the http server implementation.
 type HttpServer struct {
-	router           *mux.Router
+	router           *echo.Echo
 	isRunning        bool
 	doListenAndServe bool
 }
 
 // NewHttpServer is a factory method that returns an initialized HttpServer receiver struct.
-func NewHttpServer(router *mux.Router, doListenAndServe bool) *HttpServer {
+func NewHttpServer(router *echo.Echo, doListenAndServe bool) *HttpServer {
 	return &HttpServer{
 		router:           router,
 		isRunning:        false,
@@ -114,18 +115,16 @@ func (b *HttpServer) BootstrapHandler(
 		return false
 	}
 
-	b.router.Use(func(next http.Handler) http.Handler {
-		return http.TimeoutHandler(next, timeout, "HTTP request timeout")
-	})
+	b.router.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+		Timeout: timeout,
+	}))
 
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
 
 	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
 
 	// handle the CORS preflight request
-	b.router.Methods(http.MethodOptions).MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
-		return r.Header.Get(AccessControlRequestMethod) != ""
-	}).HandlerFunc(HandlePreflight(bootstrapConfig.Service.CORSConfiguration))
+	b.router.Use(HandlePreflight(bootstrapConfig.Service.CORSConfiguration))
 
 	server := &http.Server{
 		Addr:              addr,
@@ -175,9 +174,11 @@ func (b *HttpServer) BootstrapHandler(
 }
 
 // RequestLimitMiddleware is a middleware function that limits the request body size to Service.MaxRequestSize in kilobytes
-func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			r := c.Request()
+			w := c.Response()
 			switch r.Method {
 			case http.MethodPost, http.MethodPut, http.MethodPatch:
 				if sizeLimit > 0 && r.ContentLength > sizeLimit*1024 {
@@ -189,14 +190,11 @@ func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) func(http.
 					if err := json.NewEncoder(w).Encode(response); err != nil {
 						lc.Errorf("Error encoding the data:  %v", err)
 						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return err
 					}
-				} else {
-					next.ServeHTTP(w, r)
 				}
-			default:
-				// ignore the other http methods because they do not have request bodies
-				next.ServeHTTP(w, r)
 			}
-		})
+			return next(c)
+		}
 	}
 }
