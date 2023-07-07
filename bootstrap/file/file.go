@@ -11,6 +11,8 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 )
 
+const DefaultTimeout = 15 * time.Second
+
 func Load(path string, timeout time.Duration, provider interfaces.SecretProvider) ([]byte, error) {
 	var fileBytes []byte
 	var err error

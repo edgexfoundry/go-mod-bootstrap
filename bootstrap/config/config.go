@@ -216,7 +216,7 @@ func (cp *Processor) Process(
 	// Now load the private config from a local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath, defaultTimeout, secretProvider)
+		configMap, err := cp.loadConfigYamlFromFile(filePath, file.DefaultTimeout, secretProvider)
 		if err != nil {
 			return err
 		}
@@ -666,7 +666,7 @@ func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
 		lc.Errorf("Could not parse file path: %v", err)
 		return ""
 	}
-	lc.Infof("name %s, parsedurl: %v", configFileName, parsedUrl)
+
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		return configFileName
 	}

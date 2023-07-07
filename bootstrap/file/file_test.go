@@ -3,7 +3,6 @@ package file
 import (
 	"path"
 	"testing"
-	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
@@ -47,7 +46,7 @@ func TestLoadFile(t *testing.T) {
 		})
 
 		t.Run(tc.Name, func(t *testing.T) {
-			bytesOut, err := Load(tc.Path, 10*time.Second, mockSecretProvider)
+			bytesOut, err := Load(tc.Path, DefaultTimeout, mockSecretProvider)
 			if tc.ExpectedErr != "" {
 				assert.Contains(t, err.Error(), tc.ExpectedErr)
 				return
