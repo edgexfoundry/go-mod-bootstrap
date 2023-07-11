@@ -586,3 +586,32 @@ func TestOverrideConfigMapValues(t *testing.T) {
 		})
 	}
 }
+
+func TestGetRequestTimeout(t *testing.T) {
+	_, lc := initializeTest()
+
+	testCases := []struct {
+		TestName        string
+		EnvTimeout      string
+		PassedInTimeout string
+		ExpectedTimeout string
+	}{
+		{"With Env Var", envKeyRequestTimeout, "15", "14"},
+		{"With No Env Var", "", "15", "15"},
+		{"With No Env Var and no passed in", "", "", ""},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
+
+			if len(test.EnvTimeout) > 0 {
+				err := os.Setenv(test.EnvTimeout, test.ExpectedTimeout)
+				require.NoError(t, err)
+			}
+
+			actual := GetRequestTimeout(lc, test.PassedInTimeout)
+			assert.Equal(t, test.ExpectedTimeout, actual)
+		})
+	}
+}

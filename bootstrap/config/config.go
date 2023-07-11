@@ -215,8 +215,14 @@ func (cp *Processor) Process(
 
 	// Now load the private config from a local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
+		requestTimeout, err := time.ParseDuration(environment.GetRequestTimeout(cp.lc, cp.flags.RequestTimeout()))
+		if err != nil {
+			cp.lc.Debug("Failed to parse Service.RequestTimeout configuration value: %v, using default value", err)
+			requestTimeout = 15 * time.Second
+		}
+
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath, file.DefaultTimeout, secretProvider)
+		configMap, err := cp.loadConfigYamlFromFile(filePath, requestTimeout, secretProvider)
 		if err != nil {
 			return err
 		}

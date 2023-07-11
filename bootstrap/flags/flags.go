@@ -24,6 +24,7 @@ import (
 const (
 	DefaultConfigProvider = "consul.http://localhost:8500"
 	DefaultConfigFile     = "configuration.yaml"
+	DefaultRequestTimeout = "15"
 )
 
 // Common is an interface that defines AP for the common command-line flags used by most EdgeX services
@@ -35,6 +36,7 @@ type Common interface {
 	Profile() string
 	ConfigDirectory() string
 	ConfigFileName() string
+	RequestTimeout() string
 	CommonConfig() string
 	Parse([]string)
 	Help()
@@ -52,6 +54,7 @@ type Default struct {
 	profile           string
 	configDir         string
 	configFileName    string
+	requestTimeout    string
 }
 
 // NewWithUsage returns a Default struct.
@@ -93,6 +96,8 @@ func (d *Default) Parse(arguments []string) {
 	d.FlagSet.BoolVar(&d.overwriteConfig, "o", false, "")
 	d.FlagSet.StringVar(&d.configFileName, "cf", DefaultConfigFile, "")
 	d.FlagSet.StringVar(&d.configFileName, "configFile", DefaultConfigFile, "")
+	d.FlagSet.StringVar(&d.requestTimeout, "rt", DefaultRequestTimeout, "")
+	d.FlagSet.StringVar(&d.requestTimeout, "requestTimeout", DefaultRequestTimeout, "")
 	d.FlagSet.StringVar(&d.profile, "profile", "", "")
 	d.FlagSet.StringVar(&d.profile, "p", "", ".")
 	d.FlagSet.StringVar(&d.configDir, "configDir", "", "")
@@ -151,6 +156,11 @@ func (d *Default) CommonConfig() string {
 	return d.commonConfig
 }
 
+// CommonConfig returns the location for the common configuration
+func (d *Default) RequestTimeout() string {
+	return d.requestTimeout
+}
+
 // Help displays the usage help message and exit.
 func (d *Default) Help() {
 	d.helpCallback()
@@ -169,6 +179,7 @@ func (d *Default) helpCallback() {
 			"                                    *** Use with cation *** Use will clobber existing settings in provider,\n"+
 			"                                    problematic if those settings were edited by hand intentionally\n"+
 			"    -cf, --configFile <name>        Indicates name of the local configuration file. Defaults to configuration.toml\n"+
+			"    -rt, --requestTimeout <seconds> Set the uri file load request timeout\n"+
 			"    -p, --profile <name>            Indicate configuration profile other than default\n"+
 			"    -cd, --configDir                Specify local configuration directory\n"+
 			"    -r, --registry                  Indicates service should use Registry.\n"+

@@ -44,6 +44,7 @@ const (
 	envKeyConfigDir       = "EDGEX_CONFIG_DIR"
 	envKeyProfile         = "EDGEX_PROFILE"
 	envKeyConfigFile      = "EDGEX_CONFIG_FILE"
+	envKeyRequestTimeout  = "EDGEX_SERVICE_REQUESTTIMEOUT"
 
 	noConfigProviderValue = "none"
 
@@ -455,4 +456,16 @@ func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, va
 		valueStr = redactedStr
 	}
 	lc.Infof("Variables override of '%s' by environment variable: %s=%s", name, key, valueStr)
+}
+
+// GetRequestTimeout gets the configuration request timeout value from a Variables variable value (if it exists)
+// or uses passed in value.
+func GetRequestTimeout(lc logger.LoggingClient, requestTimeout string) string {
+	envValue := os.Getenv(envKeyRequestTimeout)
+	if len(envValue) > 0 {
+		requestTimeout = envValue
+		logEnvironmentOverride(lc, "-rt/--requestTimeout", envKeyRequestTimeout, envValue)
+	}
+
+	return requestTimeout
 }
