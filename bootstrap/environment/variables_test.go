@@ -587,18 +587,16 @@ func TestOverrideConfigMapValues(t *testing.T) {
 	}
 }
 
-func TestGetRequestTimeout(t *testing.T) {
+func TestGetFileUriTimeout(t *testing.T) {
 	_, lc := initializeTest()
 
 	testCases := []struct {
 		TestName        string
 		EnvTimeout      string
-		PassedInTimeout string
 		ExpectedTimeout string
 	}{
-		{"With Env Var", envKeyRequestTimeout, "15", "14"},
-		{"With No Env Var", "", "15", "15"},
-		{"With No Env Var and no passed in", "", "", ""},
+		{"With Env Var", envKeyRequestTimeout, "14"},
+		{"With No Env Var", "", "15"},
 	}
 
 	for _, test := range testCases {
@@ -610,7 +608,7 @@ func TestGetRequestTimeout(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			actual := GetRequestTimeout(lc, test.PassedInTimeout)
+			actual := GetFileUriTimeout(lc)
 			assert.Equal(t, test.ExpectedTimeout, actual)
 		})
 	}
