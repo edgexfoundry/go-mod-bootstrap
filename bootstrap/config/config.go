@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
+	"net/url"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/mitchellh/copystructure"
@@ -637,8 +638,10 @@ func CreateProviderClient(
 
 // loadConfigYamlFromFile attempts to read the specified configuration yaml file
 func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, error) {
+	secretProvider := container.SecretProviderExtFrom(cp.dic.Get)
+
 	cp.lc.Infof("Loading configuration file from %s", yamlFile)
-	contents, err := os.ReadFile(yamlFile)
+	contents, err := file.Load(yamlFile, secretProvider, cp.lc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration file %s: %s", yamlFile, err.Error())
 	}
@@ -654,10 +657,21 @@ func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, er
 
 // GetConfigFileLocation uses the environment variables and flags to determine the location of the configuration
 func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
-	configDir := environment.GetConfigDir(lc, flags.ConfigDirectory())
-	profileDir := environment.GetProfileDir(lc, flags.Profile())
 	configFileName := environment.GetConfigFileName(lc, flags.ConfigFileName())
 
+	// Check for uri path
+	parsedUrl, err := url.Parse(configFileName)
+	if err != nil {
+		lc.Errorf("Could not parse file path: %v", err)
+		return ""
+	}
+
+	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
+		return configFileName
+	}
+
+	configDir := environment.GetConfigDir(lc, flags.ConfigDirectory())
+	profileDir := environment.GetProfileDir(lc, flags.Profile())
 	return filepath.Join(configDir, profileDir, configFileName)
 }
 

@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 )
 
-func Load(path string, timeout time.Duration, provider interfaces.SecretProvider) ([]byte, error) {
+func Load(path string, provider interfaces.SecretProvider, lc logger.LoggingClient) ([]byte, error) {
 	var fileBytes []byte
 	var err error
 
@@ -22,7 +23,7 @@ func Load(path string, timeout time.Duration, provider interfaces.SecretProvider
 
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		client := &http.Client{
-			Timeout: timeout,
+			Timeout: environment.GetURIRequestTimeout(lc),
 		}
 		req, err := http.NewRequest("GET", path, nil)
 		if err != nil {

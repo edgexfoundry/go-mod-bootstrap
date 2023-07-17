@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -44,6 +45,7 @@ const (
 	envKeyConfigDir       = "EDGEX_CONFIG_DIR"
 	envKeyProfile         = "EDGEX_PROFILE"
 	envKeyConfigFile      = "EDGEX_CONFIG_FILE"
+	envKeyFileURITimeout  = "EDGEX_FILE_URI_TIMEOUT"
 
 	noConfigProviderValue = "none"
 
@@ -59,6 +61,8 @@ const (
 	insecureSecretsRegexStr = "^Writable\\.InsecureSecrets\\.[^.]+\\.Secrets\\..+$" //#nosec G101 -- This is a false positive
 	// redactedStr is the value to print for redacted variable values
 	redactedStr = "<redacted>"
+
+	defaultFileURITimeout = 15 * time.Second
 )
 
 var (
@@ -455,4 +459,22 @@ func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, va
 		valueStr = redactedStr
 	}
 	lc.Infof("Variables override of '%s' by environment variable: %s=%s", name, key, valueStr)
+}
+
+// GetURIRequestTimeout gets the configuration request timeout value from an environment variable (if it exists)
+// or uses default value.
+func GetURIRequestTimeout(lc logger.LoggingClient) time.Duration {
+	envValue := os.Getenv(envKeyFileURITimeout)
+	if len(envValue) <= 0 {
+		return defaultFileURITimeout
+	}
+
+	requestTimeout, err := time.ParseDuration(envValue)
+	if err != nil {
+		lc.Warnf("Could not parse value for %s = %s: %v. Using default of %s", envKeyFileURITimeout, envValue, err, defaultFileURITimeout)
+		return defaultFileURITimeout
+	}
+
+	lc.Infof("Variables override of 'URI Request Timeout' by environment variable: %s=%s", envKeyFileURITimeout, envValue)
+	return requestTimeout
 }

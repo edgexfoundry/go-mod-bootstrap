@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
 	"github.com/stretchr/testify/mock"
@@ -583,6 +584,33 @@ func TestOverrideConfigMapValues(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, expectedCount, actualCount)
 			mockLogger.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGetRequestTimeout(t *testing.T) {
+	_, lc := initializeTest()
+
+	testCases := []struct {
+		TestName        string
+		EnvTimeout      string
+		ExpectedTimeout time.Duration
+	}{
+		{"With Env Var", envKeyFileURITimeout, 15 * time.Second},
+		{"With No Env Var", "", 15 * time.Second},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
+
+			if len(test.EnvTimeout) > 0 {
+				err := os.Setenv(test.EnvTimeout, test.ExpectedTimeout.String())
+				require.NoError(t, err)
+			}
+
+			actual := GetURIRequestTimeout(lc)
+			assert.Equal(t, test.ExpectedTimeout, actual)
 		})
 	}
 }
