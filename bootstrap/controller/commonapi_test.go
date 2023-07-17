@@ -7,21 +7,28 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 )
 
 var validAddSecretRequest = commonDTO.NewSecretRequest(
@@ -32,10 +39,13 @@ var validAddSecretRequest = commonDTO.NewSecretRequest(
 	},
 )
 
+var serviceVersion = "0.0.0"
+
 func mockDic() *di.Container {
 	mockConfig := &mocks.Configuration{}
 	mockProvider := &mocks.SecretProvider{}
 	mockProvider.On("StoreSecret", validAddSecretRequest.SecretName, map[string]string{"password": "password", "username": "username"}).Return(nil)
+	mockProvider.On("StoreSecret", "no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
 
 	return di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
@@ -53,7 +63,7 @@ func mockDic() *di.Container {
 func TestAddSecret(t *testing.T) {
 	dic := mockDic()
 
-	target := NewCommonController(dic, mux.NewRouter(), uuid.NewString(), "0.0.0")
+	target := NewCommonController(dic, mux.NewRouter(), uuid.NewString(), serviceVersion)
 	assert.NotNil(t, target)
 
 	NoPath := validAddSecretRequest
@@ -72,6 +82,9 @@ func TestAddSecret(t *testing.T) {
 	missingSecretValue.SecretData = []commonDTO.SecretDataKeyValue{
 		{Key: "username", Value: ""},
 	}
+	noSecretStore := validAddSecretRequest
+	noSecretStore.SecretName = "no"
+
 	tests := []struct {
 		Name               string
 		Request            commonDTO.SecretRequest
@@ -84,10 +97,15 @@ func TestAddSecret(t *testing.T) {
 		{"Invalid - no secrets", noSecrets, true, http.StatusBadRequest},
 		{"Invalid - missing secret key", missingSecretKey, true, http.StatusBadRequest},
 		{"Invalid - missing secret value", missingSecretValue, true, http.StatusBadRequest},
+		{"Invalid - No Secret Store", noSecretStore, true, http.StatusInternalServerError},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
+			if testCase.Request.SecretName == noSecretStore.SecretName {
+				_ = os.Setenv(secret.EnvSecretStore, "false")
+			}
+
 			jsonData, err := json.Marshal(testCase.Request)
 			require.NoError(t, err)
 
@@ -114,4 +132,202 @@ func TestAddSecret(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPingRequest(t *testing.T) {
+	serviceName := uuid.NewString()
+	dic := mockDic()
+	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+
+	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, target.Ping, nil)
+
+	actual := commonDTO.PingResponse{}
+	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
+	require.NoError(t, err)
+
+	_, err = time.Parse(time.UnixDate, actual.Timestamp)
+	assert.NoError(t, err)
+
+	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
+}
+
+func TestVersionRequest(t *testing.T) {
+	expectedSdkVersion := "1.3.1"
+	serviceName := uuid.NewString()
+	dic := mockDic()
+	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+	target.SetSDKVersion(expectedSdkVersion)
+
+	recorder := doRequest(t, http.MethodGet, common.ApiVersion, target.Version, nil)
+
+	actual := commonDTO.VersionSdkResponse{}
+	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
+	require.NoError(t, err)
+
+	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, serviceVersion, actual.Version)
+	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
+}
+
+func TestConfigRequest(t *testing.T) {
+	expectedConfig := TestConfig{
+		Service: bootstrapConfig.ServiceInfo{
+			Host: "localhost",
+			Port: 8080,
+		},
+	}
+
+	serviceName := uuid.NewString()
+
+	dic := mockDic()
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
+			return expectedConfig
+		},
+	})
+	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+
+	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
+
+	actualResponse := commonDTO.ConfigResponse{}
+	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, common.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, serviceName, actualResponse.ServiceName)
+
+	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into TestConfig
+	configJson, err := json.Marshal(actualResponse.Config)
+	require.NoError(t, err)
+	require.Less(t, 0, len(configJson))
+
+	actualConfig := TestConfig{}
+	err = json.Unmarshal(configJson, &actualConfig)
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedConfig, actualConfig)
+}
+
+func TestConfigRequest_CustomConfig(t *testing.T) {
+	expectedConfig := TestConfig{
+		Service: bootstrapConfig.ServiceInfo{
+			Host: "localhost",
+			Port: 8080,
+		},
+	}
+
+	expectedCustomConfig := TestCustomConfig{
+		"test custom config",
+	}
+
+	serviceName := uuid.NewString()
+
+	dic := mockDic()
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
+			return expectedConfig
+		},
+	})
+
+	type fullConfig struct {
+		Configuration       TestConfig
+		CustomConfiguration TestCustomConfig
+	}
+
+	expectedFullConfig := fullConfig{
+		expectedConfig,
+		expectedCustomConfig,
+	}
+
+	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+	target.SetCustomConfigInfo(expectedCustomConfig)
+	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
+
+	actualResponse := commonDTO.ConfigResponse{}
+	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, common.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, serviceName, actualResponse.ServiceName)
+
+	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into config.ConfigurationStruct
+	configJson, err := json.Marshal(actualResponse.Config)
+	require.NoError(t, err)
+	require.Less(t, 0, len(configJson))
+
+	actualConfig := fullConfig{}
+	err = json.Unmarshal(configJson, &actualConfig)
+	require.NoError(t, err)
+	assert.Equal(t, expectedFullConfig, actualConfig)
+}
+
+func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc, body io.Reader) *httptest.ResponseRecorder {
+	req, err := http.NewRequest(method, api, body)
+	require.NoError(t, err)
+	expectedCorrelationId := uuid.New().String()
+	req.Header.Set(common.CorrelationHeader, expectedCorrelationId)
+
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code, "Wrong status code")
+	assert.Equal(t, common.ContentTypeJSON, recorder.Header().Get(common.ContentType), "Content type not set or not JSON")
+	assert.Equal(t, expectedCorrelationId, recorder.Header().Get(common.CorrelationHeader), "CorrelationHeader not as expected")
+
+	require.NotEmpty(t, recorder.Body.String(), "Response body is empty")
+
+	return recorder
+}
+
+type TestConfig struct {
+	Service bootstrapConfig.ServiceInfo
+}
+
+func (tc TestConfig) UpdateFromRaw(_ interface{}) bool {
+	panic("should not be called")
+}
+
+func (tc TestConfig) UpdateWritableFromRaw(_ interface{}) bool {
+	panic("should not be called")
+}
+
+func (tc TestConfig) EmptyWritablePtr() interface{} {
+	panic("should not be called")
+}
+
+func (tc TestConfig) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
+	return bootstrapConfig.BootstrapConfiguration{
+		Service: &tc.Service,
+	}
+}
+
+func (tc TestConfig) GetLogLevel() string {
+	return "TRACE"
+}
+
+func (tc TestConfig) GetRegistryInfo() bootstrapConfig.RegistryInfo {
+	panic("should not be called")
+}
+
+func (tc TestConfig) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
+	return nil
+}
+
+func (tc TestConfig) GetTelemetryInfo() *bootstrapConfig.TelemetryInfo {
+	panic("should not be called")
+}
+
+func (tc TestConfig) GetWritablePtr() any {
+	panic("should not be called")
+}
+
+type TestCustomConfig struct {
+	Sample string
+}
+
+func (t TestCustomConfig) UpdateFromRaw(_ interface{}) bool {
+	return true
 }
