@@ -461,7 +461,7 @@ func logEnvironmentOverride(lc logger.LoggingClient, name string, key string, va
 	lc.Infof("Variables override of '%s' by environment variable: %s=%s", name, key, valueStr)
 }
 
-// GetURIRequestTimeout gets the configuration request timeout value from a Variables variable value (if it exists)
+// GetURIRequestTimeout gets the configuration request timeout value from an environment variable (if it exists)
 // or uses passed in value.
 func GetURIRequestTimeout(lc logger.LoggingClient) time.Duration {
 	envValue := os.Getenv(envKeyFileURITimeout)

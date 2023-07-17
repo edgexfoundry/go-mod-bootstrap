@@ -594,11 +594,10 @@ func TestGetRequestTimeout(t *testing.T) {
 	testCases := []struct {
 		TestName        string
 		EnvTimeout      string
-		PassedInTimeout string
 		ExpectedTimeout time.Duration
 	}{
-		{"With Env Var", envKeyFileURITimeout, "15", 15 * time.Second},
-		{"With No Env Var", "", "15", 15 * time.Second},
+		{"With Env Var", envKeyFileURITimeout, 15 * time.Second},
+		{"With No Env Var", "", 15 * time.Second},
 	}
 
 	for _, test := range testCases {
@@ -606,7 +605,7 @@ func TestGetRequestTimeout(t *testing.T) {
 			os.Clearenv()
 
 			if len(test.EnvTimeout) > 0 {
-				err := os.Setenv(test.EnvTimeout, test.PassedInTimeout)
+				err := os.Setenv(test.EnvTimeout, test.ExpectedTimeout.String())
 				require.NoError(t, err)
 			}
 
