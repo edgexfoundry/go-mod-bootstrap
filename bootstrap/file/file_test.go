@@ -7,12 +7,14 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/stretchr/testify/assert"
 )
 
 var dic *di.Container
 
 func TestLoadFile(t *testing.T) {
+	lc := logger.NewMockClient()
 	tests := []struct {
 		Name               string
 		Path               string
@@ -46,7 +48,7 @@ func TestLoadFile(t *testing.T) {
 		})
 
 		t.Run(tc.Name, func(t *testing.T) {
-			bytesOut, err := Load(tc.Path, DefaultTimeout, mockSecretProvider)
+			bytesOut, err := Load(tc.Path, mockSecretProvider, lc)
 			if tc.ExpectedErr != "" {
 				assert.Contains(t, err.Error(), tc.ExpectedErr)
 				return

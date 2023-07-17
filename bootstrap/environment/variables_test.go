@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
 	"github.com/stretchr/testify/mock"
@@ -587,16 +588,17 @@ func TestOverrideConfigMapValues(t *testing.T) {
 	}
 }
 
-func TestGetFileUriTimeout(t *testing.T) {
+func TestGetRequestTimeout(t *testing.T) {
 	_, lc := initializeTest()
 
 	testCases := []struct {
 		TestName        string
 		EnvTimeout      string
-		ExpectedTimeout string
+		PassedInTimeout string
+		ExpectedTimeout time.Duration
 	}{
-		{"With Env Var", envKeyRequestTimeout, "14"},
-		{"With No Env Var", "", "15"},
+		{"With Env Var", envKeyFileURITimeout, "15", 15 * time.Second},
+		{"With No Env Var", "", "15", 15 * time.Second},
 	}
 
 	for _, test := range testCases {
@@ -604,11 +606,11 @@ func TestGetFileUriTimeout(t *testing.T) {
 			os.Clearenv()
 
 			if len(test.EnvTimeout) > 0 {
-				err := os.Setenv(test.EnvTimeout, test.ExpectedTimeout)
+				err := os.Setenv(test.EnvTimeout, test.PassedInTimeout)
 				require.NoError(t, err)
 			}
 
-			actual := GetFileUriTimeout(lc)
+			actual := GetURIRequestTimeout(lc)
 			assert.Equal(t, test.ExpectedTimeout, actual)
 		})
 	}
