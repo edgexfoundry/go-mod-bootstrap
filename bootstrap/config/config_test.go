@@ -394,6 +394,20 @@ func TestGetConfigFileLocation(t *testing.T) {
 			expected: filepath.Join("myRes", "myProfile", "myFile.yaml"),
 		},
 		{
+			name:     "valid - file absolute path",
+			dir:      "/myRes",
+			profile:  "myProfile",
+			path:     "myFile.yaml",
+			expected: "/myRes/myProfile/myFile.yaml",
+		},
+		{
+			name:     "valid - file relative path",
+			dir:      "../../myRes",
+			profile:  "myProfile",
+			path:     "myFile.yaml",
+			expected: "../../myRes/myProfile/myFile.yaml",
+		},
+		{
 			name:     "valid - url",
 			dir:      "",
 			profile:  "",

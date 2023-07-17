@@ -639,9 +639,6 @@ func CreateProviderClient(
 // loadConfigYamlFromFile attempts to read the specified configuration yaml file
 func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, error) {
 	secretProvider := container.SecretProviderExtFrom(cp.dic.Get)
-	if secretProvider != nil {
-		return nil, fmt.Errorf("failed to get secret provider")
-	}
 
 	cp.lc.Infof("Loading configuration file from %s", yamlFile)
 	contents, err := file.Load(yamlFile, secretProvider, cp.lc)
