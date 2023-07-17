@@ -198,7 +198,7 @@ func (cp *Processor) Process(
 		// NOTE: Some security services don't use any common configuration and don't use the configuration provider.
 		commonConfigLocation := environment.GetCommonConfigFileName(cp.lc, cp.flags.CommonConfig())
 		if commonConfigLocation != "" {
-			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType, secretProvider)
+			err := cp.loadCommonConfigFromFile(commonConfigLocation, serviceConfig, serviceType)
 			if err != nil {
 				return err
 			}
@@ -214,7 +214,7 @@ func (cp *Processor) Process(
 	// Now load the private config from a local file if any of these conditions are true
 	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath, secretProvider)
+		configMap, err := cp.loadConfigYamlFromFile(filePath)
 		if err != nil {
 			return err
 		}
@@ -394,12 +394,11 @@ func (cp *Processor) loadCommonConfig(
 func (cp *Processor) loadCommonConfigFromFile(
 	configFile string,
 	serviceConfig interfaces.Configuration,
-	serviceType string,
-	secretProvider interfaces.SecretProviderExt) error {
+	serviceType string) error {
 
 	var err error
 
-	commonConfig, err := cp.loadConfigYamlFromFile(configFile, secretProvider)
+	commonConfig, err := cp.loadConfigYamlFromFile(configFile)
 	if err != nil {
 		return err
 	}
@@ -467,7 +466,7 @@ func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider in
 // LoadCustomConfigSection loads the specified custom configuration section from file or Configuration provider.
 // Section will be seed if Configuration provider does yet have it. This is used for structures custom configuration
 // in App and Device services
-func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.UpdatableConfig, sectionName string, secretProvider interfaces.SecretProviderExt) error {
+func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.UpdatableConfig, sectionName string) error {
 	if cp.envVars == nil {
 		cp.envVars = environment.NewVariables(cp.lc)
 	}
@@ -476,7 +475,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 	if configClient == nil {
 		cp.lc.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath, secretProvider)
+		configMap, err := cp.loadConfigYamlFromFile(filePath)
 		if err != nil {
 			return err
 		}
@@ -510,7 +509,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 			cp.lc.Info("Loaded custom configuration from Configuration Provider, no overrides applied")
 		} else {
 			filePath := GetConfigFileLocation(cp.lc, cp.flags)
-			configMap, err := cp.loadConfigYamlFromFile(filePath, secretProvider)
+			configMap, err := cp.loadConfigYamlFromFile(filePath)
 			if err != nil {
 				return err
 			}
@@ -638,9 +637,14 @@ func CreateProviderClient(
 }
 
 // loadConfigYamlFromFile attempts to read the specified configuration yaml file
-func (cp *Processor) loadConfigYamlFromFile(yamlFile string, provider interfaces.SecretProvider) (map[string]any, error) {
+func (cp *Processor) loadConfigYamlFromFile(yamlFile string) (map[string]any, error) {
+	secretProvider := container.SecretProviderExtFrom(cp.dic.Get)
+	if secretProvider != nil {
+		return nil, fmt.Errorf("failed to get secret provider")
+	}
+
 	cp.lc.Infof("Loading configuration file from %s", yamlFile)
-	contents, err := file.Load(yamlFile, provider, cp.lc)
+	contents, err := file.Load(yamlFile, secretProvider, cp.lc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration file %s: %s", yamlFile, err.Error())
 	}

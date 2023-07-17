@@ -299,7 +299,7 @@ func TestLoadCommonConfigFromFile(t *testing.T) {
 			proc := NewProcessor(f, env, timer, ctx, &wg, nil, dic)
 
 			// call load common config
-			err := proc.loadCommonConfigFromFile(tc.config, tc.serviceConfig, tc.serviceType, nil)
+			err := proc.loadCommonConfigFromFile(tc.config, tc.serviceConfig, tc.serviceType)
 			// make assertions
 			require.NotNil(t, cancel)
 			if tc.expectedErr == "" {
