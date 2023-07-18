@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +22,6 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -45,7 +43,7 @@ func mockDic() *di.Container {
 	mockConfig := &mocks.Configuration{}
 	mockProvider := &mocks.SecretProvider{}
 	mockProvider.On("StoreSecret", validAddSecretRequest.SecretName, map[string]string{"password": "password", "username": "username"}).Return(nil)
-	mockProvider.On("StoreSecret", "no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
+	mockProvider.On("StoreSecret", "fail", map[string]string{"password": "password", "username": "username"}).Return(errors.New("add failed"))
 
 	return di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationInterfaceName: func(get di.Get) interface{} {
@@ -82,8 +80,8 @@ func TestAddSecret(t *testing.T) {
 	missingSecretValue.SecretData = []commonDTO.SecretDataKeyValue{
 		{Key: "username", Value: ""},
 	}
-	noSecretStore := validAddSecretRequest
-	noSecretStore.SecretName = "no"
+	addFailure := validAddSecretRequest
+	addFailure.SecretName = "fail"
 
 	tests := []struct {
 		Name               string
@@ -97,15 +95,11 @@ func TestAddSecret(t *testing.T) {
 		{"Invalid - no secrets", noSecrets, true, http.StatusBadRequest},
 		{"Invalid - missing secret key", missingSecretKey, true, http.StatusBadRequest},
 		{"Invalid - missing secret value", missingSecretValue, true, http.StatusBadRequest},
-		{"Invalid - No Secret Store", noSecretStore, true, http.StatusInternalServerError},
+		{"Invalid - add failure", addFailure, true, http.StatusInternalServerError},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
-			if testCase.Request.SecretName == noSecretStore.SecretName {
-				_ = os.Setenv(secret.EnvSecretStore, "false")
-			}
-
 			jsonData, err := json.Marshal(testCase.Request)
 			require.NoError(t, err)
 
@@ -232,7 +226,7 @@ func TestConfigRequest_CustomConfig(t *testing.T) {
 	})
 
 	type fullConfig struct {
-		Configuration       TestConfig
+		TestConfig
 		CustomConfiguration TestCustomConfig
 	}
 

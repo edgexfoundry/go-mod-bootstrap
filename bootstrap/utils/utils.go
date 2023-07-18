@@ -17,7 +17,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 )
 
 const PathSep = "/"
@@ -160,4 +166,52 @@ func DeepCopy(src any, dest any) error {
 		return fmt.Errorf("could not unmarshal JSON (from %T) into type %T: %v", src, dest, err)
 	}
 	return nil
+}
+
+// SendJsonResp puts together the response packet for the APIs
+func SendJsonResp(
+	lc logger.LoggingClient,
+	writer http.ResponseWriter,
+	request *http.Request,
+	response interface{},
+	statusCode int) {
+
+	correlationID := request.Header.Get(common.CorrelationHeader)
+
+	writer.Header().Set(common.CorrelationHeader, correlationID)
+	writer.Header().Set(common.ContentType, common.ContentTypeJSON)
+	writer.WriteHeader(statusCode)
+
+	if response != nil {
+		data, err := json.Marshal(response)
+		if err != nil {
+			lc.Error("Unable to marshal response", "error", err.Error(), common.CorrelationHeader, correlationID)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = writer.Write(data)
+		if err != nil {
+			lc.Error("Unable to marshal response", "error", err.Error(), common.CorrelationHeader, correlationID)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+// SendJsonErrResp puts together the error response packet for the APIs
+func SendJsonErrResp(
+	lc logger.LoggingClient,
+	writer http.ResponseWriter,
+	request *http.Request,
+	errKind errors.ErrKind,
+	message string,
+	err error,
+	requestID string) {
+
+	edgeXerr := errors.NewCommonEdgeX(errKind, message, err)
+	lc.Error(edgeXerr.Error())
+	lc.Debug(edgeXerr.DebugMessages())
+	response := commonDTO.NewBaseResponse(requestID, edgeXerr.Message(), edgeXerr.Code())
+	SendJsonResp(lc, writer, request, response, edgeXerr.Code())
 }
