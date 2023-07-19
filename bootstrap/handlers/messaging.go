@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2022 Intel Corp.
+ * Copyright 2022-2023 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -41,8 +41,8 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 		return true
 	}
 
-	if len(messageBus.Host) == 0 {
-		lc.Error("MessageBus configuration not set or missing from service's GetBootstrap() implementation")
+	if len(messageBus.Host) == 0 || messageBus.Port == 0 || len(messageBus.Protocol) == 0 || len(messageBus.Type) == 0 {
+		lc.Error("MessageBus configuration is incomplete, missing common config? Use -cp or -cc flags for common config.")
 		return false
 	}
 
