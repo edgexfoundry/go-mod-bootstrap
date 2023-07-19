@@ -110,6 +110,11 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 						return false
 					}
 
+					if len(config.GetBootstrap().Service.RequestTimeout) == 0 {
+						lc.Error("Service.RequestTimeout found empty in bootstrap config, missing common config? Use -cp or -cc flags for common config")
+						return false
+					}
+
 					// TODO: Move following outside loop when multiple messaging based clients exist
 					timeout, err := time.ParseDuration(config.GetBootstrap().Service.RequestTimeout)
 					if err != nil {

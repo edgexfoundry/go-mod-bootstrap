@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  * Copyright 2021-2022 IOTech Ltd
+ * Copyright 2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -86,6 +87,12 @@ func (b *HttpServer) BootstrapHandler(
 
 	bootstrapConfig := container.ConfigurationFrom(dic.Get).GetBootstrap()
 
+	if bootstrapConfig.Service.Port == 0 {
+		// should not be 0 as if it were set in local config
+		lc.Error("Service.Port is missing or should not be 0 in local private config")
+		return false
+	}
+
 	// this allows env override to explicitly set the value used
 	// for ListenAndServe as needed for different deployments
 	port := strconv.Itoa(bootstrapConfig.Service.Port)
@@ -94,6 +101,11 @@ func (b *HttpServer) BootstrapHandler(
 	// the ServerBindAddr value is not specified
 	if bootstrapConfig.Service.ServerBindAddr == "" {
 		addr = bootstrapConfig.Service.Host + ":" + port
+	}
+
+	if len(bootstrapConfig.Service.RequestTimeout) == 0 {
+		lc.Error("Service.RequestTimeout found empty in bootstrap config, missing common config? Use -cp or -cc flags for common config")
+		return false
 	}
 
 	timeout, err := time.ParseDuration(bootstrapConfig.Service.RequestTimeout)
