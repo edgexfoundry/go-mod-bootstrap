@@ -111,7 +111,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 					}
 
 					if len(config.GetBootstrap().Service.RequestTimeout) == 0 {
-						lc.Error("Service.RequestTimeout found empty in bootstrap config, missing common config? Use -cp or -cc flags for common config")
+						lc.Error("Service.RequestTimeout found empty in service's configuration, missing common config? Use -cp or -cc flags for common config")
 						return false
 					}
 

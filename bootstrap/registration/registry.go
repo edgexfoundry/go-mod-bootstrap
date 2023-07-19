@@ -41,10 +41,6 @@ func createRegistryClient(
 	dic *di.Container) (registry.Client, error) {
 	bootstrapConfig := serviceConfig.GetBootstrap()
 
-	if *bootstrapConfig.Registry == (config.RegistryInfo{}) {
-		return nil, errors.New("Registry configuration is empty, missing common config? Use -cp or -cc flags for common config.")
-	}
-
 	var err error
 	var accessToken string
 	var getAccessToken registryTypes.GetAccessTokenCallback
@@ -73,7 +69,7 @@ func createRegistryClient(
 	}
 
 	if len(bootstrapConfig.Registry.Host) == 0 || bootstrapConfig.Registry.Port == 0 || len(bootstrapConfig.Registry.Type) == 0 {
-		return nil, errors.New("Registry config is incomplete, missing common config? Use -cp or -cc flags for common config.")
+		return nil, errors.New("Registry configuration is empty or incomplete, missing common config? Use -cp or -cc flags for common config.")
 	}
 
 	registryConfig := registryTypes.Config{

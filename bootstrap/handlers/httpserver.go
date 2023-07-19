@@ -89,7 +89,7 @@ func (b *HttpServer) BootstrapHandler(
 
 	if bootstrapConfig.Service.Port == 0 {
 		// should not be 0 as if it were set in local config
-		lc.Error("Service.Port is missing or should not be 0 in local private config")
+		lc.Error("Service.Port is missing from service's configuration or should not be 0 in local private config")
 		return false
 	}
 
@@ -104,7 +104,7 @@ func (b *HttpServer) BootstrapHandler(
 	}
 
 	if len(bootstrapConfig.Service.RequestTimeout) == 0 {
-		lc.Error("Service.RequestTimeout found empty in bootstrap config, missing common config? Use -cp or -cc flags for common config")
+		lc.Error("Service.RequestTimeout found empty in service's configuration, missing common config? Use -cp or -cc flags for common config")
 		return false
 	}
 
