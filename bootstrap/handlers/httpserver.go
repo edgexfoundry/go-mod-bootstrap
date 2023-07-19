@@ -189,8 +189,9 @@ func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.Middl
 					w.WriteHeader(response.StatusCode)
 					if err := json.NewEncoder(w).Encode(response); err != nil {
 						lc.Errorf("Error encoding the data:  %v", err)
-						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return err
+						// set Response.Committed to true in order to rewrite the status code
+						w.Committed = false
+						return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 					}
 				}
 			}

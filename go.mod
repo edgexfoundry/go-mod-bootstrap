@@ -46,8 +46,8 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
-	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
+	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mitchellh/consulstructure v0.0.0-20190329231841-56fdc4d2da54 // indirect
