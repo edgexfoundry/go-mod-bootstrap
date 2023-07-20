@@ -76,7 +76,7 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 			lc.Errorf("%v", err)
 			// set Response.Committed to true in order to rewrite the status code
 			w.Committed = false
-			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+			return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		}
 	}
 }
