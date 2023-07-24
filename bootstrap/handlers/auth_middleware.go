@@ -62,12 +62,12 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 					lc.Errorf("Error checking JWT validity: %v", err)
 					// set Response.Committed to true in order to rewrite the status code
 					w.Committed = false
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+					return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 				} else if !validToken {
 					lc.Warnf("Request to '%s' UNAUTHORIZED", r.URL.Path)
 					// set Response.Committed to true in order to rewrite the status code
 					w.Committed = false
-					return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("unauthorized request to '%s'", r.URL.Path))
+					return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 				}
 				lc.Debugf("Request to '%s' authorized", r.URL.Path)
 				return inner(c)
