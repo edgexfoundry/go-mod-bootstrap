@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2021 IOTech Ltd
+// Copyright (C) 2021-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,6 +12,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,12 +28,14 @@ const (
 
 var defaultCORSInfo = config.CORSConfigurationInfo{CORSAllowCredentials: true, CORSAllowedOrigin: defaultCORSAllowedOrigin, CORSAllowedMethods: defaultCORSAllowedMethods, CORSAllowedHeaders: defaultCORSAllowedHeaders, CORSExposeHeaders: defaultCORSExposeHeaders, CORSMaxAge: 3600}
 
-func TestProcessCORS(t *testing.T) {
-	corsInfo := defaultCORSInfo
+var simpleHandler = echo.HandlerFunc(func(c echo.Context) error {
+	c.Response().WriteHeader(http.StatusOK)
+	return nil
+})
 
-	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+func TestProcessCORS(t *testing.T) {
+	e := echo.New()
+	corsInfo := defaultCORSInfo
 
 	tests := []struct {
 		Name                                  string
@@ -68,7 +71,10 @@ func TestProcessCORS(t *testing.T) {
 			}
 
 			recorder := httptest.NewRecorder()
-			handler.ServeHTTP(recorder, req)
+			c := e.NewContext(req, recorder)
+			err = handler(c)
+			assert.NoError(t, err)
+
 			resp := recorder.Result()
 
 			require.Equal(t, http.StatusOK, resp.StatusCode, "http status code is not as expected")
@@ -81,25 +87,28 @@ func TestProcessCORS(t *testing.T) {
 }
 
 func TestHandlePreflight(t *testing.T) {
+	e := echo.New()
 	corsInfo := defaultCORSInfo
 
 	tests := []struct {
 		Name                              string
 		EnableCORS                        bool
 		Origin                            string
+		AccessControlRequestMethod        string
 		ExpectedAccessControlAllowMethods string
 		ExpectedAccessControlAllowHeaders string
 		ExpectedAccessControlMaxAge       string
 	}{
-		{"not enable CORS", false, "http://test.com", "", "", ""},
-		{"enable CORS without Origin header", true, "", "", "", ""},
-		{"enable CORS and receive a preflight request", true, "http://test.com", defaultCORSAllowedMethods, defaultCORSAllowedHeaders, defaultCORSMaxAge},
+		{"not enable CORS", false, "http://test.com", "", "", "", ""},
+		{"enable CORS without Origin header", true, "", "", "", "", ""},
+		{"enable CORS and receive a preflight request", true, "http://test.com", "GET", defaultCORSAllowedMethods, defaultCORSAllowedHeaders, defaultCORSMaxAge},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
 			corsInfo.EnableCORS = testCase.EnableCORS
-			handler := http.HandlerFunc(HandlePreflight(corsInfo))
+			preflightMiddleware := HandlePreflight(corsInfo)
+			handler := preflightMiddleware(simpleHandler)
 
 			req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
 			require.NoError(t, err)
@@ -107,9 +116,15 @@ func TestHandlePreflight(t *testing.T) {
 			if len(testCase.Origin) > 0 {
 				req.Header.Set(Origin, testCase.Origin)
 			}
+			if len(testCase.AccessControlRequestMethod) > 0 {
+				req.Header.Set(AccessControlRequestMethod, testCase.AccessControlRequestMethod)
+			}
 
 			recorder := httptest.NewRecorder()
-			handler.ServeHTTP(recorder, req)
+			c := e.NewContext(req, recorder)
+			err = handler(c)
+			assert.NoError(t, err)
+
 			resp := recorder.Result()
 
 			require.Equal(t, http.StatusOK, resp.StatusCode, "http status code is not as expected")

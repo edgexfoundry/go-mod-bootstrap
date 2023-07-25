@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2023 Intel Corp.
+ * Copyright (C) 2023 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -24,6 +25,8 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+
+	"github.com/labstack/echo/v4"
 )
 
 const PathSep = "/"
@@ -171,10 +174,10 @@ func DeepCopy(src any, dest any) error {
 // SendJsonResp puts together the response packet for the APIs
 func SendJsonResp(
 	lc logger.LoggingClient,
-	writer http.ResponseWriter,
+	writer *echo.Response,
 	request *http.Request,
 	response interface{},
-	statusCode int) {
+	statusCode int) error {
 
 	correlationID := request.Header.Get(common.CorrelationHeader)
 
@@ -186,32 +189,35 @@ func SendJsonResp(
 		data, err := json.Marshal(response)
 		if err != nil {
 			lc.Error("Unable to marshal response", "error", err.Error(), common.CorrelationHeader, correlationID)
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
+			// set Response.Committed to true in order to rewrite the status code
+			writer.Committed = false
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		_, err = writer.Write(data)
 		if err != nil {
 			lc.Error("Unable to marshal response", "error", err.Error(), common.CorrelationHeader, correlationID)
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
+			// set Response.Committed to true in order to rewrite the status code
+			writer.Committed = false
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
+	return nil
 }
 
 // SendJsonErrResp puts together the error response packet for the APIs
 func SendJsonErrResp(
 	lc logger.LoggingClient,
-	writer http.ResponseWriter,
+	writer *echo.Response,
 	request *http.Request,
 	errKind errors.ErrKind,
 	message string,
 	err error,
-	requestID string) {
+	requestID string) error {
 
 	edgeXerr := errors.NewCommonEdgeX(errKind, message, err)
 	lc.Error(edgeXerr.Error())
 	lc.Debug(edgeXerr.DebugMessages())
 	response := commonDTO.NewBaseResponse(requestID, edgeXerr.Message(), edgeXerr.Code())
-	SendJsonResp(lc, writer, request, response, edgeXerr.Code())
+	return SendJsonResp(lc, writer, request, response, edgeXerr.Code())
 }

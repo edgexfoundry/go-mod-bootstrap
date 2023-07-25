@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022 IOTech Ltd
+// Copyright (C) 2022-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,18 +7,22 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
+
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequestLimitMiddleware(t *testing.T) {
+	e := echo.New()
 	lc := logger.NewMockClient()
 	payload := make([]byte, 2048)
 	tests := []struct {
@@ -33,14 +37,17 @@ func TestRequestLimitMiddleware(t *testing.T) {
 
 	for _, testCase := range tests {
 		middleware := RequestLimitMiddleware(testCase.sizeLimit, lc)
-		handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		handler := middleware(simpleHandler)
 
 		reader := strings.NewReader(string(payload))
 		req, err := http.NewRequest(http.MethodPost, "/", reader)
 		require.NoError(t, err)
 
 		recorder := httptest.NewRecorder()
-		handler.ServeHTTP(recorder, req)
+		c := e.NewContext(req, recorder)
+		err = handler(c)
+		assert.NoError(t, err)
+
 		resp := recorder.Result()
 
 		if testCase.errorExpected {

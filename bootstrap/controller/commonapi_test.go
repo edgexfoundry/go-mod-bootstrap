@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -59,9 +59,10 @@ func mockDic() *di.Container {
 }
 
 func TestAddSecret(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 
-	target := NewCommonController(dic, mux.NewRouter(), uuid.NewString(), serviceVersion)
+	target := NewCommonController(dic, e, uuid.NewString(), serviceVersion)
 	assert.NotNil(t, target)
 
 	NoPath := validAddSecretRequest
@@ -108,8 +109,10 @@ func TestAddSecret(t *testing.T) {
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(target.AddSecret)
-			handler.ServeHTTP(recorder, req)
+			handler := echo.HandlerFunc(target.AddSecret)
+			c := e.NewContext(req, recorder)
+			err = handler(c)
+			assert.NoError(t, err)
 
 			actualResponse := commonDTO.BaseResponse{}
 			err = json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
@@ -129,9 +132,10 @@ func TestAddSecret(t *testing.T) {
 }
 
 func TestPingRequest(t *testing.T) {
+	e := echo.New()
 	serviceName := uuid.NewString()
 	dic := mockDic()
-	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+	target := NewCommonController(dic, e, serviceName, serviceVersion)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, target.Ping, nil)
 
@@ -147,10 +151,11 @@ func TestPingRequest(t *testing.T) {
 }
 
 func TestVersionRequest(t *testing.T) {
+	e := echo.New()
 	expectedSdkVersion := "1.3.1"
 	serviceName := uuid.NewString()
 	dic := mockDic()
-	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+	target := NewCommonController(dic, e, serviceName, serviceVersion)
 	target.SetSDKVersion(expectedSdkVersion)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiVersion, target.Version, nil)
@@ -166,6 +171,7 @@ func TestVersionRequest(t *testing.T) {
 }
 
 func TestConfigRequest(t *testing.T) {
+	e := echo.New()
 	expectedConfig := TestConfig{
 		Service: bootstrapConfig.ServiceInfo{
 			Host: "localhost",
@@ -181,7 +187,7 @@ func TestConfigRequest(t *testing.T) {
 			return expectedConfig
 		},
 	})
-	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+	target := NewCommonController(dic, e, serviceName, serviceVersion)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
 
@@ -205,6 +211,7 @@ func TestConfigRequest(t *testing.T) {
 }
 
 func TestConfigRequest_CustomConfig(t *testing.T) {
+	e := echo.New()
 	expectedConfig := TestConfig{
 		Service: bootstrapConfig.ServiceInfo{
 			Host: "localhost",
@@ -235,7 +242,7 @@ func TestConfigRequest_CustomConfig(t *testing.T) {
 		expectedCustomConfig,
 	}
 
-	target := NewCommonController(dic, mux.NewRouter(), serviceName, serviceVersion)
+	target := NewCommonController(dic, e, serviceName, serviceVersion)
 	target.SetCustomConfigInfo(expectedCustomConfig)
 	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
 
@@ -257,7 +264,8 @@ func TestConfigRequest_CustomConfig(t *testing.T) {
 	assert.Equal(t, expectedFullConfig, actualConfig)
 }
 
-func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc, body io.Reader) *httptest.ResponseRecorder {
+func doRequest(t *testing.T, method string, api string, handler echo.HandlerFunc, body io.Reader) *httptest.ResponseRecorder {
+	e := echo.New()
 	req, err := http.NewRequest(method, api, body)
 	require.NoError(t, err)
 	expectedCorrelationId := uuid.New().String()
@@ -265,7 +273,9 @@ func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc
 
 	recorder := httptest.NewRecorder()
 
-	handler.ServeHTTP(recorder, req)
+	c := e.NewContext(req, recorder)
+	err = handler(c)
+	assert.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, recorder.Code, "Wrong status code")
 	assert.Equal(t, common.ContentTypeJSON, recorder.Header().Get(common.ContentType), "Content type not set or not JSON")

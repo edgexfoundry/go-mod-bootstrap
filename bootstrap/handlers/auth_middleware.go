@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2023 Intel Corporation
+ * Copyright 2023 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,6 +16,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -24,6 +26,8 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
+
+	"github.com/labstack/echo/v4"
 )
 
 // VaultAuthenticationHandlerFunc prefixes an existing HandlerFunc
@@ -43,9 +47,11 @@ import (
 //
 // For typical usage, it is preferred to use AutoConfigAuthenticationFunc which
 // will automatically select between a real and a fake JWT validation handler.
-func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) func(inner http.HandlerFunc) http.HandlerFunc {
-	return func(inner http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) echo.MiddlewareFunc {
+	return func(inner echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			r := c.Request()
+			w := c.Response()
 			authHeader := r.Header.Get("Authorization")
 			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d)", r.URL.Path, len(authHeader))
 			authParts := strings.Split(authHeader, " ")
@@ -54,28 +60,32 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 				validToken, err := secretProvider.IsJWTValid(token)
 				if err != nil {
 					lc.Errorf("Error checking JWT validity: %v", err)
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-					return
+					// set Response.Committed to true in order to rewrite the status code
+					w.Committed = false
+					return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 				} else if !validToken {
 					lc.Warnf("Request to '%s' UNAUTHORIZED", r.URL.Path)
-					http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-					return
+					// set Response.Committed to true in order to rewrite the status code
+					w.Committed = false
+					return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 				}
 				lc.Debugf("Request to '%s' authorized", r.URL.Path)
-				inner(w, r)
-				return
+				return inner(c)
 			}
-			lc.Errorf("Unable to parse JWT for call to '%s'; unauthorized", r.URL.Path)
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			err := fmt.Errorf("unable to parse JWT for call to '%s'; unauthorized", r.URL.Path)
+			lc.Errorf("%v", err)
+			// set Response.Committed to true in order to rewrite the status code
+			w.Committed = false
+			return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		}
 	}
 }
 
 // NilAuthenticationHandlerFunc just invokes a nested handler
-func NilAuthenticationHandlerFunc() func(inner http.HandlerFunc) http.HandlerFunc {
-	return func(inner http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			inner(w, r)
+func NilAuthenticationHandlerFunc() echo.MiddlewareFunc {
+	return func(inner echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			return inner(c)
 		}
 	}
 }
@@ -89,7 +99,7 @@ func NilAuthenticationHandlerFunc() func(inner http.HandlerFunc) http.HandlerFun
 // to disable JWT validation.  This might be wanted for an EdgeX
 // adopter that wanted to only validate JWT's at the proxy layer,
 // or as an escape hatch for a caller that cannot authenticate.
-func AutoConfigAuthenticationFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) func(inner http.HandlerFunc) http.HandlerFunc {
+func AutoConfigAuthenticationFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) echo.MiddlewareFunc {
 	// Golang standard library treats an error as false
 	disableJWTValidation, _ := strconv.ParseBool(os.Getenv("EDGEX_DISABLE_JWT_VALIDATION"))
 	authenticationHook := NilAuthenticationHandlerFunc()
