@@ -53,7 +53,7 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 		return func(c echo.Context) error {
 			// Skip the JWT authorization check for Ping request
 			if c.Path() == common.ApiPingRoute {
-				return nil
+				return inner(c)
 			}
 
 			r := c.Request()
