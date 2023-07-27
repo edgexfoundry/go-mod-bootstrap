@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
@@ -51,11 +50,6 @@ import (
 func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) echo.MiddlewareFunc {
 	return func(inner echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Skip the JWT authorization check for Ping request
-			if c.Path() == common.ApiPingRoute {
-				return inner(c)
-			}
-
 			r := c.Request()
 			w := c.Response()
 			authHeader := r.Header.Get("Authorization")

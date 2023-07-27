@@ -110,10 +110,6 @@ func (b *HttpServer) BootstrapHandler(
 	}
 
 	// Use the common middlewares
-	secretProvider := container.SecretProviderExtFrom(dic.Get)
-	authenticationHook := AutoConfigAuthenticationFunc(secretProvider, lc)
-
-	b.router.Use(authenticationHook)
 	b.router.Use(ManageHeader)
 	b.router.Use(LoggingMiddleware(lc))
 	b.router.Use(UrlDecodeMiddleware(lc))
