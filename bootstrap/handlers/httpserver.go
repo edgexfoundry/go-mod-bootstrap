@@ -109,6 +109,11 @@ func (b *HttpServer) BootstrapHandler(
 		return false
 	}
 
+	// Use the common middlewares
+	b.router.Use(ManageHeader)
+	b.router.Use(LoggingMiddleware(lc))
+	b.router.Use(UrlDecodeMiddleware(lc))
+
 	timeout, err := time.ParseDuration(bootstrapConfig.Service.RequestTimeout)
 	if err != nil {
 		lc.Errorf("unable to parse RequestTimeout value of %s to a duration: %v", bootstrapConfig.Service.RequestTimeout, err)
