@@ -61,10 +61,10 @@ func NewCommonController(dic *di.Container, r *echo.Echo, serviceName string, se
 			configuration: configuration,
 		},
 	}
-	r.GET(common.ApiPingRoute, c.Ping) // Health check is always unauthenticated
-	r.GET(common.ApiVersionRoute, c.Version, authenticationHook)
-	r.GET(common.ApiConfigRoute, c.Config, authenticationHook)
-	r.POST(common.ApiSecretRoute, c.AddSecret, authenticationHook)
+	r.GET(common.ApiPingRoute, utils.WrapHandler(c.Ping)) // Health check is always unauthenticated
+	r.GET(common.ApiVersionRoute, utils.WrapHandler(c.Version), utils.WrapMiddlewareFunc(authenticationHook))
+	r.GET(common.ApiConfigRoute, utils.WrapHandler(c.Config), utils.WrapMiddlewareFunc(authenticationHook))
+	r.POST(common.ApiSecretRoute, utils.WrapHandler(c.AddSecret), utils.WrapMiddlewareFunc(authenticationHook))
 
 	return &c
 }
@@ -81,39 +81,33 @@ func (c *CommonController) SetCustomConfigInfo(customConfig interfaces.Updatable
 
 // Ping handles the request to /ping endpoint. Is used to test if the service is working
 // It returns a response as specified by the API swagger in the openapi directory
-func (c *CommonController) Ping(e echo.Context) error {
-	request := e.Request()
-	writer := e.Response()
+func (c *CommonController) Ping(writer http.ResponseWriter, request *http.Request) {
 	response := commonDTO.NewPingResponse(c.serviceName)
-
-	return utils.SendJsonResp(c.lc, writer, request, response, http.StatusOK)
+	utils.SendJsonResp(c.lc, writer, request, response, http.StatusOK)
 }
 
 // Version handles the request to /version endpoint. Is used to request the service's versions
 // It returns a response as specified by the API swagger in the openapi directory
-func (c *CommonController) Version(e echo.Context) error {
-	request := e.Request()
-	writer := e.Response()
+func (c *CommonController) Version(writer http.ResponseWriter, request *http.Request) {
 	var response interface{}
 	if c.version.sdkVersion != "" {
 		response = commonDTO.NewVersionSdkResponse(c.version.serviceVersion, c.version.sdkVersion, c.serviceName)
 	} else {
 		response = commonDTO.NewVersionResponse(c.version.serviceVersion, c.serviceName)
 	}
-	return utils.SendJsonResp(c.lc, writer, request, response, http.StatusOK)
+	utils.SendJsonResp(c.lc, writer, request, response, http.StatusOK)
 }
 
 // Config handles the request to /config endpoint. Is used to request the service's configuration
 // It returns a response as specified by the swagger in openapi/common
-func (c *CommonController) Config(e echo.Context) error {
-	request := e.Request()
-	writer := e.Response()
+func (c *CommonController) Config(writer http.ResponseWriter, request *http.Request) {
 	var fullConfig interface{}
 	m := make(map[string]any)
 	err := mapstructure.Decode(c.config.configuration, &m)
 	if err != nil {
 		c.lc.Errorf("%v", err.Error())
-		return utils.SendJsonErrResp(c.lc, writer, request, errors.KindServerError, "config can not convert to map", err, "")
+		utils.SendJsonErrResp(c.lc, writer, request, errors.KindServerError, "config can not convert to map", err, "")
+		return
 	}
 	if c.config.customConfig != nil {
 		m["CustomConfiguration"] = c.config.customConfig
@@ -121,15 +115,12 @@ func (c *CommonController) Config(e echo.Context) error {
 	fullConfig = m
 
 	response := commonDTO.NewConfigResponse(fullConfig, c.serviceName)
-	return utils.SendJsonResp(c.lc, writer, request, response, http.StatusOK)
+	utils.SendJsonResp(c.lc, writer, request, response, http.StatusOK)
 }
 
 // AddSecret handles the request to the /secret endpoint. Is used to add EdgeX Service exclusive secret to the Secret Store
 // It returns a response as specified by the API swagger in the openapi directory
-func (c *CommonController) AddSecret(e echo.Context) error {
-	request := e.Request()
-	writer := e.Response()
-
+func (c *CommonController) AddSecret(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = request.Body.Close()
 	}()
@@ -138,17 +129,18 @@ func (c *CommonController) AddSecret(e echo.Context) error {
 	err := json.NewDecoder(request.Body).Decode(&secretRequest)
 	if err != nil {
 		c.lc.Errorf("%v", err.Error())
-		return utils.SendJsonErrResp(c.lc, writer, request, errors.KindContractInvalid, "JSON decode failed", err, "")
+		utils.SendJsonErrResp(c.lc, writer, request, errors.KindContractInvalid, "JSON decode failed", err, "")
+		return
 	}
 
 	err = addSecret(c.dic, secretRequest)
 	if err != nil {
-		return utils.SendJsonErrResp(c.lc, writer, request, errors.Kind(err), err.Error(), err, secretRequest.RequestId)
+		utils.SendJsonErrResp(c.lc, writer, request, errors.Kind(err), err.Error(), err, secretRequest.RequestId)
+		return
 	}
 
 	response := commonDTO.NewBaseResponse(secretRequest.RequestId, "", http.StatusCreated)
-
-	return utils.SendJsonResp(c.lc, writer, request, response, http.StatusCreated)
+	utils.SendJsonResp(c.lc, writer, request, response, http.StatusCreated)
 }
 
 // addSecret adds EdgeX Service exclusive secret to the Secret Store

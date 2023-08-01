@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
 	"github.com/labstack/echo/v4"
@@ -57,7 +58,7 @@ func TestProcessCORS(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
 			corsInfo.EnableCORS = testCase.EnableCORS
-			corsMiddleware := ProcessCORS(corsInfo)
+			corsMiddleware := echo.WrapMiddleware(ProcessCORS(corsInfo))
 			handler := corsMiddleware(simpleHandler)
 
 			req, err := http.NewRequest(testCase.HttpMethod, "/", http.NoBody)
@@ -107,7 +108,7 @@ func TestHandlePreflight(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
 			corsInfo.EnableCORS = testCase.EnableCORS
-			preflightMiddleware := HandlePreflight(corsInfo)
+			preflightMiddleware := utils.WrapMiddleware(HandlePreflight(corsInfo))
 			handler := preflightMiddleware(simpleHandler)
 
 			req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)

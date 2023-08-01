@@ -10,8 +10,6 @@ import (
 	"strconv"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-
-	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -27,11 +25,9 @@ const (
 )
 
 // ProcessCORS is a middleware function that enables CORS responses and sets CORS headers.
-func ProcessCORS(corsInfo config.CORSConfigurationInfo) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			r := c.Request()
-			w := c.Response()
+func ProcessCORS(corsInfo config.CORSConfigurationInfo) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if corsInfo.EnableCORS && r.Header.Get(Origin) != "" {
 				// Set Access-Control-Expose-Headers only if it's not a preflight request
 				// If the http method is OPTIONS with Access-Control-Request-Methods headers, it means a preflight request
@@ -50,35 +46,26 @@ func ProcessCORS(corsInfo config.CORSConfigurationInfo) echo.MiddlewareFunc {
 
 				w.Header().Set(Vary, Origin)
 			}
-			return next(c)
-		}
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
 // HandlePreflight returns a http handler function that process CORS preflight responses and sets CORS headers.
-func HandlePreflight(corsInfo config.CORSConfigurationInfo) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			r := c.Request()
-			// skip the middleware if AccessControlRequestMethod header is not defined
-			if r.Header.Get(AccessControlRequestMethod) == "" {
-				return next(c)
+func HandlePreflight(corsInfo config.CORSConfigurationInfo) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if corsInfo.EnableCORS && r.Header.Get(Origin) != "" {
+			if len(corsInfo.CORSAllowedMethods) > 0 {
+				w.Header().Set(AccessControlAllowMethods, corsInfo.CORSAllowedMethods)
 			}
-
-			w := c.Response()
-			if corsInfo.EnableCORS && r.Header.Get(Origin) != "" {
-				if len(corsInfo.CORSAllowedMethods) > 0 {
-					w.Header().Set(AccessControlAllowMethods, corsInfo.CORSAllowedMethods)
-				}
-				if len(corsInfo.CORSAllowedHeaders) > 0 {
-					w.Header().Set(AccessControlAllowHeaders, corsInfo.CORSAllowedHeaders)
-				}
-				if corsInfo.CORSMaxAge > 0 {
-					w.Header().Set(AccessControlMaxAge, strconv.Itoa(corsInfo.CORSMaxAge))
-				}
+			if len(corsInfo.CORSAllowedHeaders) > 0 {
+				w.Header().Set(AccessControlAllowHeaders, corsInfo.CORSAllowedHeaders)
 			}
-			w.WriteHeader(http.StatusOK)
-			return next(c)
+			if corsInfo.CORSMaxAge > 0 {
+				w.Header().Set(AccessControlMaxAge, strconv.Itoa(corsInfo.CORSMaxAge))
+			}
 		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

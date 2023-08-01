@@ -22,6 +22,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -109,7 +110,7 @@ func TestAddSecret(t *testing.T) {
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()
-			handler := echo.HandlerFunc(target.AddSecret)
+			handler := utils.WrapHandler(target.AddSecret)
 			c := e.NewContext(req, recorder)
 			err = handler(c)
 			assert.NoError(t, err)
@@ -137,7 +138,7 @@ func TestPingRequest(t *testing.T) {
 	dic := mockDic()
 	target := NewCommonController(dic, e, serviceName, serviceVersion)
 
-	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, target.Ping, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, utils.WrapHandler(target.Ping), nil)
 
 	actual := commonDTO.PingResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -158,7 +159,7 @@ func TestVersionRequest(t *testing.T) {
 	target := NewCommonController(dic, e, serviceName, serviceVersion)
 	target.SetSDKVersion(expectedSdkVersion)
 
-	recorder := doRequest(t, http.MethodGet, common.ApiVersion, target.Version, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiVersion, utils.WrapHandler(target.Version), nil)
 
 	actual := commonDTO.VersionSdkResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -189,7 +190,7 @@ func TestConfigRequest(t *testing.T) {
 	})
 	target := NewCommonController(dic, e, serviceName, serviceVersion)
 
-	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, utils.WrapHandler(target.Config), nil)
 
 	actualResponse := commonDTO.ConfigResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
@@ -244,7 +245,7 @@ func TestConfigRequest_CustomConfig(t *testing.T) {
 
 	target := NewCommonController(dic, e, serviceName, serviceVersion)
 	target.SetCustomConfigInfo(expectedCustomConfig)
-	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, utils.WrapHandler(target.Config), nil)
 
 	actualResponse := commonDTO.ConfigResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)

@@ -36,7 +36,7 @@ func TestRequestLimitMiddleware(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		middleware := RequestLimitMiddleware(testCase.sizeLimit, lc)
+		middleware := echo.WrapMiddleware(RequestLimitMiddleware(testCase.sizeLimit, lc))
 		handler := middleware(simpleHandler)
 
 		reader := strings.NewReader(string(payload))

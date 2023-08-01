@@ -19,9 +19,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func ManageHeader(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		r := c.Request()
+func ManageHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		correlationID := r.Header.Get(common.CorrelationHeader)
 		if correlationID == "" {
 			correlationID = uuid.New().String()
@@ -35,30 +34,26 @@ func ManageHeader(next echo.HandlerFunc) echo.HandlerFunc {
 		// nolint:staticcheck // See golangci-lint #741
 		ctx = context.WithValue(ctx, common.ContentType, contentType)
 
-		c.SetRequest(r.WithContext(ctx))
+		r = r.WithContext(ctx)
 
-		return next(c)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-func LoggingMiddleware(lc logger.LoggingClient) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+func LoggingMiddleware(lc logger.LoggingClient) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if lc.LogLevel() == models.TraceLog {
-				r := c.Request()
 				begin := time.Now()
 				correlationId := FromContext(r.Context())
 				lc.Trace("Begin request", common.CorrelationHeader, correlationId, "path", r.URL.Path)
-				err := next(c)
-				if err != nil {
-					lc.Errorf("failed to add the middleware: %v", err)
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
+				next.ServeHTTP(w, r)
 				lc.Trace("Response complete", common.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
-				return nil
+
+			} else {
+				next.ServeHTTP(w, r)
 			}
-			return next(c)
-		}
+		})
 	}
 }
 

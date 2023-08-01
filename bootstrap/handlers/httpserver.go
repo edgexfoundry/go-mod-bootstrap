@@ -32,10 +32,10 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 // HttpServer contains references to dependencies required by the http server implementation.
@@ -110,8 +110,8 @@ func (b *HttpServer) BootstrapHandler(
 	}
 
 	// Use the common middlewares
-	b.router.Use(ManageHeader)
-	b.router.Use(LoggingMiddleware(lc))
+	b.router.Use(echo.WrapMiddleware(ManageHeader))
+	b.router.Use(echo.WrapMiddleware(LoggingMiddleware(lc)))
 	b.router.Use(UrlDecodeMiddleware(lc))
 
 	timeout, err := time.ParseDuration(bootstrapConfig.Service.RequestTimeout)
@@ -120,16 +120,16 @@ func (b *HttpServer) BootstrapHandler(
 		return false
 	}
 
-	b.router.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		Timeout: timeout,
+	b.router.Use(echo.WrapMiddleware(func(next http.Handler) http.Handler {
+		return http.TimeoutHandler(next, timeout, "HTTP request timeout")
 	}))
 
-	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
+	b.router.Use(echo.WrapMiddleware(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc)))
 
-	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
+	b.router.Use(echo.WrapMiddleware(ProcessCORS(bootstrapConfig.Service.CORSConfiguration)))
 
 	// handle the CORS preflight request
-	b.router.Use(HandlePreflight(bootstrapConfig.Service.CORSConfiguration))
+	b.router.Use(utils.WrapMiddleware(HandlePreflight(bootstrapConfig.Service.CORSConfiguration)))
 
 	server := &http.Server{
 		Addr:              addr,
@@ -179,11 +179,9 @@ func (b *HttpServer) BootstrapHandler(
 }
 
 // RequestLimitMiddleware is a middleware function that limits the request body size to Service.MaxRequestSize in kilobytes
-func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			r := c.Request()
-			w := c.Response()
+func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPost, http.MethodPut, http.MethodPatch:
 				if sizeLimit > 0 && r.ContentLength > sizeLimit*1024 {
@@ -194,13 +192,15 @@ func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.Middl
 					w.WriteHeader(response.StatusCode)
 					if err := json.NewEncoder(w).Encode(response); err != nil {
 						lc.Errorf("Error encoding the data:  %v", err)
-						// set Response.Committed to true in order to rewrite the status code
-						w.Committed = false
-						return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+						http.Error(w, err.Error(), http.StatusInternalServerError)
 					}
+				} else {
+					next.ServeHTTP(w, r)
 				}
+			default:
+				// ignore the other http methods because they do not have request bodies
+				next.ServeHTTP(w, r)
 			}
-			return next(c)
-		}
+		})
 	}
 }

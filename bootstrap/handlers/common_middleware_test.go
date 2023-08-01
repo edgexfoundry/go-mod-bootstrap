@@ -34,7 +34,7 @@ func TestManageHeader(t *testing.T) {
 		c.Response().WriteHeader(http.StatusOK)
 		return nil
 	})
-	e.Use(ManageHeader)
+	e.Use(echo.WrapMiddleware(ManageHeader))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set(common.CorrelationHeader, expectedCorrelationId)
@@ -55,7 +55,7 @@ func TestLoggingMiddleware(t *testing.T) {
 	lcMock.On("Trace", "Begin request", common.CorrelationHeader, expectedCorrelationId, "path", "/")
 	lcMock.On("Trace", "Response complete", common.CorrelationHeader, expectedCorrelationId, "duration", mock.Anything)
 	lcMock.On("LogLevel").Return("TRACE")
-	e.Use(LoggingMiddleware(lcMock))
+	e.Use(echo.WrapMiddleware(LoggingMiddleware(lcMock)))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	// lint:ignore SA1029 legacy

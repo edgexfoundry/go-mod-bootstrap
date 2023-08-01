@@ -25,8 +25,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
-
-	"github.com/labstack/echo/v4"
 )
 
 const PathSep = "/"
@@ -174,10 +172,10 @@ func DeepCopy(src any, dest any) error {
 // SendJsonResp puts together the response packet for the APIs
 func SendJsonResp(
 	lc logger.LoggingClient,
-	writer *echo.Response,
+	writer http.ResponseWriter,
 	request *http.Request,
 	response interface{},
-	statusCode int) error {
+	statusCode int) {
 
 	correlationID := request.Header.Get(common.CorrelationHeader)
 
@@ -189,35 +187,32 @@ func SendJsonResp(
 		data, err := json.Marshal(response)
 		if err != nil {
 			lc.Error("Unable to marshal response", "error", err.Error(), common.CorrelationHeader, correlationID)
-			// set Response.Committed to true in order to rewrite the status code
-			writer.Committed = false
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		_, err = writer.Write(data)
 		if err != nil {
 			lc.Error("Unable to marshal response", "error", err.Error(), common.CorrelationHeader, correlationID)
-			// set Response.Committed to true in order to rewrite the status code
-			writer.Committed = false
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
-	return nil
 }
 
 // SendJsonErrResp puts together the error response packet for the APIs
 func SendJsonErrResp(
 	lc logger.LoggingClient,
-	writer *echo.Response,
+	writer http.ResponseWriter,
 	request *http.Request,
 	errKind errors.ErrKind,
 	message string,
 	err error,
-	requestID string) error {
+	requestID string) {
 
 	edgeXerr := errors.NewCommonEdgeX(errKind, message, err)
 	lc.Error(edgeXerr.Error())
 	lc.Debug(edgeXerr.DebugMessages())
 	response := commonDTO.NewBaseResponse(requestID, edgeXerr.Message(), edgeXerr.Code())
-	return SendJsonResp(lc, writer, request, response, edgeXerr.Code())
+	SendJsonResp(lc, writer, request, response, edgeXerr.Code())
 }
