@@ -6,7 +6,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.1.0-dev.4
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.3
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.12
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.13
 	github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.4
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.5
 	github.com/google/uuid v1.3.0
@@ -45,7 +45,7 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
-	github.com/klauspost/compress v1.16.5 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
