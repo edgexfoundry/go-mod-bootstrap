@@ -7,7 +7,7 @@ require (
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.1.0-dev.4
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.5
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.13
-	github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.4
+	github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.5
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.5
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -37,7 +37,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/hashicorp/consul/api v1.23.0 // indirect
+	github.com/hashicorp/consul/api v1.24.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
@@ -66,7 +66,7 @@ require (
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
