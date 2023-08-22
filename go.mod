@@ -9,7 +9,7 @@ require (
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.15
 	github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.5
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.6
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/mitchellh/copystructure v1.2.0
