@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -37,6 +38,7 @@ type Common interface {
 	ConfigFileName() string
 	CommonConfig() string
 	Parse([]string)
+	RemoteServiceIPs() []string
 	Help()
 }
 
@@ -52,6 +54,7 @@ type Default struct {
 	profile           string
 	configDir         string
 	configFileName    string
+	remoteServiceIPs  string
 }
 
 // NewWithUsage returns a Default struct.
@@ -97,6 +100,8 @@ func (d *Default) Parse(arguments []string) {
 	d.FlagSet.StringVar(&d.profile, "p", "", ".")
 	d.FlagSet.StringVar(&d.configDir, "configDir", "", "")
 	d.FlagSet.StringVar(&d.configDir, "cd", "", "")
+	d.FlagSet.StringVar(&d.remoteServiceIPs, "remoteServiceIPs", "", "")
+	d.FlagSet.StringVar(&d.remoteServiceIPs, "rsi", "", "")
 	d.FlagSet.BoolVar(&d.useRegistry, "registry", false, "")
 	d.FlagSet.BoolVar(&d.useRegistry, "r", false, "")
 	d.FlagSet.BoolVar(&d.devMode, "dev", false, "")
@@ -151,6 +156,14 @@ func (d *Default) CommonConfig() string {
 	return d.commonConfig
 }
 
+func (d *Default) RemoteServiceIPs() []string {
+	if len(d.remoteServiceIPs) == 0 {
+		return nil
+	}
+
+	return strings.Split(d.remoteServiceIPs, ",")
+}
+
 // Help displays the usage help message and exit.
 func (d *Default) Help() {
 	d.helpCallback()
@@ -161,22 +174,26 @@ func (d *Default) helpCallback() {
 	fmt.Printf(
 		"Usage: %s [options]\n"+
 			"Server Options:\n"+
-			"    -cp, --configProvider           Indicates to use Configuration Provider service at specified URL.\n"+
-			"                                    URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500\n"+
-			"    -cc, --commonConfig             Takes the location where the common configuration is loaded from when\n"+
-			"                                    not using the Configuration Provider\n"+
-			"    -o, --overwrite                 Overwrite configuration in provider with local configuration\n"+
-			"                                    *** Use with cation *** Use will clobber existing settings in provider,\n"+
-			"                                    problematic if those settings were edited by hand intentionally\n"+
-			"    -cf, --configFile <name>        Indicates name of the local configuration file. Defaults to configuration.toml\n"+
-			"    -p, --profile <name>            Indicate configuration profile other than default\n"+
-			"    -cd, --configDir                Specify local configuration directory\n"+
-			"    -r, --registry                  Indicates service should use Registry.\n"+
-			"    -d, --dev                       Indicates service to run in developer mode which causes Host configuration values to be overridden.\n"+
-			"                                    with `localhost`. This is so that it will run with other services running in Docker (aka hybrid mode)\n"+
+			"    -cp, --configProvider              Indicates to use Configuration Provider service at specified URL.\n"+
+			"                                       URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500\n"+
+			"    -cc, --commonConfig                Takes the location where the common configuration is loaded from when\n"+
+			"                                       not using the Configuration Provider\n"+
+			"    -o, --overwrite                    Overwrite configuration in provider with local configuration\n"+
+			"                                       *** Use with cation *** Use will clobber existing settings in provider,\n"+
+			"                                       problematic if those settings were edited by hand intentionally\n"+
+			"    -cf, --configFile <name>           Indicates name of the local configuration file. Defaults to configuration.toml\n"+
+			"    -p, --profile <name>               Indicate configuration profile other than default\n"+
+			"    -cd, --configDir                   Specify local configuration directory\n"+
+			"    -r, --registry                     Indicates service should use Registry.\n"+
+			"    -rsi, --remoteServiceIPs <ip list> Indicates that the service is running remote from the Core EdgeX services and\n"+
+			"                                       to use the listed IPs to connect remotely. <ip list> contains 3 IPs seperated by ','.\n"+
+			"                                       1st is the local system IP, 2nd is the remote system IP and 3rd is the WedServer bind address\n"+
+			"                                       exmaple: -rs=192.0.1.20,192.0.1.5,127.0.0.1\n"+
+			"    -d, --dev                          Indicates service to run in developer mode which causes Host configuration values to be overridden.\n"+
+			"                                       with `localhost`. This is so that it will run with other services running in Docker (aka hybrid mode)\n"+
 			"%s\n"+
 			"Common Options:\n"+
-			"	-h, --help                      Show this message\n",
+			"    -h, --help                         Show this message\n",
 		os.Args[0], d.additionalUsage,
 	)
 	os.Exit(0)

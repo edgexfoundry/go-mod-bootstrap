@@ -27,9 +27,14 @@ type WritableInfo struct {
 }
 
 type ConfigurationMockStruct struct {
-	Writable WritableInfo
-	Registry config.RegistryInfo
-	Trigger  TriggerInfo
+	Writable   WritableInfo
+	Registry   config.RegistryInfo
+	Service    config.ServiceInfo
+	MessageBus config.MessageBusInfo
+	Clients    config.ClientsCollection
+	Database   config.Database
+	Config     config.ConfigProviderInfo
+	Trigger    TriggerInfo
 }
 
 type TriggerInfo struct {
@@ -64,7 +69,12 @@ func (c *ConfigurationMockStruct) UpdateWritableFromRaw(rawWritable interface{})
 
 func (c *ConfigurationMockStruct) GetBootstrap() config.BootstrapConfiguration {
 	return config.BootstrapConfiguration{
-		Registry: &c.Registry,
+		Clients:    &c.Clients,
+		Service:    &c.Service,
+		Config:     &c.Config,
+		Registry:   &c.Registry,
+		MessageBus: &c.MessageBus,
+		Database:   &c.Database,
 	}
 }
 

@@ -46,11 +46,16 @@ func NewProviderInfo(envVars *environment.Variables, providerUrl string) (*Provi
 }
 
 // UseProvider returns whether the Configuration Provider should be used or not.
-func (config ProviderInfo) UseProvider() bool {
+func (config *ProviderInfo) UseProvider() bool {
 	return config.serviceConfig.Host != ""
 }
 
+// SetHost sets the host name for the Configuration Provider.
+func (config *ProviderInfo) SetHost(host string) {
+	config.serviceConfig.Host = host
+}
+
 // ServiceConfig returns service configuration for the Configuration Provider
-func (config ProviderInfo) ServiceConfig() types.ServiceConfig {
+func (config *ProviderInfo) ServiceConfig() types.ServiceConfig {
 	return config.serviceConfig
 }

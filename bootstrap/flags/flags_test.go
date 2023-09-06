@@ -116,3 +116,10 @@ func TestConfigCommonScenario(t *testing.T) {
 	assert.True(t, actual.UseRegistry())
 	assert.Equal(t, expectedConfigDirectory, actual.ConfigDirectory())
 }
+
+func TestDefault_RemoteServiceIPs(t *testing.T) {
+	expected := []string{"1.2.3.4", "5.6.7.8", "localhost"}
+	actual := newSUT([]string{"--remoteServiceIPs=1.2.3.4,5.6.7.8,localhost"})
+
+	assert.Equal(t, expected, actual.RemoteServiceIPs())
+}

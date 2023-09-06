@@ -224,7 +224,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				},
 			})
 
-			actualResult := NewClientsBootstrap(false).BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			actualResult := NewClientsBootstrap().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
 			require.Equal(t, actualResult, test.ExpectedResult)
 			if test.ExpectedResult == false {
 				return
@@ -341,7 +341,7 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 			})
 
 			startupTimer := startup.NewTimer(1, 1)
-			actualResult := NewClientsBootstrap(false).BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			actualResult := NewClientsBootstrap().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
 			require.False(t, actualResult)
 
 			mockLogger.AssertNumberOfCalls(t, "Errorf", 1)
