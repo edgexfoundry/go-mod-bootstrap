@@ -77,22 +77,22 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			case common.CoreDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.EventClientName: func(get di.Get) interface{} {
-						return clients.NewEventClient(url, jwtSecretProvider)
+						return clients.NewEventClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 			case common.CoreMetaDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.DeviceClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceClient(url, jwtSecretProvider)
+						return clients.NewDeviceClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.DeviceServiceClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceServiceClient(url, jwtSecretProvider)
+						return clients.NewDeviceServiceClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.DeviceProfileClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceProfileClient(url, jwtSecretProvider)
+						return clients.NewDeviceProfileClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.ProvisionWatcherClientName: func(get di.Get) interface{} {
-						return clients.NewProvisionWatcherClient(url, jwtSecretProvider)
+						return clients.NewProvisionWatcherClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
@@ -124,7 +124,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 					lc.Infof("Using messaging for '%s' clients", serviceKey)
 				} else {
-					client = clients.NewCommandClient(url, jwtSecretProvider)
+					client = clients.NewCommandClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 				}
 
 				dic.Update(di.ServiceConstructorMap{
@@ -136,20 +136,20 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			case common.SupportNotificationsServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.NotificationClientName: func(get di.Get) interface{} {
-						return clients.NewNotificationClient(url, jwtSecretProvider)
+						return clients.NewNotificationClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.SubscriptionClientName: func(get di.Get) interface{} {
-						return clients.NewSubscriptionClient(url, jwtSecretProvider)
+						return clients.NewSubscriptionClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
 			case common.SupportSchedulerServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.IntervalClientName: func(get di.Get) interface{} {
-						return clients.NewIntervalClient(url, jwtSecretProvider)
+						return clients.NewIntervalClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.IntervalActionClientName: func(get di.Get) interface{} {
-						return clients.NewIntervalActionClient(url, jwtSecretProvider)
+						return clients.NewIntervalActionClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
