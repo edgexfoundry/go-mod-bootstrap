@@ -190,7 +190,7 @@ func TestGetRemoteServiceIPs(t *testing.T) {
 		PassedIn []string
 		Expected []string
 	}{
-		{"With Env Var", envKeyRemoteServiceIPs, "1,2,3", nil, []string{"1", "2", "3"}},
+		{"With Env Var", envKeyRemoteServiceHosts, "1,2,3", nil, []string{"1", "2", "3"}},
 		{"With No Env Var and passed in", "", "", []string{"1", "2", "3"}, []string{"1", "2", "3"}},
 		{"With No Env Var and no passed in", "", "", nil, nil},
 	}
@@ -204,7 +204,7 @@ func TestGetRemoteServiceIPs(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			actual := GetRemoteServiceIPs(lc, test.PassedIn)
+			actual := GetRemoteServiceHosts(lc, test.PassedIn)
 			assert.Equal(t, test.Expected, actual)
 		})
 	}

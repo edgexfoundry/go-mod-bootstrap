@@ -507,7 +507,7 @@ func TestProcessorApplyRemoteIPs(t *testing.T) {
 	remoteIP := "5.6.7.8"
 	srvBindIP := "localhost"
 	ips := []string{localIP, remoteIP, srvBindIP}
-	err := applyRemoteIPs(ips, &mockStruct)
+	err := applyRemoteHosts(ips, &mockStruct)
 	require.NoError(t, err)
 
 	assert.Equal(t, localIP, mockStruct.Service.Host)
@@ -519,6 +519,6 @@ func TestProcessorApplyRemoteIPs(t *testing.T) {
 	assert.Equal(t, remoteIP, mockStruct.Config.Host)
 
 	ips = []string{localIP, remoteIP}
-	err = applyRemoteIPs(ips, &mockStruct)
+	err = applyRemoteHosts(ips, &mockStruct)
 	require.Error(t, err)
 }

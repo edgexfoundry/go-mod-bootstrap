@@ -60,7 +60,7 @@ const (
 	deviceServicesKey = "device-services"
 )
 
-var invalidRemoteIPsError = errors.New("-rs/--remoteService must contain 3 and only 3 comma seperated IP addresses")
+var invalidRemoteIPsError = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
 type UpdatedStream chan struct{}
@@ -126,7 +126,7 @@ func (cp *Processor) Process(
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
 	configProviderUrl := cp.flags.ConfigProviderUrl()
-	remoteIPs := environment.GetRemoteServiceIPs(cp.lc, cp.flags.RemoteServiceIPs())
+	remoteIPs := environment.GetRemoteServiceHosts(cp.lc, cp.flags.RemoteServiceHosts())
 
 	// Create new ProviderInfo and initialize it from command-line flag or Variables
 	configProviderInfo, err := NewProviderInfo(cp.envVars, configProviderUrl)
@@ -304,7 +304,7 @@ func (cp *Processor) Process(
 	}
 
 	if remoteIPs != nil {
-		err = applyRemoteIPs(remoteIPs, serviceConfig)
+		err = applyRemoteHosts(remoteIPs, serviceConfig)
 		if err != nil {
 			return err
 		}
@@ -313,7 +313,7 @@ func (cp *Processor) Process(
 	return err
 }
 
-func applyRemoteIPs(remoteIPs []string, serviceConfig interfaces.Configuration) error {
+func applyRemoteHosts(remoteIPs []string, serviceConfig interfaces.Configuration) error {
 	if len(remoteIPs) != 3 {
 		return invalidRemoteIPsError
 	}
