@@ -60,7 +60,7 @@ const (
 	deviceServicesKey = "device-services"
 )
 
-var invalidRemoteIPsError = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")
+var invalidRemoteHostsError = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
 type UpdatedStream chan struct{}
@@ -126,7 +126,7 @@ func (cp *Processor) Process(
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
 	configProviderUrl := cp.flags.ConfigProviderUrl()
-	remoteIPs := environment.GetRemoteServiceHosts(cp.lc, cp.flags.RemoteServiceHosts())
+	remoteHosts := environment.GetRemoteServiceHosts(cp.lc, cp.flags.RemoteServiceHosts())
 
 	// Create new ProviderInfo and initialize it from command-line flag or Variables
 	configProviderInfo, err := NewProviderInfo(cp.envVars, configProviderUrl)
@@ -137,7 +137,7 @@ func (cp *Processor) Process(
 	useProvider := configProviderInfo.UseProvider()
 
 	devOrRemoteMode := &container.InDevOrRemoteMode{}
-	devOrRemoteMode.Value = cp.flags.InDevMode() || remoteIPs != nil
+	devOrRemoteMode.Value = cp.flags.InDevMode() || remoteHosts != nil
 	cp.dic.Update(di.ServiceConstructorMap{
 		container.DevOrRemoteModeName: func(get di.Get) interface{} {
 			return devOrRemoteMode
@@ -148,13 +148,13 @@ func (cp *Processor) Process(
 	var privateServiceConfig interfaces.Configuration
 
 	if useProvider {
-		if remoteIPs != nil {
-			if len(remoteIPs) != 3 {
-				return invalidRemoteIPsError
+		if remoteHosts != nil {
+			if len(remoteHosts) != 3 {
+				return invalidRemoteHostsError
 			}
 
-			cp.lc.Infof("Setting config Provider host to %s", remoteIPs[1])
-			configProviderInfo.SetHost(remoteIPs[1])
+			cp.lc.Infof("Setting config Provider host to %s", remoteHosts[1])
+			configProviderInfo.SetHost(remoteHosts[1])
 		}
 
 		getAccessToken, err := cp.getAccessTokenCallback(serviceKey, secretProvider, err, configProviderInfo)
@@ -303,8 +303,8 @@ func (cp *Processor) Process(
 		}
 	}
 
-	if remoteIPs != nil {
-		err = applyRemoteHosts(remoteIPs, serviceConfig)
+	if remoteHosts != nil {
+		err = applyRemoteHosts(remoteHosts, serviceConfig)
 		if err != nil {
 			return err
 		}
@@ -313,35 +313,35 @@ func (cp *Processor) Process(
 	return err
 }
 
-func applyRemoteHosts(remoteIPs []string, serviceConfig interfaces.Configuration) error {
-	if len(remoteIPs) != 3 {
-		return invalidRemoteIPsError
+func applyRemoteHosts(remoteHosts []string, serviceConfig interfaces.Configuration) error {
+	if len(remoteHosts) != 3 {
+		return invalidRemoteHostsError
 	}
 
 	config := serviceConfig.GetBootstrap()
 
-	config.Service.Host = remoteIPs[0]
-	config.Service.ServerBindAddr = remoteIPs[2]
+	config.Service.Host = remoteHosts[0]
+	config.Service.ServerBindAddr = remoteHosts[2]
 
 	if config.Config != nil {
-		config.Config.Host = remoteIPs[1]
+		config.Config.Host = remoteHosts[1]
 	}
 
 	if config.MessageBus != nil {
-		config.MessageBus.Host = remoteIPs[1]
+		config.MessageBus.Host = remoteHosts[1]
 	}
 
 	if config.Registry != nil {
-		config.Registry.Host = remoteIPs[1]
+		config.Registry.Host = remoteHosts[1]
 	}
 
 	if config.Database != nil {
-		config.Database.Host = remoteIPs[1]
+		config.Database.Host = remoteHosts[1]
 	}
 
 	if config.Clients != nil {
 		for _, client := range *config.Clients {
-			client.Host = remoteIPs[1]
+			client.Host = remoteHosts[1]
 		}
 	}
 

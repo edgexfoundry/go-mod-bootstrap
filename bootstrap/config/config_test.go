@@ -491,7 +491,7 @@ func TestGetInsecureSecretDataFullPath(t *testing.T) {
 	}
 }
 
-func TestProcessorApplyRemoteIPs(t *testing.T) {
+func TestProcessorApplyRemoteHosts(t *testing.T) {
 	mockStruct := ConfigurationMockStruct{
 		Registry:   config.RegistryInfo{},
 		Service:    config.ServiceInfo{},
@@ -506,8 +506,8 @@ func TestProcessorApplyRemoteIPs(t *testing.T) {
 	localIP := "1.2.3.4"
 	remoteIP := "5.6.7.8"
 	srvBindIP := "localhost"
-	ips := []string{localIP, remoteIP, srvBindIP}
-	err := applyRemoteHosts(ips, &mockStruct)
+	hosts := []string{localIP, remoteIP, srvBindIP}
+	err := applyRemoteHosts(hosts, &mockStruct)
 	require.NoError(t, err)
 
 	assert.Equal(t, localIP, mockStruct.Service.Host)
@@ -518,7 +518,7 @@ func TestProcessorApplyRemoteIPs(t *testing.T) {
 	assert.Equal(t, remoteIP, mockStruct.Registry.Host)
 	assert.Equal(t, remoteIP, mockStruct.Config.Host)
 
-	ips = []string{localIP, remoteIP}
-	err = applyRemoteHosts(ips, &mockStruct)
+	hosts = []string{localIP, remoteIP}
+	err = applyRemoteHosts(hosts, &mockStruct)
 	require.Error(t, err)
 }

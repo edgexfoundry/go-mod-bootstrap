@@ -180,7 +180,7 @@ func TestGetConfigDir(t *testing.T) {
 	}
 }
 
-func TestGetRemoteServiceIPs(t *testing.T) {
+func TestGetRemoteServiceHosts(t *testing.T) {
 	_, lc := initializeTest()
 
 	testCases := []struct {
