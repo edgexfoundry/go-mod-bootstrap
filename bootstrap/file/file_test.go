@@ -1,6 +1,9 @@
 package file
 
 import (
+	"github.com/stretchr/testify/require"
+	"net/http"
+	"net/http/httptest"
 	"path"
 	"testing"
 
@@ -38,7 +41,6 @@ func TestLoadFile(t *testing.T) {
 	for _, tc := range tests {
 		mockSecretProvider := &mocks.SecretProvider{}
 		if tc.expectedSecretData != nil {
-			mockSecretProvider.On("GetSecret", "").Return(nil)
 			mockSecretProvider.On("GetSecret", "mySecretName").Return(tc.expectedSecretData, nil)
 		}
 		dic = di.NewContainer(di.ServiceConstructorMap{
@@ -55,6 +57,41 @@ func TestLoadFile(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.ContentLength, len(bytesOut))
+			mockSecretProvider.AssertExpectations(t)
 		})
 	}
+}
+
+func TestLoadFile_WithHTTPServer(t *testing.T) {
+
+	lc := logger.MockLogger{}
+
+	expectedHeaderKey := "Authorization"
+	expectedHeaderContents := "Basic 1234567890"
+	expectedSecretData := map[string]string{"type": "httpheader", "headername": expectedHeaderKey, "headercontents": expectedHeaderContents}
+
+	mockSecretProvider := &mocks.SecretProvider{}
+	mockSecretProvider.On("GetSecret", "mySecretName").Return(expectedSecretData, nil)
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		container.SecretProviderName: func(get di.Get) interface{} {
+			return mockSecretProvider
+		},
+	})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contents := r.Header.Get(expectedHeaderKey)
+		require.Equal(t, expectedHeaderContents, contents)
+		_, err := w.Write([]byte("test passed"))
+		require.NoError(t, err)
+	}))
+	defer ts.Close()
+
+	query := "?edgexSecretName=mySecretName"
+	path := ts.URL + query
+
+	bytesOut, err := Load(path, mockSecretProvider, lc)
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, bytesOut)
+	mockSecretProvider.AssertExpectations(t)
 }
