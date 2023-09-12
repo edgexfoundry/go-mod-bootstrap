@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2020 Intel Inc.
+ * Copyright 2023 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -176,6 +176,36 @@ func TestGetConfigDir(t *testing.T) {
 
 			actual := GetConfigDir(lc, test.PassedInName)
 			assert.Equal(t, test.ExpectedName, actual)
+		})
+	}
+}
+
+func TestGetRemoteServiceHosts(t *testing.T) {
+	_, lc := initializeTest()
+
+	testCases := []struct {
+		TestName string
+		EnvName  string
+		EnvValue string
+		PassedIn []string
+		Expected []string
+	}{
+		{"With Env Var", envKeyRemoteServiceHosts, "1,2,3", nil, []string{"1", "2", "3"}},
+		{"With No Env Var and passed in", "", "", []string{"1", "2", "3"}, []string{"1", "2", "3"}},
+		{"With No Env Var and no passed in", "", "", nil, nil},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			os.Clearenv()
+
+			if len(test.EnvName) > 0 {
+				err := os.Setenv(test.EnvName, test.EnvValue)
+				require.NoError(t, err)
+			}
+
+			actual := GetRemoteServiceHosts(lc, test.PassedIn)
+			assert.Equal(t, test.Expected, actual)
 		})
 	}
 }

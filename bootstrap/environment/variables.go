@@ -37,15 +37,16 @@ const (
 	bootRetrySecondsDefault   = 1
 	defaultConfigDirValue     = "./res"
 
-	envKeyConfigUrl       = "EDGEX_CONFIG_PROVIDER"
-	envKeyCommonConfig    = "EDGEX_COMMON_CONFIG"
-	envKeyUseRegistry     = "EDGEX_USE_REGISTRY"
-	envKeyStartupDuration = "EDGEX_STARTUP_DURATION"
-	envKeyStartupInterval = "EDGEX_STARTUP_INTERVAL"
-	envKeyConfigDir       = "EDGEX_CONFIG_DIR"
-	envKeyProfile         = "EDGEX_PROFILE"
-	envKeyConfigFile      = "EDGEX_CONFIG_FILE"
-	envKeyFileURITimeout  = "EDGEX_FILE_URI_TIMEOUT"
+	envKeyConfigUrl          = "EDGEX_CONFIG_PROVIDER"
+	envKeyCommonConfig       = "EDGEX_COMMON_CONFIG"
+	envKeyUseRegistry        = "EDGEX_USE_REGISTRY"
+	envKeyStartupDuration    = "EDGEX_STARTUP_DURATION"
+	envKeyStartupInterval    = "EDGEX_STARTUP_INTERVAL"
+	envKeyConfigDir          = "EDGEX_CONFIG_DIR"
+	envKeyProfile            = "EDGEX_PROFILE"
+	envKeyConfigFile         = "EDGEX_CONFIG_FILE"
+	envKeyFileURITimeout     = "EDGEX_FILE_URI_TIMEOUT"
+	envKeyRemoteServiceHosts = "EDGEX_REMOTE_SERVICE_HOSTS"
 
 	noConfigProviderValue = "none"
 
@@ -477,4 +478,16 @@ func GetURIRequestTimeout(lc logger.LoggingClient) time.Duration {
 
 	lc.Infof("Variables override of 'URI Request Timeout' by environment variable: %s=%s", envKeyFileURITimeout, envValue)
 	return requestTimeout
+}
+
+// GetRemoteServiceHosts gets the Remote Service host name list from an environment variable (if it exists), if not returns the passed in (default) value
+func GetRemoteServiceHosts(lc logger.LoggingClient, remoteHosts []string) []string {
+	envValue := os.Getenv(envKeyRemoteServiceHosts)
+	if len(envValue) <= 0 {
+		return remoteHosts
+	}
+
+	logEnvironmentOverride(lc, "-rsh/--remoteServiceHosts", envKeyRemoteServiceHosts, envValue)
+
+	return strings.Split(envValue, ",")
 }

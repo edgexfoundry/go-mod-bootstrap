@@ -37,15 +37,12 @@ import (
 
 // ClientsBootstrap contains data to boostrap the configured clients
 type ClientsBootstrap struct {
-	registry  registry.Client
-	inDevMode bool
+	registry registry.Client
 }
 
 // NewClientsBootstrap is a factory method that returns the initialized "ClientsBootstrap" receiver struct.
-func NewClientsBootstrap(devMode bool) *ClientsBootstrap {
-	return &ClientsBootstrap{
-		inDevMode: devMode,
-	}
+func NewClientsBootstrap() *ClientsBootstrap {
+	return &ClientsBootstrap{}
 }
 
 // BootstrapHandler fulfills the BootstrapHandler contract.
@@ -69,7 +66,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			var err error
 
 			if !serviceInfo.UseMessageBus {
-				url, err = cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, lc)
+				url, err = cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, dic, lc)
 				if err != nil {
 					lc.Error(err.Error())
 					return false
@@ -164,8 +161,9 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	return true
 }
 
-func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, lc logger.LoggingClient) (string, error) {
-	if cb.registry == nil || cb.inDevMode {
+func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, dic *di.Container, lc logger.LoggingClient) (string, error) {
+	mode := container.DevRemoteModeFrom(dic.Get)
+	if cb.registry == nil || mode.InDevMode || mode.InRemoteMode {
 		lc.Infof("Using REST for '%s' clients @ %s", serviceKey, defaultUrl)
 		return defaultUrl, nil
 	}

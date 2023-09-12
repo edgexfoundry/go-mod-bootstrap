@@ -60,6 +60,8 @@ const (
 	deviceServicesKey = "device-services"
 )
 
+var invalidRemoteHostsError = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")
+
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
 type UpdatedStream chan struct{}
 
@@ -124,6 +126,7 @@ func (cp *Processor) Process(
 
 	cp.overwriteConfig = cp.flags.OverwriteConfig()
 	configProviderUrl := cp.flags.ConfigProviderUrl()
+	remoteHosts := environment.GetRemoteServiceHosts(cp.lc, cp.flags.RemoteServiceHosts())
 
 	// Create new ProviderInfo and initialize it from command-line flag or Variables
 	configProviderInfo, err := NewProviderInfo(cp.envVars, configProviderUrl)
@@ -133,10 +136,30 @@ func (cp *Processor) Process(
 
 	useProvider := configProviderInfo.UseProvider()
 
+	mode := &container.DevRemoteMode{
+		InDevMode:    cp.flags.InDevMode(),
+		InRemoteMode: remoteHosts != nil,
+	}
+
+	cp.dic.Update(di.ServiceConstructorMap{
+		container.DevRemoteModeName: func(get di.Get) interface{} {
+			return mode
+		},
+	})
+
 	var privateConfigClient configuration.Client
 	var privateServiceConfig interfaces.Configuration
 
 	if useProvider {
+		if remoteHosts != nil {
+			if len(remoteHosts) != 3 {
+				return invalidRemoteHostsError
+			}
+
+			cp.lc.Infof("Setting config Provider host to %s", remoteHosts[1])
+			configProviderInfo.SetHost(remoteHosts[1])
+		}
+
 		getAccessToken, err := cp.getAccessTokenCallback(serviceKey, secretProvider, err, configProviderInfo)
 		if err != nil {
 			return err
@@ -283,7 +306,49 @@ func (cp *Processor) Process(
 		}
 	}
 
+	if remoteHosts != nil {
+		err = applyRemoteHosts(remoteHosts, serviceConfig)
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
+}
+
+func applyRemoteHosts(remoteHosts []string, serviceConfig interfaces.Configuration) error {
+	if len(remoteHosts) != 3 {
+		return invalidRemoteHostsError
+	}
+
+	config := serviceConfig.GetBootstrap()
+
+	config.Service.Host = remoteHosts[0]
+	config.Service.ServerBindAddr = remoteHosts[2]
+
+	if config.Config != nil {
+		config.Config.Host = remoteHosts[1]
+	}
+
+	if config.MessageBus != nil {
+		config.MessageBus.Host = remoteHosts[1]
+	}
+
+	if config.Registry != nil {
+		config.Registry.Host = remoteHosts[1]
+	}
+
+	if config.Database != nil {
+		config.Database.Host = remoteHosts[1]
+	}
+
+	if config.Clients != nil {
+		for _, client := range *config.Clients {
+			client.Host = remoteHosts[1]
+		}
+	}
+
+	return nil
 }
 
 type createProviderCallback func(

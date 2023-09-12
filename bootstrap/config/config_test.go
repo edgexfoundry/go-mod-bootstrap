@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2022 Intel Corp.
+ * Copyright 2023 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -489,4 +489,36 @@ func TestGetInsecureSecretDataFullPath(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
+}
+
+func TestProcessorApplyRemoteHosts(t *testing.T) {
+	mockStruct := ConfigurationMockStruct{
+		Registry:   config.RegistryInfo{},
+		Service:    config.ServiceInfo{},
+		MessageBus: config.MessageBusInfo{},
+		Clients: config.ClientsCollection{
+			"core-metadata": {},
+		},
+		Database: config.Database{},
+		Config:   config.ConfigProviderInfo{},
+	}
+
+	localIP := "1.2.3.4"
+	remoteIP := "5.6.7.8"
+	srvBindIP := "localhost"
+	hosts := []string{localIP, remoteIP, srvBindIP}
+	err := applyRemoteHosts(hosts, &mockStruct)
+	require.NoError(t, err)
+
+	assert.Equal(t, localIP, mockStruct.Service.Host)
+	assert.Equal(t, srvBindIP, mockStruct.Service.ServerBindAddr)
+	assert.Equal(t, remoteIP, mockStruct.Clients["core-metadata"].Host)
+	assert.Equal(t, remoteIP, mockStruct.Database.Host)
+	assert.Equal(t, remoteIP, mockStruct.MessageBus.Host)
+	assert.Equal(t, remoteIP, mockStruct.Registry.Host)
+	assert.Equal(t, remoteIP, mockStruct.Config.Host)
+
+	hosts = []string{localIP, remoteIP}
+	err = applyRemoteHosts(hosts, &mockStruct)
+	require.Error(t, err)
 }
