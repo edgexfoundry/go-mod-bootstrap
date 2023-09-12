@@ -87,43 +87,43 @@ func TestValidateSecrets(t *testing.T) {
 		Name             string
 		SecureMode       bool
 		AuthMode         string
-		SecretData       SecretData
+		SecretData       *SecretData
 		ErrorExpectation bool
 		ErrorMessage     string
 	}{
-		{"Invalid AuthMode", true, "BadAuthMode", SecretData{}, true, "Invalid AuthMode of 'BadAuthMode' selected"},
-		{"No Auth No error", true, AuthModeNone, SecretData{}, false, ""},
-		{"UsernamePassword No Error", true, AuthModeUsernamePassword, SecretData{
+		{"Invalid AuthMode", true, "BadAuthMode", &SecretData{}, true, "Invalid AuthMode of 'BadAuthMode' selected"},
+		{"No Auth No error", true, AuthModeNone, &SecretData{}, false, ""},
+		{"UsernamePassword No Error", true, AuthModeUsernamePassword, &SecretData{
 			Username: "user",
 			Password: "Password",
 		}, false, ""},
-		{"UsernamePassword Error no Username", true, AuthModeUsernamePassword, SecretData{
+		{"UsernamePassword Error no Username", true, AuthModeUsernamePassword, &SecretData{
 			Password: "Password",
 		}, true, "AuthModeUsernamePassword selected however Username or Password was not found for secret=unit-test"},
-		{"UsernamePassword blank - non-secure", false, AuthModeUsernamePassword, SecretData{
+		{"UsernamePassword blank - non-secure", false, AuthModeUsernamePassword, &SecretData{
 			Username: "",
 			Password: "",
 		}, false, ""},
-		{"UsernamePassword Error no Password", true, AuthModeUsernamePassword, SecretData{
+		{"UsernamePassword Error no Password", true, AuthModeUsernamePassword, &SecretData{
 			Username: "user",
 		}, true, "AuthModeUsernamePassword selected however Username or Password was not found for secret=unit-test"},
-		{"ClientCert No Error", true, AuthModeCert, SecretData{
+		{"ClientCert No Error", true, AuthModeCert, &SecretData{
 			CertPemBlock: []byte("----"),
 			KeyPemBlock:  []byte("----"),
 		}, false, ""},
-		{"ClientCert No Key", true, AuthModeCert, SecretData{
+		{"ClientCert No Key", true, AuthModeCert, &SecretData{
 			CertPemBlock: []byte("----"),
 		}, true, "AuthModeCert selected however the key or cert PEM block was not found for secret=unit-test"},
-		{"ClientCert No Cert", true, AuthModeCert, SecretData{
+		{"ClientCert No Cert", true, AuthModeCert, &SecretData{
 			KeyPemBlock: []byte("----"),
 		}, true, "AuthModeCert selected however the key or cert PEM block was not found for secret=unit-test"},
-		{"CACert no error", true, AuthModeCA, SecretData{
+		{"CACert no error", true, AuthModeCA, &SecretData{
 			CaPemBlock: []byte(testCACert),
 		}, false, ""},
-		{"CACert invalid error", true, AuthModeCA, SecretData{
+		{"CACert invalid error", true, AuthModeCA, &SecretData{
 			CaPemBlock: []byte(`------`),
 		}, true, "Error parsing CA Certificate"},
-		{"CACert no ca error", true, AuthModeCA, SecretData{}, true, "AuthModeCA selected however no PEM Block was found for secret=unit-test"},
+		{"CACert no ca error", true, AuthModeCA, &SecretData{}, true, "AuthModeCA selected however no PEM Block was found for secret=unit-test"},
 	}
 
 	for _, test := range tests {
@@ -133,7 +133,7 @@ func TestValidateSecrets(t *testing.T) {
 				defer func() { _ = os.Setenv(secret.EnvSecretStore, "false") }()
 			}
 
-			result := ValidateSecretData(test.AuthMode, "unit-test", &test.SecretData)
+			result := ValidateSecretData(test.AuthMode, "unit-test", test.SecretData)
 			if test.ErrorExpectation {
 				require.Error(t, result, "Result should be an error")
 				assert.Equal(t, test.ErrorMessage, result.Error())
