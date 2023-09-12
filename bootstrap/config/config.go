@@ -136,11 +136,14 @@ func (cp *Processor) Process(
 
 	useProvider := configProviderInfo.UseProvider()
 
-	devOrRemoteMode := &container.InDevOrRemoteMode{}
-	devOrRemoteMode.Value = cp.flags.InDevMode() || remoteHosts != nil
+	mode := &container.DevRemoteMode{
+		InDevMode:    cp.flags.InDevMode(),
+		InRemoteMode: remoteHosts != nil,
+	}
+
 	cp.dic.Update(di.ServiceConstructorMap{
-		container.DevOrRemoteModeName: func(get di.Get) interface{} {
-			return devOrRemoteMode
+		container.DevRemoteModeName: func(get di.Get) interface{} {
+			return mode
 		},
 	})
 

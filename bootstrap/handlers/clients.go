@@ -162,8 +162,8 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 }
 
 func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, dic *di.Container, lc logger.LoggingClient) (string, error) {
-	devOrRemoteMode := container.DevOrRemoteModeFrom(dic.Get)
-	if cb.registry == nil || devOrRemoteMode {
+	mode := container.DevRemoteModeFrom(dic.Get)
+	if cb.registry == nil || mode.InDevMode || mode.InRemoteMode {
 		lc.Infof("Using REST for '%s' clients @ %s", serviceKey, defaultUrl)
 		return defaultUrl, nil
 	}

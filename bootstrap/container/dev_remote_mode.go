@@ -18,19 +18,20 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
-type InDevOrRemoteMode struct {
-	Value bool
+type DevRemoteMode struct {
+	InDevMode    bool
+	InRemoteMode bool
 }
 
-// DevOrRemoteModeName contains the name of the Dev or Remotes mode flag in the DIC.
-var DevOrRemoteModeName = di.TypeInstanceToName((*InDevOrRemoteMode)(nil))
+// DevRemoteModeName contains the name of the DevRemoteMode struct in the DIC.
+var DevRemoteModeName = di.TypeInstanceToName((*DevRemoteMode)(nil))
 
-// DevOrRemoteModeFrom helper function queries the DIC and returns the Dev or Remotes mode flag.
-func DevOrRemoteModeFrom(get di.Get) bool {
-	devOrRemoteMode, ok := get(DevOrRemoteModeName).(*InDevOrRemoteMode)
+// DevRemoteModeFrom helper function queries the DIC and returns the Dev and Remotes mode flags.
+func DevRemoteModeFrom(get di.Get) DevRemoteMode {
+	devOrRemoteMode, ok := get(DevRemoteModeName).(*DevRemoteMode)
 	if !ok {
-		return false
+		return DevRemoteMode{}
 	}
 
-	return devOrRemoteMode.Value
+	return *devOrRemoteMode
 }

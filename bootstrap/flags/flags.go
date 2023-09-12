@@ -181,7 +181,7 @@ func (d *Default) helpCallback() {
 			"    -o, --overwrite              Overwrite configuration in provider with local configuration\n"+
 			"                                 *** Use with cation *** Use will clobber existing settings in provider,\n"+
 			"                                 problematic if those settings were edited by hand intentionally\n"+
-			"    -cf, --configFile <name>     Indicates name of the local configuration file. Defaults to configuration.toml\n"+
+			"    -cf, --configFile <name>     Indicates name of the local configuration file. Defaults to configuration.yaml\n"+
 			"    -p, --profile <name>         Indicate configuration profile other than default\n"+
 			"    -cd, --configDir             Specify local configuration directory\n"+
 			"    -r, --registry               Indicates service should use Registry.\n"+
@@ -189,7 +189,7 @@ func (d *Default) helpCallback() {
 			"     --remoteServiceHosts \n"+
 			"          <host names>           Indicates that the service is running remote from the core EdgeX services and\n"+
 			"                                 to use the listed host names to connect remotely. <host names> contains 3 comma seperated host names seperated by ','.\n"+
-			"                                 1st is the local system host name, 2nd is the remote system host name and 3rd is the WedServer bind host name\n"+
+			"                                 1st is the local system host name, 2nd is the remote system host name and 3rd is the WebServer bind host name\n"+
 			"                                 example: -rsh=192.0.1.20,192.0.1.5,localhost\n"+
 			"    -d, --dev                    Indicates service to run in developer mode which causes Host configuration values to be overridden.\n"+
 			"                                 with `localhost`. This is so that it will run with other services running in Docker (aka hybrid mode)\n"+
