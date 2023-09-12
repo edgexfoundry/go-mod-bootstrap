@@ -67,15 +67,15 @@ func TestBootstrapHandler(t *testing.T) {
 
 	tests := []struct {
 		Name           string
-		MessageBus     config.MessageBusInfo
+		MessageBus     *config.MessageBusInfo
 		Secure         bool
 		ExpectedResult bool
 		ExpectClient   bool
 	}{
-		{"Valid secure - creates client", validCreateClientSecure, true, true, true},
-		{"Valid non-secure - creates client", validCreateClientNonSecure, false, true, true},
-		{"Invalid - secrets error", invalidSecrets, false, false, false},
-		{"Invalid - can't connect", invalidNoConnect, true, false, false},
+		{"Valid secure - creates client", &validCreateClientSecure, true, true, true},
+		{"Valid non-secure - creates client", &validCreateClientNonSecure, false, true, true},
+		{"Invalid - secrets error", &invalidSecrets, false, false, false},
+		{"Invalid - can't connect", &invalidNoConnect, true, false, false},
 	}
 
 	for _, test := range tests {
@@ -84,7 +84,7 @@ func TestBootstrapHandler(t *testing.T) {
 			providerMock.On("GetSecret", test.MessageBus.SecretName).Return(usernameSecretData, nil)
 			configMock := &mocks.Configuration{}
 			configMock.On("GetBootstrap").Return(config.BootstrapConfiguration{
-				MessageBus: &test.MessageBus,
+				MessageBus: test.MessageBus,
 			})
 
 			dic.Update(di.ServiceConstructorMap{
