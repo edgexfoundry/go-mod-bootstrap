@@ -62,6 +62,10 @@ type ServiceInfo struct {
 	// RequestTimeout specifies a timeout (in milliseconds) for
 	// processing REST request calls from other services.
 	RequestTimeout string
+	// EnableNameFieldEscape indicates whether enables NameFieldEscape in this service
+	// The name field escape could allow the system to use special or Chinese characters in the different name fields, including device, profile, and so on.  If the EnableNameFieldEscape is false, some special characters might cause system error.
+	// TODO: remove in EdgeX 4.0
+	EnableNameFieldEscape bool
 	// CORSConfiguration defines the cross-origin resource sharing related settings
 	CORSConfiguration CORSConfigurationInfo
 }
