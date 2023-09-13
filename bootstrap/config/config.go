@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"net/url"
 	"path/filepath"
 	"reflect"
@@ -287,6 +288,12 @@ func (cp *Processor) Process(
 		host := "localhost"
 		config := serviceConfig.GetBootstrap()
 
+		if config.Service != nil {
+			// These are needed so the Service can receive HTTP calls from services running in Docker, like Core Command to Device Service
+			config.Service.Host = getLocalIP()
+			config.Service.ServerBindAddr = "0.0.0.0"
+		}
+
 		if config.MessageBus != nil {
 			config.MessageBus.Host = host
 		}
@@ -314,6 +321,22 @@ func (cp *Processor) Process(
 	}
 
 	return err
+}
+
+func getLocalIP() string {
+	// Because of how UDP works, the connection is not established - no handshake is performed, no data is sent.
+	// The purpose of this is to get the local IP address that a UDP connection would use if it were sending data to
+	// the external destination address.
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		// Since this is for Dev Mode, just default to localhost when can't get the actual IP
+		return "localhost"
+	}
+	defer conn.Close()
+
+	localAddress := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddress.IP.String()
 }
 
 func applyRemoteHosts(remoteHosts []string, serviceConfig interfaces.Configuration) error {
