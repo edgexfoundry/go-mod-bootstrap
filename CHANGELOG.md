@@ -11,6 +11,36 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) 
 
+## [v3.1.0] - 2023-11-15
+
+### ✨  Features
+
+- Add EnableNameFieldEscape config ([b63a581…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/b63a5810faa868c4fedd8bb64209569178cd803b))
+- Add new -rsh/--remoteServiceHosts flag and corresponding env override ([#596](https://github.com/edgexfoundry/go-mod-bootstrap/issues/596)) ([1d77273…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/1d77273f7ae052ea4eae83196136ad2264b0ca56))
+- Add wrapper func to wrap http handler for Echo ([e1ab269…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/e1ab26919fdbaaa713e5edea933bdefb6ec92739))
+- Move the common middleware to go-mod-bootstrap ([#567](https://github.com/edgexfoundry/go-mod-bootstrap/issues/567)) ([8addaa2…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/8addaa2ea19495c6dfa41c603405950b1e572c4f))
+- Replace gorilla/mux router with echo ([#557](https://github.com/edgexfoundry/go-mod-bootstrap/issues/557)) ([d7c12cc…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/d7c12cc22d3e7aeafa8ef131c4e1bcef5e7d6f44))
+- Add better error handling when common config is missing ([#566](https://github.com/edgexfoundry/go-mod-bootstrap/issues/566)) ([dcdd37f…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/dcdd37f02bb774d2396efd74975d9f1fe0813359))
+- Move all the common APIs into go-mod-bootstrap ([#562](https://github.com/edgexfoundry/go-mod-bootstrap/issues/562)) ([40eb783…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/40eb783d62ac8c1fbdb1eb22585f3ac60bc9a84b))
+- Use loadfile that allows reading from local file or uri ([#558](https://github.com/edgexfoundry/go-mod-bootstrap/issues/558)) ([b171584…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/b171584baabd50881bf72082494493a340744952))
+- Implement reusable load file function ([#555](https://github.com/edgexfoundry/go-mod-bootstrap/issues/555)) ([d15a138…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/d15a1387ea8c6e29ed6cc19ffa412ce73f341b75))
+
+
+### 🐛 Bug Fixes
+
+- Expand DevMode flag to set values for external access ([#601](https://github.com/edgexfoundry/go-mod-bootstrap/issues/601)) ([db3759c…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/db3759c59d39e98bdf0ca83cc7aace05fd638c89))
+- Rename SecretPath to SecretName ([#551](https://github.com/edgexfoundry/go-mod-bootstrap/issues/551)) ([2d38a8b…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/2d38a8b95e73454354ad735e1dd2bea47a8371ca))
+
+
+### 👷 Build
+
+- Upgrade to go 1.21 and linter 1.54.2 ([#599](https://github.com/edgexfoundry/go-mod-bootstrap/issues/599)) ([ff44a32…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/ff44a32d95b8337476342a35d1a5d777bc26cdf3))
+
+
+### 🧪 Testing
+
+- Add httpserver test for uri4files to check secret header ([#597](https://github.com/edgexfoundry/go-mod-bootstrap/issues/597)) ([4fcc5d1…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/4fcc5d18e9c04bd2c618068180bee74c5352e294))
+
 ## [v3.0.0] - 2023-05-31
 
 ### Features ✨
