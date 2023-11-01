@@ -37,11 +37,6 @@
 - Upgrade to go 1.21 and linter 1.54.2 ([#599](https://github.com/edgexfoundry/go-mod-bootstrap/issues/599)) ([ff44a32…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/ff44a32d95b8337476342a35d1a5d777bc26cdf3))
 
 
-### ⛏️ Chore
-
-- *(security)* Bump go-mod-secrets ([51ce098…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/51ce098b7ba365623ff34df70cfe64bc3fb0b364))
-
-
 ### 🧪 Testing
 
 - Add httpserver test for uri4files to check secret header ([#597](https://github.com/edgexfoundry/go-mod-bootstrap/issues/597)) ([4fcc5d1…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/4fcc5d18e9c04bd2c618068180bee74c5352e294))
