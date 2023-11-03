@@ -5,10 +5,10 @@ go 1.21
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.1.0-dev.7
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.17
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.18
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.32
 	github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.7
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.12
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.14
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.2
