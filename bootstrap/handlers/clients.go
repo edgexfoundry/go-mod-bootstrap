@@ -71,9 +71,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 				lc.Errorf("could not obtain an http client for use with zero trust provider: %v", transpErr)
 				return false
 			} else {
-				if sp != nil {
-					sp.SetHttpTransport(rt) //only need to set the transport when using SecretProviderExt
-				}
+				sp.SetHttpTransport(rt) //only need to set the transport when using SecretProviderExt
 			}
 
 			if !serviceInfo.UseMessageBus {
