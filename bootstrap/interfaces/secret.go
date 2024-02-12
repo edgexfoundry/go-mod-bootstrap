@@ -72,9 +72,15 @@ type SecretProviderExt interface {
 	// IsJWTValid evaluates a given JWT and returns a true/false if the JWT is valid (i.e. belongs to us and current) or not
 	IsJWTValid(jwt string) (bool, error)
 
-	// HttpTransport
+	// HttpTransport returns the http.RoundTripper to be used by http-based clients
 	HttpTransport() http.RoundTripper
 
-	// HttpTransport
+	// SetHttpTransport sets the http.RoundTripper to be used by http-based clients
 	SetHttpTransport(rt http.RoundTripper)
+
+	// ZeroTrustEnabled returns whether zero trust principles are enabled
+	ZeroTrustEnabled() bool
+
+	// EnableZeroTrust marks the provider as being zero trust enabled
+	EnableZeroTrust()
 }

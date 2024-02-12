@@ -28,7 +28,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 
 	"github.com/labstack/echo/v4"
-	"github.com/openziti/sdk-golang/ziti"
 	"github.com/openziti/sdk-golang/ziti/edge"
 )
 
@@ -57,24 +56,14 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 			authHeader := r.Header.Get("Authorization")
 			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d)", r.URL.Path, len(authHeader))
 
-			zitiCtx := r.Context().Value("zitiContext")
-			if zitiCtx != nil {
-				zc := *zitiCtx.(*ziti.Context)
-				if zi, err := zc.GetCurrentIdentity(); err != nil {
-					lc.Warnf("Could not verify incoming connection via OpenZiti for %s", *zi.Name)
-					return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-				} else {
-					lc.Debugf("Authorizing incoming connection via OpenZiti for %s", *zi.Name)
+			if secretProvider.ZeroTrustEnabled() {
+				zitiCtx := r.Context().Value("zero.trust.identityName")
+				if zitiCtx != nil {
+					zitiEdgeConn := zitiCtx.(edge.Conn)
+
+					lc.Debugf("Authorizing incoming connection via OpenZiti for %s", zitiEdgeConn.SourceIdentifier())
+					return inner(c)
 				}
-				return inner(c)
-			}
-
-			zitiCtx = r.Context().Value("zero.trust.identityName")
-			if zitiCtx != nil {
-				zitiEdgeConn := zitiCtx.(edge.Conn)
-
-				lc.Debugf("Authorizing incoming connection via OpenZiti for %s", zitiEdgeConn.SourceIdentifier())
-				return inner(c)
 			}
 
 			authParts := strings.Split(authHeader, " ")

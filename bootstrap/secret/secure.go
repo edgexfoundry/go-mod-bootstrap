@@ -67,6 +67,7 @@ type SecureProvider struct {
 	securityRuntimeSecretTokenDuration gometrics.Timer
 	securityGetSecretDuration          gometrics.Timer
 	httpRoundTripper                   http.RoundTripper
+	zeroTrustEnabled                   bool
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -486,4 +487,12 @@ func (p *SecureProvider) HttpTransport() http.RoundTripper {
 
 func (p *SecureProvider) SetHttpTransport(rt http.RoundTripper) {
 	p.httpRoundTripper = rt
+}
+
+func (p *SecureProvider) IsZeroTrustEnabled() bool {
+	return p.zeroTrustEnabled
+}
+
+func (p *SecureProvider) ZeroTrustEnabled() {
+	p.zeroTrustEnabled = true
 }

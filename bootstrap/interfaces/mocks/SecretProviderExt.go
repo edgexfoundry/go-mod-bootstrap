@@ -209,6 +209,24 @@ func (_m *SecretProviderExt) IsJWTValid(jwt string) (bool, error) {
 	return r0, r1
 }
 
+// IsZeroTrustEnabled provides a mock function with given fields:
+func (_m *SecretProviderExt) IsZeroTrustEnabled() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsZeroTrustEnabled")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // ListSecretNames provides a mock function with given fields:
 func (_m *SecretProviderExt) ListSecretNames() ([]string, error) {
 	ret := _m.Called()

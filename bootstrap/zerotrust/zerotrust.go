@@ -47,13 +47,9 @@ func AuthToOpenZiti(ozController, jwt string) (ziti.Context, error) {
 	return ctx, nil
 }
 
-func isZeroTrust(secOpts map[string]string) bool {
-	return secOpts != nil && secOpts["Mode"] == ConfigKey
-}
-
 func HttpTransportFromService(secretProvider interfaces.SecretProviderExt, serviceInfo config.ServiceInfo, lc logger.LoggingClient) (http.RoundTripper, error) {
 	roundTripper := http.DefaultTransport
-	if isZeroTrust(serviceInfo.SecurityOptions) {
+	if secretProvider.ZeroTrustEnabled() {
 		lc.Debugf("zero trust client detected for service: %s", serviceInfo.Host)
 		if rt, err := createZitifiedTransport(secretProvider, serviceInfo.SecurityOptions[OpenZitiControllerKey]); err != nil {
 			return nil, err
@@ -66,7 +62,7 @@ func HttpTransportFromService(secretProvider interfaces.SecretProviderExt, servi
 
 func HttpTransportFromClient(secretProvider interfaces.SecretProviderExt, clientInfo *config.ClientInfo, lc logger.LoggingClient) (http.RoundTripper, error) {
 	roundTripper := http.DefaultTransport
-	if isZeroTrust(clientInfo.SecurityOptions) {
+	if secretProvider.ZeroTrustEnabled() {
 		lc.Debugf("zero trust client detected for client: %s", clientInfo.Host)
 		if rt, err := createZitifiedTransport(secretProvider, clientInfo.SecurityOptions[OpenZitiControllerKey]); err != nil {
 			return nil, err

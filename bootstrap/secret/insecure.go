@@ -254,3 +254,11 @@ func (p *InsecureProvider) HttpTransport() http.RoundTripper {
 func (p *InsecureProvider) SetHttpTransport(_ http.RoundTripper) {
 	//empty on purpose
 }
+
+func (p *InsecureProvider) IsZeroTrustEnabled() bool {
+	return false
+}
+
+func (p *InsecureProvider) ZeroTrustEnabled() {
+	//empty on purpose
+}
