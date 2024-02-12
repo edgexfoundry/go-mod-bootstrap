@@ -218,10 +218,11 @@ func (b *HttpServer) BootstrapHandler(
 			}
 
 			zc.c = &zitiCtx
+			lc.Infof("using ListenMode 'zerotrust' at %s", addr)
 			err = server.Serve(ln)
 		case "http":
 		default:
-			lc.Warnf("using ListenMode1 'http' at %s", addr)
+			lc.Infof("using ListenMode 'http' at %s", addr)
 			ln, listenErr := net.Listen("tcp", addr)
 			if listenErr != nil {
 				err = listenErr

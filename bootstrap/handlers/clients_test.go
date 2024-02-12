@@ -209,6 +209,8 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			messageClient := &messagingMocks.MessageClient{}
 			messageClient.On("Subscribe", mock.Anything, mock.Anything).Return(nil)
 
+			secProviderExt := &mocks.SecretProviderExt{}
+
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
 					return lc
@@ -221,6 +223,9 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				},
 				container.MessagingClientName: func(get di.Get) interface{} {
 					return messageClient
+				},
+				container.SecretProviderExtName: func(get di.Get) interface{} {
+					return secProviderExt
 				},
 			})
 
