@@ -51,6 +51,19 @@ func isZeroTrust(secOpts map[string]string) bool {
 	return secOpts != nil && secOpts["Mode"] == ConfigKey
 }
 
+func HttpTransportFromService(secretProvider interfaces.SecretProviderExt, serviceInfo config.ServiceInfo, lc logger.LoggingClient) (http.RoundTripper, error) {
+	roundTripper := http.DefaultTransport
+	if isZeroTrust(serviceInfo.SecurityOptions) {
+		lc.Debugf("zero trust client detected for service: %s", serviceInfo.Host)
+		if rt, err := createZitifiedTransport(secretProvider, serviceInfo.SecurityOptions[OpenZitiControllerKey]); err != nil {
+			return nil, err
+		} else {
+			roundTripper = rt
+		}
+	}
+	return roundTripper, nil
+}
+
 func HttpTransportFromClient(secretProvider interfaces.SecretProviderExt, clientInfo *config.ClientInfo, lc logger.LoggingClient) (http.RoundTripper, error) {
 	roundTripper := http.DefaultTransport
 	if isZeroTrust(clientInfo.SecurityOptions) {
