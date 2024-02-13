@@ -15,8 +15,9 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 )
 
 // LoggingClientInterfaceName contains the name of the logger.LoggingClient implementation in the DIC.
