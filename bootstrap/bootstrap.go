@@ -19,8 +19,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
-	"github.com/sirupsen/logrus"
-	"io"
 	"os"
 	"os/signal"
 	"sync"
@@ -110,7 +108,7 @@ func RunAndReturnWaitGroup(
 		})
 	}
 
-	adaptLogrusBasedLogging(dic)
+	utils.AdaptLogrusBasedLogging(lc)
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	envVars := environment.NewVariables(lc)
@@ -254,17 +252,4 @@ func registerMetrics(metricsManager interfaces.MetricsManager, metrics map[strin
 
 		lc.Infof("%s metric registered and will be reported (if enabled)", metricName)
 	}
-}
-
-func adaptLogrusBasedLogging(dic *di.Container) {
-	l := container.LoggingClientFrom(dic.Get)
-	// Create a new logger instance
-	hook := &utils.LogrusAdaptor{
-		Logger: l,
-	}
-	logrus.AddHook(hook)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors: true,
-	})
-	logrus.SetOutput(io.Discard)
 }

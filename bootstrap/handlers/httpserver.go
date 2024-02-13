@@ -177,7 +177,7 @@ func (b *HttpServer) BootstrapHandler(
 				err = errors.New("secret provider is nil. cannot proceed with zero trust configuration")
 				break
 			}
-			secretProvider.ZeroTrustEnabled() //mark the secret provider as zero trust enabled
+			secretProvider.IsZeroTrustEnabled() //mark the secret provider as zero trust enabled
 			var zitiCtx ziti.Context
 			var ctxErr error
 			jwt, jwtErr := secretProvider.GetSelfJWT()

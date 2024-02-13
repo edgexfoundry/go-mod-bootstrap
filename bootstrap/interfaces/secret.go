@@ -78,8 +78,8 @@ type SecretProviderExt interface {
 	// SetHttpTransport sets the http.RoundTripper to be used by http-based clients
 	SetHttpTransport(rt http.RoundTripper)
 
-	// ZeroTrustEnabled returns whether zero trust principles are enabled
-	ZeroTrustEnabled() bool
+	// IsZeroTrustEnabled returns whether zero trust principles are enabled
+	IsZeroTrustEnabled() bool
 
 	// EnableZeroTrust marks the provider as being zero trust enabled
 	EnableZeroTrust()

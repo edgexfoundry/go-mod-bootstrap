@@ -56,7 +56,7 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 			authHeader := r.Header.Get("Authorization")
 			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d)", r.URL.Path, len(authHeader))
 
-			if secretProvider.ZeroTrustEnabled() {
+			if secretProvider.IsZeroTrustEnabled() {
 				zitiCtx := r.Context().Value("zero.trust.identityName")
 				if zitiCtx != nil {
 					zitiEdgeConn := zitiCtx.(edge.Conn)

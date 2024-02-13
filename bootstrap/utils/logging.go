@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/sirupsen/logrus"
+	"io"
 )
 
 type LogrusAdaptor struct {
-	Logger logger.LoggingClient
+	logger logger.LoggingClient
 }
 
 func (f *LogrusAdaptor) Format(entry *logrus.Entry) ([]byte, error) {
@@ -25,20 +26,32 @@ const OPENZITI_DEFAULT_LOG_FORMAT = "default openziti: %s"
 func (f *LogrusAdaptor) Fire(e *logrus.Entry) error {
 	switch e.Level {
 	case logrus.DebugLevel:
-		f.Logger.Debugf(OPENZITI_LOG_FORMAT, e.Message)
+		f.logger.Debugf(OPENZITI_LOG_FORMAT, e.Message)
 	case logrus.InfoLevel:
-		f.Logger.Infof(OPENZITI_LOG_FORMAT, e.Message)
+		f.logger.Infof(OPENZITI_LOG_FORMAT, e.Message)
 	case logrus.WarnLevel:
-		f.Logger.Warnf(OPENZITI_LOG_FORMAT, e.Message)
+		f.logger.Warnf(OPENZITI_LOG_FORMAT, e.Message)
 	case logrus.ErrorLevel:
-		f.Logger.Errorf(OPENZITI_LOG_FORMAT, e.Message)
+		f.logger.Errorf(OPENZITI_LOG_FORMAT, e.Message)
 	case logrus.FatalLevel:
-		f.Logger.Errorf(OPENZITI_LOG_FORMAT, e.Message)
+		f.logger.Errorf(OPENZITI_LOG_FORMAT, e.Message)
 	case logrus.PanicLevel:
-		f.Logger.Errorf(OPENZITI_LOG_FORMAT, e.Message)
+		f.logger.Errorf(OPENZITI_LOG_FORMAT, e.Message)
 	default:
-		f.Logger.Errorf(OPENZITI_DEFAULT_LOG_FORMAT, e.Message)
+		f.logger.Errorf(OPENZITI_DEFAULT_LOG_FORMAT, e.Message)
 	}
 
 	return nil
+}
+
+func AdaptLogrusBasedLogging(lc logger.LoggingClient) {
+	// Create a new logger instance
+	hook := &LogrusAdaptor{
+		logger: lc,
+	}
+	logrus.AddHook(hook)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableColors: true,
+	})
+	logrus.SetOutput(io.Discard)
 }
