@@ -136,7 +136,6 @@ func (b *HttpServer) BootstrapHandler(
 
 	zc := &ZitiContext{}
 
-	b.router.Use(HandleOpenZiti(zc))
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
 
 	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
@@ -177,7 +176,7 @@ func (b *HttpServer) BootstrapHandler(
 				err = errors.New("secret provider is nil. cannot proceed with zero trust configuration")
 				break
 			}
-			secretProvider.IsZeroTrustEnabled() //mark the secret provider as zero trust enabled
+			secretProvider.EnableZeroTrust() //mark the secret provider as zero trust enabled
 			var zitiCtx ziti.Context
 			var ctxErr error
 			jwt, jwtErr := secretProvider.GetSelfJWT()
@@ -286,13 +285,4 @@ func mutator(srcCtx context.Context, c net.Conn) context.Context {
 		return context.WithValue(srcCtx, "zero.trust.identityName", zitiConn)
 	}
 	return srcCtx
-}
-
-func HandleOpenZiti(zitiCtx *ZitiContext) echo.MiddlewareFunc {
-
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			return next(c)
-		}
-	}
 }

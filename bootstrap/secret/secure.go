@@ -493,6 +493,6 @@ func (p *SecureProvider) IsZeroTrustEnabled() bool {
 	return p.zeroTrustEnabled
 }
 
-func (p *SecureProvider) ZeroTrustEnabled() {
+func (p *SecureProvider) EnableZeroTrust() {
 	p.zeroTrustEnabled = true
 }

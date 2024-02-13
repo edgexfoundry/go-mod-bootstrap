@@ -259,6 +259,6 @@ func (p *InsecureProvider) IsZeroTrustEnabled() bool {
 	return false
 }
 
-func (p *InsecureProvider) ZeroTrustEnabled() {
+func (p *InsecureProvider) EnableZeroTrust() {
 	//empty on purpose
 }
