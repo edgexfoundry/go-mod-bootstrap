@@ -211,6 +211,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 			secProviderExt := &mocks.SecretProviderExt{}
 			secProviderExt.On("SetHttpTransport", mock.Anything, mock.Anything).Return(nil)
+			secProviderExt.On("IsZeroTrustEnabled", mock.Anything, mock.Anything).Return(false)
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
@@ -333,6 +334,10 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 			configMock := &mocks.Configuration{}
 			configMock.On("GetBootstrap").Return(bootstrapConfig)
 
+			secProviderExt := &mocks.SecretProviderExt{}
+			secProviderExt.On("SetHttpTransport", mock.Anything, mock.Anything).Return(nil)
+			secProviderExt.On("IsZeroTrustEnabled", mock.Anything, mock.Anything).Return(false)
+
 			dic := di.NewContainer(di.ServiceConstructorMap{
 				container.LoggingClientInterfaceName: func(get di.Get) interface{} {
 					return mockLogger
@@ -346,6 +351,9 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 					} else {
 						return nil
 					}
+				},
+				container.SecretProviderExtName: func(get di.Get) interface{} {
+					return secProviderExt
 				},
 			})
 

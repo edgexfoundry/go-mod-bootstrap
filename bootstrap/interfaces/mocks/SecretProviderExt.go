@@ -20,6 +20,11 @@ func (_m *SecretProviderExt) DeregisterSecretUpdatedCallback(secretName string) 
 	_m.Called(secretName)
 }
 
+// EnableZeroTrust provides a mock function with given fields:
+func (_m *SecretProviderExt) EnableZeroTrust() {
+	_m.Called()
+}
+
 // GetAccessToken provides a mock function with given fields: tokenType, serviceKey
 func (_m *SecretProviderExt) GetAccessToken(tokenType string, serviceKey string) (string, error) {
 	ret := _m.Called(tokenType, serviceKey)
