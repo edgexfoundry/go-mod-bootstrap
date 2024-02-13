@@ -54,6 +54,7 @@ type HttpServer struct {
 type ZitiContext struct {
 	c *ziti.Context
 }
+type OpenZitiIdentityKey struct{}
 
 // NewHttpServer is a factory method that returns an initialized HttpServer receiver struct.
 func NewHttpServer(router *echo.Echo, doListenAndServe bool) *HttpServer {
@@ -282,7 +283,7 @@ func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.Middl
 
 func mutator(srcCtx context.Context, c net.Conn) context.Context {
 	if zitiConn, ok := c.(edge.Conn); ok {
-		return context.WithValue(srcCtx, "zero.trust.identityName", zitiConn)
+		return context.WithValue(srcCtx, OpenZitiIdentityKey{}, zitiConn)
 	}
 	return srcCtx
 }
