@@ -231,6 +231,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			}
 
 			eventClient := container.EventClientFrom(dic.Get)
+			readingClient := container.ReadingClientFrom(dic.Get)
 			commandClient := container.CommandClientFrom(dic.Get)
 			deviceServiceClient := container.DeviceServiceClientFrom(dic.Get)
 			deviceProfileClient := container.DeviceProfileClientFrom(dic.Get)
@@ -243,8 +244,10 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 			if test.CoreDataClientInfo != nil {
 				assert.NotNil(t, eventClient)
+				assert.NotNil(t, readingClient)
 			} else {
 				assert.Nil(t, eventClient)
+				assert.Nil(t, readingClient)
 			}
 
 			if test.CommandClientInfo != nil {

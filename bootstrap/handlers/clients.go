@@ -79,6 +79,9 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 					container.EventClientName: func(get di.Get) interface{} {
 						return clients.NewEventClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
 					},
+					container.ReadingClientName: func(get di.Get) interface{} {
+						return clients.NewReadingClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+					},
 				})
 			case common.CoreMetaDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
