@@ -33,6 +33,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
@@ -149,6 +150,7 @@ func (b *HttpServer) BootstrapHandler(
 		Handler:           b.router,
 		ReadHeaderTimeout: 5 * time.Second, // G112: A configured ReadHeaderTimeout in the http.Server averts a potential Slowloris Attack
 	}
+	server.ConnContext = mutator
 
 	wg.Add(1)
 	go func() {
@@ -170,7 +172,7 @@ func (b *HttpServer) BootstrapHandler(
 
 		b.isRunning = true
 
-		switch bootstrapConfig.Service.SecurityOptions["Mode"] {
+		switch strings.ToLower(bootstrapConfig.Service.SecurityOptions[config.SecurityModeKey]) {
 		case "zerotrust":
 			secretProvider := container.SecretProviderExtFrom(dic.Get)
 			if secretProvider == nil {
@@ -211,7 +213,7 @@ func (b *HttpServer) BootstrapHandler(
 				break
 			}
 
-			serviceName := bootstrapConfig.Service.SecurityOptions["OpenZitiServiceName"]
+			serviceName := bootstrapConfig.Service.SecurityOptions[config.OpenZitiServiceNameKey]
 			ln, listenErr := zitiCtx.Listen(serviceName)
 			if listenErr != nil {
 				err = fmt.Errorf("could not bind service " + serviceName + ": " + listenErr.Error())
@@ -222,6 +224,7 @@ func (b *HttpServer) BootstrapHandler(
 			lc.Infof("using ListenMode 'zerotrust' at %s", addr)
 			err = server.Serve(ln)
 		case "http":
+			fallthrough
 		default:
 			lc.Infof("using ListenMode 'http' at %s", addr)
 			ln, listenErr := net.Listen("tcp", addr)
@@ -231,7 +234,6 @@ func (b *HttpServer) BootstrapHandler(
 			}
 			err = server.Serve(ln)
 		}
-		server.ConnContext = mutator
 
 		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
 		if err != nil && err != http.ErrServerClosed {
@@ -285,5 +287,6 @@ func mutator(srcCtx context.Context, c net.Conn) context.Context {
 	if zitiConn, ok := c.(edge.Conn); ok {
 		return context.WithValue(srcCtx, OpenZitiIdentityKey{}, zitiConn)
 	}
+
 	return srcCtx
 }

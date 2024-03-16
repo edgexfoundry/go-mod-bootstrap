@@ -486,7 +486,11 @@ func (p *SecureProvider) HttpTransport() http.RoundTripper {
 }
 
 func (p *SecureProvider) SetHttpTransport(rt http.RoundTripper) {
-	p.httpRoundTripper = rt
+	if p.httpRoundTripper == nil {
+		p.httpRoundTripper = rt
+	} else {
+		p.lc.Warnf("refusing to override httpRoundTripper, already set")
+	}
 }
 
 func (p *SecureProvider) IsZeroTrustEnabled() bool {

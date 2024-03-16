@@ -59,6 +59,9 @@ const (
 	allServicesKey    = "all-services"
 	appServicesKey    = "app-services"
 	deviceServicesKey = "device-services"
+
+	SecurityModeKey        = "Mode"
+	OpenZitiServiceNameKey = "OpenZitiServiceName"
 )
 
 var invalidRemoteHostsError = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")

@@ -54,16 +54,16 @@ func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt,
 			r := c.Request()
 			w := c.Response()
 			authHeader := r.Header.Get("Authorization")
-			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d)", r.URL.Path, len(authHeader))
+			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d), %v", r.URL.Path, len(authHeader), secretProvider.IsZeroTrustEnabled())
 
 			if secretProvider.IsZeroTrustEnabled() {
 				zitiCtx := r.Context().Value(OpenZitiIdentityKey{})
 				if zitiCtx != nil {
 					zitiEdgeConn := zitiCtx.(edge.Conn)
-
 					lc.Debugf("Authorizing incoming connection via OpenZiti for %s", zitiEdgeConn.SourceIdentifier())
 					return inner(c)
 				}
+				lc.Debug("zero trust was enabled, but no marker was found. this is unexpected. falling back to token-based auth")
 			}
 
 			authParts := strings.Split(authHeader, " ")
