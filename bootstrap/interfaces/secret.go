@@ -14,7 +14,10 @@
 
 package interfaces
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 // SecretProvider defines the contract for secret provider implementations that
 // allow secrets to be retrieved/stored from/to a services Secret Store and other secret related APIs.
@@ -68,4 +71,10 @@ type SecretProviderExt interface {
 
 	// IsJWTValid evaluates a given JWT and returns a true/false if the JWT is valid (i.e. belongs to us and current) or not
 	IsJWTValid(jwt string) (bool, error)
+
+	// HttpTransport
+	HttpTransport() http.RoundTripper
+
+	// HttpTransport
+	SetHttpTransport(rt http.RoundTripper)
 }

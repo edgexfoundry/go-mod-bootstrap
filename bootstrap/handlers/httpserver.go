@@ -19,10 +19,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +39,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	edge_apis "github.com/openziti/sdk-golang/edge-apis"
+	"github.com/openziti/sdk-golang/ziti"
+	"github.com/openziti/sdk-golang/ziti/edge"
 )
 
 // HttpServer contains references to dependencies required by the http server implementation.
@@ -43,6 +49,10 @@ type HttpServer struct {
 	router           *echo.Echo
 	isRunning        bool
 	doListenAndServe bool
+}
+
+type ZitiContext struct {
+	c *ziti.Context
 }
 
 // NewHttpServer is a factory method that returns an initialized HttpServer receiver struct.
@@ -124,6 +134,9 @@ func (b *HttpServer) BootstrapHandler(
 		Timeout: timeout,
 	}))
 
+	zc := &ZitiContext{}
+
+	b.router.Use(HandleOpenZiti(zc))
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
 
 	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
@@ -156,7 +169,68 @@ func (b *HttpServer) BootstrapHandler(
 		}()
 
 		b.isRunning = true
-		err := server.ListenAndServe()
+
+		switch bootstrapConfig.Service.SecurityOptions["Mode"] {
+		case "zerotrust":
+			secretProvider := container.SecretProviderExtFrom(dic.Get)
+			if secretProvider == nil {
+				err = errors.New("secret provider is nil. cannot proceed with zero trust configuration")
+				break
+			}
+			var zitiCtx ziti.Context
+			var ctxErr error
+			jwt, jwtErr := secretProvider.GetSelfJWT()
+			if jwtErr != nil {
+				lc.Errorf("could not load jwt: %v", jwtErr)
+				err = jwtErr
+				break
+			}
+			ozUrl := bootstrapConfig.Service.SecurityOptions["OpenZitiController"]
+			if !strings.Contains(ozUrl, "://") {
+				ozUrl = "https://" + ozUrl
+			}
+			caPool, caErr := ziti.GetControllerWellKnownCaPool(ozUrl)
+			if caErr != nil {
+				err = caErr
+				break
+			}
+
+			credentials := edge_apis.NewJwtCredentials(jwt)
+			credentials.CaPool = caPool
+
+			cfg := &ziti.Config{
+				ZtAPI:       ozUrl + "/edge/client/v1",
+				Credentials: credentials,
+			}
+			cfg.ConfigTypes = append(cfg.ConfigTypes, "all")
+
+			zitiCtx, ctxErr = ziti.NewContext(cfg)
+			if ctxErr != nil {
+				err = ctxErr
+				break
+			}
+
+			serviceName := bootstrapConfig.Service.SecurityOptions["OpenZitiServiceName"]
+			ln, listenErr := zitiCtx.Listen(serviceName)
+			if listenErr != nil {
+				err = fmt.Errorf("could not bind service " + serviceName + ": " + listenErr.Error())
+				break
+			}
+
+			zc.c = &zitiCtx
+			err = server.Serve(ln)
+		case "http":
+		default:
+			lc.Warnf("using ListenMode1 'http' at %s", addr)
+			ln, listenErr := net.Listen("tcp", addr)
+			if listenErr != nil {
+				err = listenErr
+				break
+			}
+			err = server.Serve(ln)
+		}
+		server.ConnContext = mutator
+
 		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
 		if err != nil && err != http.ErrServerClosed {
 			// Other errors occur during bootstrapping, like port bind fails, are considered fatal
@@ -200,6 +274,29 @@ func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.Middl
 					}
 				}
 			}
+			return next(c)
+		}
+	}
+}
+
+func mutator(srcCtx context.Context, c net.Conn) context.Context {
+	if zitiConn, ok := c.(edge.Conn); ok {
+		return context.WithValue(srcCtx, "zero.trust.identityName", zitiConn)
+	}
+	return srcCtx
+}
+
+func HandleOpenZiti(zitiCtx *ZitiContext) echo.MiddlewareFunc {
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if zitiCtx != nil {
+				if zitiCtx != nil {
+					//newCtx := context.WithValue(r.Context(), "zitiContext", zitiCtx.c)
+					//r = r.WithContext(newCtx)
+				}
+			}
+
 			return next(c)
 		}
 	}

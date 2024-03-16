@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -65,6 +66,7 @@ type SecureProvider struct {
 	securityConsulTokenDuration        gometrics.Timer
 	securityRuntimeSecretTokenDuration gometrics.Timer
 	securityGetSecretDuration          gometrics.Timer
+	httpRoundTripper                   http.RoundTripper
 }
 
 // NewSecureProvider creates & initializes Provider instance for secure secrets.
@@ -476,4 +478,12 @@ func (p *SecureProvider) GetSelfJWT() (string, error) {
 // IsJWTValid evaluates a given JWT and returns a true/false if the JWT is valid (i.e. belongs to us and current) or not
 func (p *SecureProvider) IsJWTValid(jwt string) (bool, error) {
 	return p.secretClient.IsJWTValid(jwt)
+}
+
+func (p *SecureProvider) HttpTransport() http.RoundTripper {
+	return p.httpRoundTripper
+}
+
+func (p *SecureProvider) SetHttpTransport(rt http.RoundTripper) {
+	p.httpRoundTripper = rt
 }

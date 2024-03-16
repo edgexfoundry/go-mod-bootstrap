@@ -68,6 +68,9 @@ type ServiceInfo struct {
 	EnableNameFieldEscape bool
 	// CORSConfiguration defines the cross-origin resource sharing related settings
 	CORSConfiguration CORSConfigurationInfo
+	// SecurityOptions is a key/value map, used for configuring hosted services. Currently used for zero trust but
+	// could be for other options additional security related configuration
+	SecurityOptions map[string]string
 }
 
 // HealthCheck is a URL specifying a health check REST endpoint used by the Registry to determine if the
@@ -140,6 +143,9 @@ type ClientInfo struct {
 	Protocol string
 	// UseMessageBus indicates weather to use Messaging version of client
 	UseMessageBus bool
+	// SecurityOptions is a key/value map, used for configuring clients. Currently used for zero trust but
+	// could be for other options additional security related configuration
+	SecurityOptions map[string]string
 }
 
 func (c ClientInfo) Url() string {

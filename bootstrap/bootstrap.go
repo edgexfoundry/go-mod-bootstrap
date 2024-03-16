@@ -107,6 +107,7 @@ func RunAndReturnWaitGroup(
 		})
 	}
 
+	container.AdaptLogrusBasedLogging(dic)
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	envVars := environment.NewVariables(lc)

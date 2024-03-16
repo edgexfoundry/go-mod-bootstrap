@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -244,4 +245,12 @@ func (p *InsecureProvider) GetSelfJWT() (string, error) {
 // IsJWTValid evaluates a given JWT and returns a true/false if the JWT is valid (i.e. belongs to us and current) or not
 func (p *InsecureProvider) IsJWTValid(jwt string) (bool, error) {
 	return true, nil
+}
+
+func (p *InsecureProvider) HttpTransport() http.RoundTripper {
+	return http.DefaultTransport
+}
+
+func (p *InsecureProvider) SetHttpTransport(_ http.RoundTripper) {
+	//empty on purpose
 }
