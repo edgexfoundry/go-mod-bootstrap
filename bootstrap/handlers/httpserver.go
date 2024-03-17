@@ -38,6 +38,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/zerotrust"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	edge_apis "github.com/openziti/sdk-golang/edge-apis"
@@ -171,9 +172,9 @@ func (b *HttpServer) BootstrapHandler(
 		}()
 
 		b.isRunning = true
-
-		switch strings.ToLower(bootstrapConfig.Service.SecurityOptions[config.SecurityModeKey]) {
-		case "zerotrust":
+		listenMode := strings.ToLower(bootstrapConfig.Service.SecurityOptions[config.SecurityModeKey])
+		switch listenMode {
+		case zerotrust.ConfigKey:
 			secretProvider := container.SecretProviderExtFrom(dic.Get)
 			if secretProvider == nil {
 				err = errors.New("secret provider is nil. cannot proceed with zero trust configuration")
@@ -221,12 +222,12 @@ func (b *HttpServer) BootstrapHandler(
 			}
 
 			zc.c = &zitiCtx
-			lc.Infof("using ListenMode 'zerotrust' at %s", addr)
+			lc.Infof("listening on overlay network. ListenMode '%s' at %s", listenMode, addr)
 			err = server.Serve(ln)
 		case "http":
 			fallthrough
 		default:
-			lc.Infof("using ListenMode 'http' at %s", addr)
+			lc.Infof("listening on underlay network. ListenMode '%s' at %s", listenMode, addr)
 			ln, listenErr := net.Listen("tcp", addr)
 			if listenErr != nil {
 				err = listenErr
