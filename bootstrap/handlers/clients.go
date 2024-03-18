@@ -18,7 +18,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"sync"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/v3/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v3/registry"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
