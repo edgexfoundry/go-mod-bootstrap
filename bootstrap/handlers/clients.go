@@ -18,6 +18,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"sync"
 	"time"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/v3/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v3/registry"
 
-	bscfg "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
@@ -58,17 +58,17 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	dic *di.Container) bool {
 
 	lc := container.LoggingClientFrom(dic.Get)
-	config := container.ConfigurationFrom(dic.Get)
+	cfg := container.ConfigurationFrom(dic.Get)
 	cb.registry = container.RegistryFrom(dic.Get)
 
-	if config.GetBootstrap().Clients != nil {
-		for serviceKey, serviceInfo := range *config.GetBootstrap().Clients {
+	if cfg.GetBootstrap().Clients != nil {
+		for serviceKey, serviceInfo := range *cfg.GetBootstrap().Clients {
 			var url string
 			var err error
 
 			sp := container.SecretProviderExtFrom(dic.Get)
 			jwtSecretProvider := secret.NewJWTSecretProvider(sp)
-			if serviceInfo.SecurityOptions[bscfg.SecurityModeKey] == zerotrust.ConfigKey {
+			if serviceInfo.SecurityOptions[config.SecurityModeKey] == zerotrust.ZeroTrustMode {
 				sp.EnableZeroTrust()
 			}
 			if rt, transpErr := zerotrust.HttpTransportFromClient(sp, serviceInfo, lc); transpErr != nil {
@@ -90,25 +90,25 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			case common.CoreDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.EventClientName: func(get di.Get) interface{} {
-						return clients.NewEventClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewEventClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.ReadingClientName: func(get di.Get) interface{} {
-						return clients.NewReadingClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewReadingClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 			case common.CoreMetaDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.DeviceClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewDeviceClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.DeviceServiceClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceServiceClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewDeviceServiceClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.DeviceProfileClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceProfileClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewDeviceProfileClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.ProvisionWatcherClientName: func(get di.Get) interface{} {
-						return clients.NewProvisionWatcherClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewProvisionWatcherClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
@@ -123,24 +123,24 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 						return false
 					}
 
-					if len(config.GetBootstrap().Service.RequestTimeout) == 0 {
+					if len(cfg.GetBootstrap().Service.RequestTimeout) == 0 {
 						lc.Error("Service.RequestTimeout found empty in service's configuration, missing common config? Use -cp or -cc flags for common config")
 						return false
 					}
 
 					// TODO: Move following outside loop when multiple messaging based clients exist
-					timeout, err := time.ParseDuration(config.GetBootstrap().Service.RequestTimeout)
+					timeout, err := time.ParseDuration(cfg.GetBootstrap().Service.RequestTimeout)
 					if err != nil {
 						lc.Errorf("Unable to parse Service.RequestTimeout as a time duration: %v", err)
 						return false
 					}
 
-					baseTopic := config.GetBootstrap().MessageBus.GetBaseTopicPrefix()
+					baseTopic := cfg.GetBootstrap().MessageBus.GetBaseTopicPrefix()
 					client = clientsMessaging.NewCommandClient(messageClient, baseTopic, timeout)
 
 					lc.Infof("Using messaging for '%s' clients", serviceKey)
 				} else {
-					client = clients.NewCommandClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+					client = clients.NewCommandClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 				}
 
 				dic.Update(di.ServiceConstructorMap{
@@ -152,20 +152,20 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			case common.SupportNotificationsServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.NotificationClientName: func(get di.Get) interface{} {
-						return clients.NewNotificationClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewNotificationClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.SubscriptionClientName: func(get di.Get) interface{} {
-						return clients.NewSubscriptionClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewSubscriptionClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
 			case common.SupportSchedulerServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.IntervalClientName: func(get di.Get) interface{} {
-						return clients.NewIntervalClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewIntervalClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.IntervalActionClientName: func(get di.Get) interface{} {
-						return clients.NewIntervalActionClient(url, jwtSecretProvider, config.GetBootstrap().Service.EnableNameFieldEscape)
+						return clients.NewIntervalActionClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 

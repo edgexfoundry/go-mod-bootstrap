@@ -174,7 +174,7 @@ func (b *HttpServer) BootstrapHandler(
 		b.isRunning = true
 		listenMode := strings.ToLower(bootstrapConfig.Service.SecurityOptions[config.SecurityModeKey])
 		switch listenMode {
-		case zerotrust.ConfigKey:
+		case zerotrust.ZeroTrustMode:
 			secretProvider := container.SecretProviderExtFrom(dic.Get)
 			if secretProvider == nil {
 				err = errors.New("secret provider is nil. cannot proceed with zero trust configuration")
