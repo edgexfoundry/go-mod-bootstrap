@@ -29,6 +29,7 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/v3/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v3/registry"
 
+	bscfg "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
@@ -67,6 +68,9 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 			sp := container.SecretProviderExtFrom(dic.Get)
 			jwtSecretProvider := secret.NewJWTSecretProvider(sp)
+			if serviceInfo.SecurityOptions[bscfg.SecurityModeKey] == zerotrust.ConfigKey {
+				sp.EnableZeroTrust()
+			}
 			if rt, transpErr := zerotrust.HttpTransportFromClient(sp, serviceInfo, lc); transpErr != nil {
 				lc.Errorf("could not obtain an http client for use with zero trust provider: %v", transpErr)
 				return false
