@@ -31,6 +31,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
 	"github.com/edgexfoundry/go-mod-registry/v3/registry"
@@ -107,6 +108,7 @@ func RunAndReturnWaitGroup(
 		})
 	}
 
+	utils.AdaptLogrusBasedLogging(lc)
 	translateInterruptToCancel(ctx, &wg, cancel)
 
 	envVars := environment.NewVariables(lc)

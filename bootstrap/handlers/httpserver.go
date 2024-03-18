@@ -19,10 +19,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,12 +33,17 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/zerotrust"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	edge_apis "github.com/openziti/sdk-golang/edge-apis"
+	"github.com/openziti/sdk-golang/ziti"
+	"github.com/openziti/sdk-golang/ziti/edge"
 )
 
 // HttpServer contains references to dependencies required by the http server implementation.
@@ -44,6 +52,11 @@ type HttpServer struct {
 	isRunning        bool
 	doListenAndServe bool
 }
+
+type ZitiContext struct {
+	c *ziti.Context
+}
+type OpenZitiIdentityKey struct{}
 
 // NewHttpServer is a factory method that returns an initialized HttpServer receiver struct.
 func NewHttpServer(router *echo.Echo, doListenAndServe bool) *HttpServer {
@@ -124,6 +137,8 @@ func (b *HttpServer) BootstrapHandler(
 		Timeout: timeout,
 	}))
 
+	zc := &ZitiContext{}
+
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
 
 	b.router.Use(ProcessCORS(bootstrapConfig.Service.CORSConfiguration))
@@ -136,6 +151,7 @@ func (b *HttpServer) BootstrapHandler(
 		Handler:           b.router,
 		ReadHeaderTimeout: 5 * time.Second, // G112: A configured ReadHeaderTimeout in the http.Server averts a potential Slowloris Attack
 	}
+	server.ConnContext = mutator
 
 	wg.Add(1)
 	go func() {
@@ -156,7 +172,70 @@ func (b *HttpServer) BootstrapHandler(
 		}()
 
 		b.isRunning = true
-		err := server.ListenAndServe()
+		listenMode := strings.ToLower(bootstrapConfig.Service.SecurityOptions[config.SecurityModeKey])
+		switch listenMode {
+		case zerotrust.ConfigKey:
+			secretProvider := container.SecretProviderExtFrom(dic.Get)
+			if secretProvider == nil {
+				err = errors.New("secret provider is nil. cannot proceed with zero trust configuration")
+				break
+			}
+			secretProvider.EnableZeroTrust() //mark the secret provider as zero trust enabled
+			var zitiCtx ziti.Context
+			var ctxErr error
+			jwt, jwtErr := secretProvider.GetSelfJWT()
+			if jwtErr != nil {
+				lc.Errorf("could not load jwt: %v", jwtErr)
+				err = jwtErr
+				break
+			}
+			ozUrl := bootstrapConfig.Service.SecurityOptions["OpenZitiController"]
+			if !strings.Contains(ozUrl, "://") {
+				ozUrl = "https://" + ozUrl
+			}
+			caPool, caErr := ziti.GetControllerWellKnownCaPool(ozUrl)
+			if caErr != nil {
+				err = caErr
+				break
+			}
+
+			credentials := edge_apis.NewJwtCredentials(jwt)
+			credentials.CaPool = caPool
+
+			cfg := &ziti.Config{
+				ZtAPI:       ozUrl + "/edge/client/v1",
+				Credentials: credentials,
+			}
+			cfg.ConfigTypes = append(cfg.ConfigTypes, "all")
+
+			zitiCtx, ctxErr = ziti.NewContext(cfg)
+			if ctxErr != nil {
+				err = ctxErr
+				break
+			}
+
+			serviceName := bootstrapConfig.Service.SecurityOptions[config.OpenZitiServiceNameKey]
+			ln, listenErr := zitiCtx.Listen(serviceName)
+			if listenErr != nil {
+				err = fmt.Errorf("could not bind service " + serviceName + ": " + listenErr.Error())
+				break
+			}
+
+			zc.c = &zitiCtx
+			lc.Infof("listening on overlay network. ListenMode '%s' at %s", listenMode, addr)
+			err = server.Serve(ln)
+		case "http":
+			fallthrough
+		default:
+			lc.Infof("listening on underlay network. ListenMode '%s' at %s", listenMode, addr)
+			ln, listenErr := net.Listen("tcp", addr)
+			if listenErr != nil {
+				err = listenErr
+				break
+			}
+			err = server.Serve(ln)
+		}
+
 		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
 		if err != nil && err != http.ErrServerClosed {
 			// Other errors occur during bootstrapping, like port bind fails, are considered fatal
@@ -203,4 +282,12 @@ func RequestLimitMiddleware(sizeLimit int64, lc logger.LoggingClient) echo.Middl
 			return next(c)
 		}
 	}
+}
+
+func mutator(srcCtx context.Context, c net.Conn) context.Context {
+	if zitiConn, ok := c.(edge.Conn); ok {
+		return context.WithValue(srcCtx, OpenZitiIdentityKey{}, zitiConn)
+	}
+
+	return srcCtx
 }

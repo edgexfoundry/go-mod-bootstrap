@@ -10,17 +10,26 @@ import (
 	"net/http"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	clientInterfaces "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
+	clientinterfaces "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
 )
 
 type jwtSecretProvider struct {
 	secretProvider interfaces.SecretProviderExt
+	roundTripper_a http.RoundTripper
 }
 
-func NewJWTSecretProvider(secretProvider interfaces.SecretProviderExt) clientInterfaces.AuthenticationInjector {
+func NewJWTSecretProvider(secretProvider interfaces.SecretProviderExt) clientinterfaces.AuthenticationInjector {
 	return &jwtSecretProvider{
 		secretProvider: secretProvider,
 	}
+}
+func NewJWTSecretProviderWithRT(secretProvider interfaces.SecretProviderExt, roundTripper_b http.RoundTripper) clientinterfaces.AuthenticationInjector {
+	j := &jwtSecretProvider{
+		secretProvider: secretProvider,
+		roundTripper_a: roundTripper_b,
+	}
+	secretProvider.SetHttpTransport(roundTripper_b)
+	return j
 }
 
 func (self *jwtSecretProvider) AddAuthenticationData(req *http.Request) error {
@@ -42,4 +51,8 @@ func (self *jwtSecretProvider) AddAuthenticationData(req *http.Request) error {
 	}
 
 	return nil
+}
+func (self *jwtSecretProvider) RoundTripper() http.RoundTripper {
+	// Do nothing to the request; used for unit tests
+	return self.secretProvider.HttpTransport()
 }
