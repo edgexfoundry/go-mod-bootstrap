@@ -15,7 +15,7 @@ import (
 
 const (
 	OpenZitiControllerKey = "OpenZitiController"
-	ConfigKey             = "zerotrust"
+	ZeroTrustMode         = "zerotrust"
 )
 
 func AuthToOpenZiti(ozController, jwt string) (ziti.Context, error) {
