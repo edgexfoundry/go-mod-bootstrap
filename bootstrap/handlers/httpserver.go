@@ -216,7 +216,7 @@ func (b *HttpServer) BootstrapHandler(
 				break
 			}
 
-			ozServiceName := "edgex." + b.serverKey
+			ozServiceName := zerotrust.OpenZitiServicePrefix + b.serverKey
 			lc.Infof("Using OpenZiti service name: %s", ozServiceName)
 			ln, listenErr := zitiCtx.Listen(ozServiceName)
 			if listenErr != nil {
