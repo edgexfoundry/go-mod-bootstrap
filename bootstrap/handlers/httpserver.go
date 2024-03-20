@@ -216,13 +216,8 @@ func (b *HttpServer) BootstrapHandler(
 				break
 			}
 
-			ozServiceName := bootstrapConfig.Service.SecurityOptions[config.OpenZitiServiceNameKey]
-			if ozServiceName != "" {
-				lc.Infof("OpenZiti service name provided %s", ozServiceName)
-			} else {
-				ozServiceName = "edgex." + b.serverKey
-				lc.Infof("OpenZiti service name not provided. Using default, generated name: %s", ozServiceName)
-			}
+			ozServiceName := "edgex." + b.serverKey
+			lc.Infof("Using OpenZiti service name: %s", ozServiceName)
 			ln, listenErr := zitiCtx.Listen(ozServiceName)
 			if listenErr != nil {
 				err = fmt.Errorf("could not bind service " + ozServiceName + ": " + listenErr.Error())
