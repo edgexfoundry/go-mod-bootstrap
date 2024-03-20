@@ -16,6 +16,7 @@ import (
 const (
 	OpenZitiControllerKey = "OpenZitiController"
 	ZeroTrustMode         = "zerotrust"
+	OpenZitiServicePrefix = "edgex."
 )
 
 func AuthToOpenZiti(ozController, jwt string) (ziti.Context, error) {

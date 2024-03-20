@@ -51,6 +51,7 @@ type HttpServer struct {
 	router           *echo.Echo
 	isRunning        bool
 	doListenAndServe bool
+	serverKey        string
 }
 
 type ZitiContext struct {
@@ -59,11 +60,12 @@ type ZitiContext struct {
 type OpenZitiIdentityKey struct{}
 
 // NewHttpServer is a factory method that returns an initialized HttpServer receiver struct.
-func NewHttpServer(router *echo.Echo, doListenAndServe bool) *HttpServer {
+func NewHttpServer(router *echo.Echo, doListenAndServe bool, serviceKey string) *HttpServer {
 	return &HttpServer{
 		router:           router,
 		isRunning:        false,
 		doListenAndServe: doListenAndServe,
+		serverKey:        serviceKey,
 	}
 }
 
@@ -214,10 +216,11 @@ func (b *HttpServer) BootstrapHandler(
 				break
 			}
 
-			serviceName := bootstrapConfig.Service.SecurityOptions[config.OpenZitiServiceNameKey]
-			ln, listenErr := zitiCtx.Listen(serviceName)
+			ozServiceName := zerotrust.OpenZitiServicePrefix + b.serverKey
+			lc.Infof("Using OpenZiti service name: %s", ozServiceName)
+			ln, listenErr := zitiCtx.Listen(ozServiceName)
 			if listenErr != nil {
-				err = fmt.Errorf("could not bind service " + serviceName + ": " + listenErr.Error())
+				err = fmt.Errorf("could not bind service " + ozServiceName + ": " + listenErr.Error())
 				break
 			}
 
