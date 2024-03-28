@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  * Copyright 2020, 2023 Intel Inc.
+ * Copyright 2024 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 
@@ -84,6 +86,7 @@ func createRegistryClient(
 		CheckInterval:   bootstrapConfig.Service.HealthCheckInterval,
 		CheckRoute:      common.ApiPingRoute,
 		GetAccessToken:  getAccessToken,
+		AuthInjector:    secret.NewJWTSecretProvider(secretProvider),
 	}
 
 	lc.Info(fmt.Sprintf("Using Registry (%s) from %s", registryConfig.Type, registryConfig.GetRegistryUrl()))

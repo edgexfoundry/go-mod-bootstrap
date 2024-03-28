@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
  * Copyright 2020-2023 Intel Corporation
+ * Copyright 2024 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -41,6 +42,7 @@ import (
 
 const (
 	TokenTypeConsul      = "consul"
+	TokenTypeKeeper      = "keeper"
 	AccessTokenAuthError = "HTTP response with status code 403"
 	//nolint: gosec
 	SecretsAuthError = "Received a '403' response"
@@ -249,9 +251,11 @@ func (p *SecureProvider) SecretsLastUpdated() time.Time {
 
 // GetAccessToken returns the access token for the requested token type.
 func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
-	p.securityConsulTokensRequested.Inc(1)
-	started := time.Now()
-	defer p.securityConsulTokenDuration.UpdateSince(started)
+	if tokenType == TokenTypeConsul {
+		p.securityConsulTokensRequested.Inc(1)
+		started := time.Now()
+		defer p.securityConsulTokenDuration.UpdateSince(started)
+	}
 
 	switch tokenType {
 	case TokenTypeConsul:
@@ -268,6 +272,9 @@ func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (st
 		}
 
 		return token, nil
+	case TokenTypeKeeper:
+		// return empty token for Keeper as we don't need a token to access to it in security mode
+		return "", nil
 
 	default:
 		return "", fmt.Errorf("invalid access token type '%s'", tokenType)

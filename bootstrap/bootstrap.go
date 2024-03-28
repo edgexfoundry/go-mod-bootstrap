@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  * Copyright 2023 Intel Corporation
+ * Copyright 2024 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -125,7 +126,7 @@ func RunAndReturnWaitGroup(
 	// to the need for it to be used to get Access Token for the Configuration Provider and having to wait to
 	// initialize it until after the configuration is loaded from file.
 	configProcessor := config.NewProcessor(commonFlags, envVars, startupTimer, ctx, &wg, configUpdated, dic)
-	if err := configProcessor.Process(serviceKey, serviceType, configStem, serviceConfig, secretProvider); err != nil {
+	if err := configProcessor.Process(serviceKey, serviceType, configStem, serviceConfig, secretProvider, secret.NewJWTSecretProvider(secretProvider)); err != nil {
 		fatalError(err, lc)
 	}
 
