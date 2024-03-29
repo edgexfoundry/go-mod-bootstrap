@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2020 Intel Corp.
+ * Copyright 2024 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,6 +16,7 @@ package config
 
 import (
 	"github.com/edgexfoundry/go-mod-configuration/v3/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
 )
@@ -58,4 +60,9 @@ func (config *ProviderInfo) SetHost(host string) {
 // ServiceConfig returns service configuration for the Configuration Provider
 func (config *ProviderInfo) ServiceConfig() types.ServiceConfig {
 	return config.serviceConfig
+}
+
+// SetAuthInjector sets the Authentication Injector for the Configuration Provider
+func (config *ProviderInfo) SetAuthInjector(authInjector interfaces.AuthenticationInjector) {
+	config.serviceConfig.AuthInjector = authInjector
 }
