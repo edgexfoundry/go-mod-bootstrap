@@ -454,8 +454,8 @@ github.com/openziti/identity v1.0.75 h1:FDm3ZojmmGP9eoOxMvmF52RS6JzToTTeWB0pthIA
 github.com/openziti/identity v1.0.75/go.mod h1:ouF+CYh5ywvvMr0Uy1+tbkILIPTdob5WZEnm3v0bPMQ=
 github.com/openziti/metrics v1.2.51 h1:+RfVdEGMOmhXBcC/gFIqXeNVnpWt9+cfrbCacFV/e3w=
 github.com/openziti/metrics v1.2.51/go.mod h1:qvX8EKF8I42tA4KlNFX+RBx+ywNiVRvJTS4QofDU8KU=
-github.com/openziti/sdk-golang v0.23.32 h1:GaY89LTikNO3PAHaHgeMUKYJ5aaGYaFiU2o2e37mJxE=
-github.com/openziti/sdk-golang v0.23.32/go.mod h1:9PH2kfFge80Rxw/HyCPgsp2dntPbCsLAKB4ZjZFUovg=
+github.com/openziti/sdk-golang v0.23.35 h1:7qWgkFIWBgCS+O8sho6hpqKBM7d3NENh5bSUs8wjMeY=
+github.com/openziti/sdk-golang v0.23.35/go.mod h1:+eVyqtmY2STTIgtQ9Rze+iemkKM+hAFBWnjHT/u5NWo=
 github.com/openziti/secretstream v0.1.19 h1:qSX23lyOI5ROvYPTjy7Lo6eFsq9qBBPzaG5hvgLlw48=
 github.com/openziti/secretstream v0.1.19/go.mod h1:1n/Uk8PQEREwB7iQXhUzNqt+8jYEpUZOJDGcetMI08o=
 github.com/openziti/transport/v2 v2.0.131 h1:K1h3sl04QWQdYGSPSI1aZLufrL44Azw4WmdprzkIMxo=
@@ -504,8 +504,8 @@ github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQD
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
-github.com/shirou/gopsutil/v3 v3.24.3 h1:eoUGJSmdfLzJ3mxIhmOAhgKEKgQkeOwKpz1NbhVnuPE=
-github.com/shirou/gopsutil/v3 v3.24.3/go.mod h1:JpND7O217xa72ewWz9zN2eIIkPWsDN/3pl0H8Qt0uwg=
+github.com/shirou/gopsutil/v3 v3.24.4 h1:dEHgzZXt4LMNm+oYELpzl9YCqV65Yr/6SfrvgRBtXeU=
+github.com/shirou/gopsutil/v3 v3.24.4/go.mod h1:lTd2mdiOspcqLgAnr9/nGi71NkeMpWKdmhuxm9GusH8=
 github.com/shoenig/go-m1cpu v0.1.6 h1:nxdKQNcEB6vzgA2E2bvzKIYRuNj7XNJ4S/aRSwKzFtM=
 github.com/shoenig/go-m1cpu v0.1.6/go.mod h1:1JJMcUBvfNwpq05QDQVAnx3gUHr9IYF7GNg9SUEw2VQ=
 github.com/shoenig/test v0.6.4 h1:kVTaSd7WLz5WZ2IaoM0RSzRsUD+m8wRR+5qvntpn4LU=
@@ -1003,8 +1003,8 @@ google.golang.org/protobuf v1.24.0/go.mod h1:r/3tXBNzIEhYS9I1OUVjXDlt8tc493IdKGj
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.33.0 h1:uNO2rsAINq/JlFpSdYEKIZ0uKD/R9cpdv0T+yoGwGmI=
-google.golang.org/protobuf v1.33.0/go.mod h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=
+google.golang.org/protobuf v1.34.0 h1:Qo/qEd2RZPCf2nKuorzksSknv0d3ERwp1vFG38gSmH4=
+google.golang.org/protobuf v1.34.0/go.mod h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
