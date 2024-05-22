@@ -4,9 +4,9 @@ go 1.21
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
-	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.4
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.18
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.18
+	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.7
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.20
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.20
 	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.6
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.5
 	github.com/google/uuid v1.6.0
@@ -28,7 +28,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/fatih/color v1.14.1 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/fxamacker/cbor/v2 v2.6.0 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.19.0 // indirect
+	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/go-redis/redis/v7 v7.3.0 // indirect
 	github.com/go-resty/resty/v2 v2.13.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
-	github.com/hashicorp/consul/api v1.27.0 // indirect
+	github.com/hashicorp/consul/api v1.28.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
