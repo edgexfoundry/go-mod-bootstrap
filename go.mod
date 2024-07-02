@@ -7,7 +7,7 @@ require (
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.7
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.26
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.26
-	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.9
+	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.10
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.7
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1

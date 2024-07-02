@@ -19,6 +19,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -120,6 +121,10 @@ func RunAndReturnWaitGroup(
 		if err != nil {
 			fatalError(fmt.Errorf("failed to create SecretProvider: %s", err.Error()), lc)
 		}
+
+		// Bypass the zero trust zitidfied transport for Core Keeper Configuration client
+		// Should leverage the HttpTransportFromService function from zerotrust pkg, set the default transport for now
+		secretProvider.SetHttpTransport(http.DefaultTransport)
 	}
 
 	// The SecretProvider is initialized and placed in the DIS as part of processing the configuration due
