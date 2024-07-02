@@ -5,9 +5,9 @@ go 1.21
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.7
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.24
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.26
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.26
-	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.8
+	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.9
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.7
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -31,7 +31,7 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
-	github.com/fxamacker/cbor/v2 v2.6.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
