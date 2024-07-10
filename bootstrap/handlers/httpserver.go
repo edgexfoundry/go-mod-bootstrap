@@ -82,7 +82,7 @@ func (b *HttpServer) IsRunning() bool {
 func (b *HttpServer) BootstrapHandler(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	_ startup.Timer,
+	t startup.Timer,
 	dic *di.Container) bool {
 
 	lc := container.LoggingClientFrom(dic.Get)
@@ -218,15 +218,18 @@ func (b *HttpServer) BootstrapHandler(
 
 			ozServiceName := zerotrust.OpenZitiServicePrefix + b.serverKey
 			lc.Infof("Using OpenZiti service name: %s", ozServiceName)
-			ln, listenErr := zitiCtx.Listen(ozServiceName)
-			if listenErr != nil {
-				err = fmt.Errorf("could not bind service " + ozServiceName + ": " + listenErr.Error())
-				break
+			for t.HasNotElapsed() {
+				ln, listenErr := zitiCtx.Listen(ozServiceName)
+				if listenErr != nil {
+					err = fmt.Errorf("could not bind service " + ozServiceName + ": " + listenErr.Error())
+					t.SleepForInterval()
+				} else {
+					zc.c = &zitiCtx
+					lc.Infof("listening on overlay network. ListenMode '%s' at %s", listenMode, addr)
+					err = server.Serve(ln)
+					break
+				}
 			}
-
-			zc.c = &zitiCtx
-			lc.Infof("listening on overlay network. ListenMode '%s' at %s", listenMode, addr)
-			err = server.Serve(ln)
 		case "http":
 			fallthrough
 		default:
