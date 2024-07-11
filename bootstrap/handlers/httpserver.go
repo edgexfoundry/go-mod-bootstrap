@@ -230,6 +230,9 @@ func (b *HttpServer) BootstrapHandler(
 					break
 				}
 			}
+			if !t.HasNotElapsed() {
+				lc.Error("could not listen on the OpenZiti overlay network. timeout reached")
+			}
 		case "http":
 			fallthrough
 		default:
