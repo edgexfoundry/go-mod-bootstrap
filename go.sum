@@ -92,8 +92,8 @@ github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.28 h1:FzvB/oA6kXV/Wg800+V
 github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.28/go.mod h1:K2sKQWgW6Hs7BQK1iNZWLNo9bxvBYltWfNRcjKya/G4=
 github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.12 h1:FtHDhSaaFeni7xoB/fOzJb/UVYWl26dAzF5OXVO4llk=
 github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.12/go.mod h1:62jYYCEahEBcz1f5BtZ4ZawISpjNGcPo+KFelkFI3g0=
-github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.9 h1:Rg6RnrdYzVhtK5XpWKnvHhR8FNBp30n/BTWP6S1hxY8=
-github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.9/go.mod h1:C8emrUs40E0DeB3EjifPgNxNv7O1b/PAWdOAQ2iqIPw=
+github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.11 h1:z6+WXpFQLwG2Bd5L9psllz9aKLBEA+kUeznP9KkOLDI=
+github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.11/go.mod h1:/h/5wrHXxht+SjVFtT+MXeLdOhYAlD0ilLSiZxlW700=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
