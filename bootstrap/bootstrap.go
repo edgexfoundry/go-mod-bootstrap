@@ -19,6 +19,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -119,6 +120,14 @@ func RunAndReturnWaitGroup(
 		secretProvider, err = secret.NewSecretProvider(serviceConfig, envVars, ctx, startupTimer, dic, serviceKey)
 		if err != nil {
 			fatalError(fmt.Errorf("failed to create SecretProvider: %s", err.Error()), lc)
+		}
+
+		bootstrapConfig := serviceConfig.GetBootstrap()
+		if bootstrapConfig.Registry.Type == "keeper" {
+			// TODO: address this issue in some way? the openziti fallback dialer should be dialing this address if not zitified
+			// Bypass the zero trust zitidfied transport for Core Keeper Registry client
+			// Should leverage the HttpTransportFromService function from zerotrust pkg, set the default transport for now
+			secretProvider.SetHttpTransport(http.DefaultTransport)
 		}
 	}
 
