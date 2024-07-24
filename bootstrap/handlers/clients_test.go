@@ -211,6 +211,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 			secProviderExt := &mocks.SecretProviderExt{}
 			secProviderExt.On("SetHttpTransport", mock.Anything, mock.Anything).Return(nil)
+			secProviderExt.On("SetFallbackDialer", mock.Anything, mock.Anything).Return(nil)
 			secProviderExt.On("IsZeroTrustEnabled", mock.Anything, mock.Anything).Return(false)
 
 			dic := di.NewContainer(di.ServiceConstructorMap{
@@ -336,6 +337,7 @@ func TestCommandMessagingClientErrors(t *testing.T) {
 
 			secProviderExt := &mocks.SecretProviderExt{}
 			secProviderExt.On("SetHttpTransport", mock.Anything, mock.Anything).Return(nil)
+			secProviderExt.On("SetFallbackDialer", mock.Anything, mock.Anything).Return(nil)
 			secProviderExt.On("IsZeroTrustEnabled", mock.Anything, mock.Anything).Return(false)
 
 			dic := di.NewContainer(di.ServiceConstructorMap{

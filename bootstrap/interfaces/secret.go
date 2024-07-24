@@ -15,6 +15,7 @@
 package interfaces
 
 import (
+	"net"
 	"net/http"
 	"time"
 )
@@ -77,6 +78,12 @@ type SecretProviderExt interface {
 
 	// SetHttpTransport sets the http.RoundTripper to be used by http-based clients
 	SetHttpTransport(rt http.RoundTripper)
+
+	// FallbackDialer returns the dialer to use to establish connections when there is no zero trust service found/authorized
+	FallbackDialer() *net.Dialer
+
+	// SetFallbackDialer sets the dialer to use to establish connections when there is no zero trust service found/authorized
+	SetFallbackDialer(dialer *net.Dialer)
 
 	// IsZeroTrustEnabled returns whether zero trust principles are enabled
 	IsZeroTrustEnabled() bool
