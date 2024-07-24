@@ -18,6 +18,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -76,6 +77,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 				return false
 			} else {
 				sp.SetHttpTransport(rt) //only need to set the transport when using SecretProviderExt
+				sp.SetFallbackDialer(&net.Dialer{})
 			}
 
 			if !serviceInfo.UseMessageBus {

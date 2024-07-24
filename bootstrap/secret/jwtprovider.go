@@ -14,22 +14,14 @@ import (
 )
 
 type jwtSecretProvider struct {
-	secretProvider interfaces.SecretProviderExt
-	roundTripper_a http.RoundTripper
+	secretProvider      interfaces.SecretProviderExt
+	defaultRoundTripper http.RoundTripper
 }
 
 func NewJWTSecretProvider(secretProvider interfaces.SecretProviderExt) clientinterfaces.AuthenticationInjector {
 	return &jwtSecretProvider{
 		secretProvider: secretProvider,
 	}
-}
-func NewJWTSecretProviderWithRT(secretProvider interfaces.SecretProviderExt, roundTripper_b http.RoundTripper) clientinterfaces.AuthenticationInjector {
-	j := &jwtSecretProvider{
-		secretProvider: secretProvider,
-		roundTripper_a: roundTripper_b,
-	}
-	secretProvider.SetHttpTransport(roundTripper_b)
-	return j
 }
 
 func (self *jwtSecretProvider) AddAuthenticationData(req *http.Request) error {

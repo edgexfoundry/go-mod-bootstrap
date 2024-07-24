@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -260,5 +261,13 @@ func (p *InsecureProvider) IsZeroTrustEnabled() bool {
 }
 
 func (p *InsecureProvider) EnableZeroTrust() {
+	//empty on purpose
+}
+
+func (p *InsecureProvider) FallbackDialer() *net.Dialer {
+	return &net.Dialer{}
+}
+
+func (p *InsecureProvider) SetFallbackDialer(_ *net.Dialer) {
 	//empty on purpose
 }
