@@ -14,8 +14,7 @@ import (
 )
 
 type jwtSecretProvider struct {
-	secretProvider      interfaces.SecretProviderExt
-	defaultRoundTripper http.RoundTripper
+	secretProvider interfaces.SecretProviderExt
 }
 
 func NewJWTSecretProvider(secretProvider interfaces.SecretProviderExt) clientinterfaces.AuthenticationInjector {
