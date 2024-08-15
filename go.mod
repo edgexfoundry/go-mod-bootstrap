@@ -5,8 +5,8 @@ go 1.21
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.12
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.32
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.31
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.37
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.33
 	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.13
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.9
 	github.com/google/uuid v1.6.0
@@ -86,7 +86,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/nats-io/nats.go v1.36.0 // indirect
+	github.com/nats-io/nats.go v1.37.0 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
