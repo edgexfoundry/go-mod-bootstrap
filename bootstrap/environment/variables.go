@@ -47,6 +47,7 @@ const (
 	envKeyConfigFile         = "EDGEX_CONFIG_FILE"
 	envKeyFileURITimeout     = "EDGEX_FILE_URI_TIMEOUT"
 	envKeyRemoteServiceHosts = "EDGEX_REMOTE_SERVICE_HOSTS"
+	envOverwriteConfig       = "EDGEX_OVERWRITE_CONFIG"
 
 	noConfigProviderValue = "none"
 
@@ -490,4 +491,19 @@ func GetRemoteServiceHosts(lc logger.LoggingClient, remoteHosts []string) []stri
 	logEnvironmentOverride(lc, "-rsh/--remoteServiceHosts", envKeyRemoteServiceHosts, envValue)
 
 	return strings.Split(envValue, ",")
+}
+
+// OverwriteConfig returns whether the local configuration should be pushed (overwrite) into the Configuration provider
+func OverwriteConfig() bool {
+	envValue := os.Getenv(envOverwriteConfig)
+	if len(envValue) == 0 {
+		return false
+	}
+
+	boolValue, err := strconv.ParseBool(envValue)
+	if err != nil {
+		return false
+	}
+
+	return boolValue
 }
