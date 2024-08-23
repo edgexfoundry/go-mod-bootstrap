@@ -83,7 +83,6 @@ type Processor struct {
 	wg                 *sync.WaitGroup
 	configUpdated      UpdatedStream
 	dic                *di.Container
-	overwriteConfig    bool
 	providerHasConfig  bool
 	commonConfigClient configuration.Client
 	appConfigClient    configuration.Client
@@ -134,7 +133,6 @@ func (cp *Processor) Process(
 	secretProvider interfaces.SecretProviderExt,
 	jwtSecretProvider clientinterfaces.AuthenticationInjector) error {
 
-	cp.overwriteConfig = cp.flags.OverwriteConfig()
 	configProviderUrl := cp.flags.ConfigProviderUrl()
 	remoteHosts := environment.GetRemoteServiceHosts(cp.lc, cp.flags.RemoteServiceHosts())
 
@@ -201,7 +199,7 @@ func (cp *Processor) Process(
 			return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
 		}
 
-		if cp.providerHasConfig && !cp.overwriteConfig {
+		if cp.providerHasConfig && !cp.overwriteConfig() {
 			privateServiceConfig, err = copyConfigurationStruct(serviceConfig)
 			if err != nil {
 				return err
@@ -247,7 +245,7 @@ func (cp *Processor) Process(
 	}
 
 	// Now load the private config from a local file if any of these conditions are true
-	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig {
+	if !useProvider || !cp.providerHasConfig || cp.overwriteConfig() {
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
 		configMap, err := cp.loadConfigYamlFromFile(filePath)
 		if err != nil {
@@ -266,7 +264,7 @@ func (cp *Processor) Process(
 		}
 
 		if useProvider {
-			if err := privateConfigClient.PutConfigurationMap(configMap, cp.overwriteConfig); err != nil {
+			if err := privateConfigClient.PutConfigurationMap(configMap, cp.overwriteConfig()); err != nil {
 				return fmt.Errorf("could not push private configuration into Configuration Provider: %s", err.Error())
 			}
 
@@ -332,6 +330,10 @@ func (cp *Processor) Process(
 	}
 
 	return err
+}
+
+func (cp *Processor) overwriteConfig() bool {
+	return environment.OverwriteConfig() || cp.flags.OverwriteConfig()
 }
 
 func getLocalIP() string {
@@ -593,7 +595,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 				err.Error())
 		}
 
-		if exists && !cp.flags.OverwriteConfig() {
+		if exists && !cp.overwriteConfig() {
 			rawConfig, err := configClient.GetConfiguration(updatableConfig)
 			if err != nil {
 				return fmt.Errorf(
@@ -637,7 +639,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 			}
 
 			var overwriteMessage = ""
-			if exists && cp.flags.OverwriteConfig() {
+			if exists && cp.overwriteConfig() {
 				overwriteMessage = "(overwritten)"
 			}
 			cp.lc.Infof("Custom Config loaded from file and pushed to Configuration Provider %s", overwriteMessage)
