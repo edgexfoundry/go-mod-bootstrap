@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright 2022 Intel Inc.
  * Copyright (C) 2023 Intel Corporation
+ * Copyright (C) 2024 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -172,6 +173,16 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 					},
 					container.IntervalActionClientName: func(get di.Get) interface{} {
 						return clients.NewIntervalActionClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+					},
+				})
+
+			case common.SupportCronSchedulerServiceKey:
+				dic.Update(di.ServiceConstructorMap{
+					container.ScheduleJobClientName: func(get di.Get) interface{} {
+						return clients.NewScheduleJobClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+					},
+					container.ScheduleActionRecordClientName: func(get di.Get) interface{} {
+						return clients.NewScheduleActionRecordClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 

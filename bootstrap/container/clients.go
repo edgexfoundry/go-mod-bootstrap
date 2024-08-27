@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2022 Intel Corporation
+// Copyright (C) 2024 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -178,4 +179,28 @@ func DeviceServiceCommandClientFrom(get di.Get) interfaces.DeviceServiceCommandC
 	}
 
 	return client
+}
+
+// ScheduleJobClientName contains the name of the ScheduleJobClient's implementation in the DIC.
+var ScheduleJobClientName = di.TypeInstanceToName((*interfaces.ScheduleJobClient)(nil))
+
+// ScheduleJobClientFrom helper function queries the DIC and returns the ScheduleJobClient's implementation.
+func ScheduleJobClientFrom(get di.Get) interfaces.ScheduleJobClient {
+	if get(ScheduleJobClientName) == nil {
+		return nil
+	}
+
+	return get(ScheduleJobClientName).(interfaces.ScheduleJobClient)
+}
+
+// ScheduleActionRecordClientName contains the name of the ScheduleActionRecordClient's implementation in the DIC.
+var ScheduleActionRecordClientName = di.TypeInstanceToName((*interfaces.ScheduleActionRecordClient)(nil))
+
+// ScheduleActionRecordClientFrom helper function queries the DIC and returns the ScheduleActionRecordClient's implementation.
+func ScheduleActionRecordClientFrom(get di.Get) interfaces.ScheduleActionRecordClient {
+	if get(ScheduleActionRecordClientName) == nil {
+		return nil
+	}
+
+	return get(ScheduleActionRecordClientName).(interfaces.ScheduleActionRecordClient)
 }
