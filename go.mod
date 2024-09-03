@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.12
+	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.14
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.43
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.31
 	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.16
@@ -106,7 +106,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible // indirect
-	github.com/spf13/cast v1.6.0 // indirect
+	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.3.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
