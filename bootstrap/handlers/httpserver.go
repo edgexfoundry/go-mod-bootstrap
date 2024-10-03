@@ -221,7 +221,7 @@ func (b *HttpServer) BootstrapHandler(
 			for t.HasNotElapsed() {
 				ln, listenErr := zitiCtx.Listen(ozServiceName)
 				if listenErr != nil {
-					err = fmt.Errorf("could not bind service " + ozServiceName + ": " + listenErr.Error())
+					err = fmt.Errorf("could not bind service %s: %s", ozServiceName, listenErr.Error())
 					t.SleepForInterval()
 				} else {
 					zc.c = &zitiCtx
