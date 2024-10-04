@@ -11,7 +11,7 @@ require (
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.14
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/labstack/echo/v4 v4.11.4
+	github.com/labstack/echo/v4 v4.12.0
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/openziti/sdk-golang v0.23.43
