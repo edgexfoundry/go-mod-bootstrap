@@ -7,3 +7,4 @@ updates:
       interval: "daily"
     ignore:
       - dependency-name: "github.com/edgexfoundry/go-mod-core-contracts/v3"
+      - dependency-name: "github.com/edgexfoundry/go-mod-messaging/v3"
