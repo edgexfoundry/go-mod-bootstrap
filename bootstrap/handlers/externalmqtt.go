@@ -17,10 +17,10 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/messaging"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/messaging"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 )
 
 type ExternalMQTT struct {

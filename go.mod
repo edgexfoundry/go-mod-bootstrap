@@ -1,14 +1,14 @@
-module github.com/edgexfoundry/go-mod-bootstrap/v3
+module github.com/edgexfoundry/go-mod-bootstrap/v4
 
 go 1.23
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.19
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.50
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.40
-	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.18
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.18
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.1
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.1
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.1
+	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.1
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.12.0

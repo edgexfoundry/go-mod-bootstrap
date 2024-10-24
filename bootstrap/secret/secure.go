@@ -27,18 +27,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg"
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/common"
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/runtimetokenprovider"
-	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/runtimetokenprovider"
+	"github.com/edgexfoundry/go-mod-secrets/v4/secrets"
 )
 
 const (
@@ -253,31 +253,10 @@ func (p *SecureProvider) SecretsLastUpdated() time.Time {
 
 // GetAccessToken returns the access token for the requested token type.
 func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
-	if tokenType == TokenTypeConsul {
-		p.securityConsulTokensRequested.Inc(1)
-		started := time.Now()
-		defer p.securityConsulTokenDuration.UpdateSince(started)
-	}
-
 	switch tokenType {
-	case TokenTypeConsul:
-		token, err := p.secretClient.GenerateConsulToken(serviceKey)
-
-		retry, err := p.reloadTokenOnAuthError(err)
-		if retry {
-			// Retry with potential new token
-			token, err = p.secretClient.GenerateConsulToken(serviceKey)
-		}
-
-		if err != nil {
-			return "", err
-		}
-
-		return token, nil
-	case TokenTypeKeeper:
+	case TokenTypeConsul, TokenTypeKeeper:
 		// return empty token for Keeper as we don't need a token to access to it in security mode
 		return "", nil
-
 	default:
 		return "", fmt.Errorf("invalid access token type '%s'", tokenType)
 	}

@@ -23,13 +23,13 @@ import (
 	"testing"
 	"time"
 
-	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
+	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger/mocks"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
 
-	"github.com/edgexfoundry/go-mod-configuration/v3/pkg/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-configuration/v4/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -480,7 +480,7 @@ func TestOverrideSecretStoreInfo(t *testing.T) {
 
 	expectedOverrideCount := 3
 	expectedAuthToken := "123456=789"
-	expectedHost := "edgex-vault"
+	expectedHost := "edgex-secret-store"
 	expectedPort := 8200
 
 	wrapper := struct {

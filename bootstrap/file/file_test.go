@@ -7,10 +7,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 	"github.com/stretchr/testify/assert"
 )
 

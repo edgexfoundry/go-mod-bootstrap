@@ -11,9 +11,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger/mocks"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"

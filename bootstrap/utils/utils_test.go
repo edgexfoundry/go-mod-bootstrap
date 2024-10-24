@@ -19,7 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -172,13 +173,13 @@ func TestRemoveUnusedSettings(t *testing.T) {
 	}
 
 	keys := map[string]any{
-		"edgex/v3/app-something/Writable/StoreAndForward/Enabled":       nil,
-		"edgex/v3/app-something/Writable/StoreAndForward/RetryInterval": nil,
-		"edgex/v3/app-something/Writable/StoreAndForward/MaxRetryCount": nil,
-		"edgex/v3/app-something/Trigger/Type":                           nil,
+		common.ConfigStemAll + "/app-something/Writable/StoreAndForward/Enabled":       nil,
+		common.ConfigStemAll + "/app-something/Writable/StoreAndForward/RetryInterval": nil,
+		common.ConfigStemAll + "/app-something/Writable/StoreAndForward/MaxRetryCount": nil,
+		common.ConfigStemAll + "/app-something/Trigger/Type":                           nil,
 	}
 
-	actual, err := RemoveUnusedSettings(testConfig, "edgex/v3/app-something", keys)
+	actual, err := RemoveUnusedSettings(testConfig, common.ConfigStemAll+"/app-something", keys)
 
 	require.NoError(t, err)
 	require.NotNil(t, actual)

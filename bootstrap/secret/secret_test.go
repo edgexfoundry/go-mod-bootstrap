@@ -24,16 +24,16 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v4/config"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader/mocks"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/authtokenloader/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -169,7 +169,7 @@ func TestAddPrefix(t *testing.T) {
 
 func TestBuildSecretStoreConfig(t *testing.T) {
 	expectedServiceKey := "unit-test"
-	expectedHost := "edgex-vault"
+	expectedHost := "edgex-secret-store"
 	expectedPort := 8201
 	expectedTokenFile := "/token.json"
 	expectedRuntimeTokenProviderEnabled := true

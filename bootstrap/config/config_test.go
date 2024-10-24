@@ -26,17 +26,17 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-configuration/v3/configuration"
-	"github.com/edgexfoundry/go-mod-configuration/v3/configuration/mocks"
-	"github.com/edgexfoundry/go-mod-configuration/v3/pkg/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/flags"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	"github.com/edgexfoundry/go-mod-configuration/v4/configuration"
+	"github.com/edgexfoundry/go-mod-configuration/v4/configuration/mocks"
+	"github.com/edgexfoundry/go-mod-configuration/v4/pkg/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -215,7 +215,7 @@ func TestLoadCommonConfig(t *testing.T) {
 			providerClientMock.On("IsAlive").Return(tc.isAlive)
 			serviceConfigMock := ConfigurationMockStruct{}
 			if tc.isAlive {
-				providerClientMock.On("GetConfigurationValueByFullPath", "edgex/v3/core-common-config-bootstrapper/IsCommonConfigReady").Return(tc.isCommonConfigReady, tc.commonConfigReadyErr)
+				providerClientMock.On("GetConfigurationValueByFullPath", common.ConfigStemAll+"/core-common-config-bootstrapper/IsCommonConfigReady").Return(tc.isCommonConfigReady, tc.commonConfigReadyErr)
 			}
 			ccReady, err := strconv.ParseBool(string(tc.isCommonConfigReady))
 			if err == nil && ccReady {
@@ -227,14 +227,14 @@ func TestLoadCommonConfig(t *testing.T) {
 				switch tc.serviceType {
 				case config.ServiceTypeApp:
 					configKeys = []string{
-						"edgex/v3/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/Enabled",
-						"edgex/v3/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/RetryInterval",
-						"edgex/v3/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/MaxRetryCount",
+						common.ConfigStemAll + "/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/Enabled",
+						common.ConfigStemAll + "/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/RetryInterval",
+						common.ConfigStemAll + "/core-common-config-bootstrapper/app-services/Writable/StoreAndForward/MaxRetryCount",
 					}
 				case config.ServiceTypeDevice:
 					configKeys = []string{
-						"edgex/v3/core-common-config-bootstrapper/device-services/Writable/Telemetry/Metrics/EventsSent",
-						"edgex/v3/core-common-config-bootstrapper/device-services/Writable/Telemetry/Metrics/ReadingsSent",
+						common.ConfigStemAll + "/core-common-config-bootstrapper/device-services/Writable/Telemetry/Metrics/EventsSent",
+						common.ConfigStemAll + "/core-common-config-bootstrapper/device-services/Writable/Telemetry/Metrics/ReadingsSent",
 					}
 				}
 

@@ -22,23 +22,23 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/secret"
 
 	"github.com/labstack/echo/v4"
 	"github.com/openziti/sdk-golang/ziti/edge"
 )
 
-// VaultAuthenticationHandlerFunc prefixes an existing HandlerFunc
-// with a Vault-based JWT authentication check.  Usage:
+// SecretStoreAuthenticationHandlerFunc prefixes an existing HandlerFunc
+// with a OpenBao-based JWT authentication check.  Usage:
 //
 //	 authenticationHook := handlers.NilAuthenticationHandlerFunc()
 //	 if secret.IsSecurityEnabled() {
 //			lc := container.LoggingClientFrom(dic.Get)
 //	     secretProvider := container.SecretProviderFrom(dic.Get)
-//	     authenticationHook = handlers.VaultAuthenticationHandlerFunc(secretProvider, lc)
+//	     authenticationHook = handlers.SecretStoreAuthenticationHandlerFunc(secretProvider, lc)
 //	 }
 //	 For optionally-authenticated requests
 //	 r.HandleFunc("path", authenticationHook(handlerFunc)).Methods(http.MethodGet)
@@ -48,7 +48,7 @@ import (
 //
 // For typical usage, it is preferred to use AutoConfigAuthenticationFunc which
 // will automatically select between a real and a fake JWT validation handler.
-func VaultAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) echo.MiddlewareFunc {
+func SecretStoreAuthenticationHandlerFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) echo.MiddlewareFunc {
 	return func(inner echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			r := c.Request()
@@ -116,7 +116,7 @@ func AutoConfigAuthenticationFunc(secretProvider interfaces.SecretProviderExt, l
 	disableJWTValidation, _ := strconv.ParseBool(os.Getenv("EDGEX_DISABLE_JWT_VALIDATION"))
 	authenticationHook := NilAuthenticationHandlerFunc()
 	if secret.IsSecurityEnabled() && !disableJWTValidation {
-		authenticationHook = VaultAuthenticationHandlerFunc(secretProvider, lc)
+		authenticationHook = SecretStoreAuthenticationHandlerFunc(secretProvider, lc)
 	}
 	return authenticationHook
 }

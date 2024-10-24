@@ -24,21 +24,21 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/registration"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/flags"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/registration"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/secret"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/utils"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 
-	"github.com/edgexfoundry/go-mod-registry/v3/registry"
+	"github.com/edgexfoundry/go-mod-registry/v4/registry"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/models"
 )
 
 // Deferred defines the signature of a function returned by RunAndReturnWaitGroup that should be executed via defer.

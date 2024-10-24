@@ -26,10 +26,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	mocks2 "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	mocks2 "github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger/mocks"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces/mocks"
 )
 
 func TestNewManager(t *testing.T) {

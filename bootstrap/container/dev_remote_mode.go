@@ -15,7 +15,7 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 )
 
 type DevRemoteMode struct {

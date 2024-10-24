@@ -21,10 +21,10 @@ import (
 
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 )
 
 type manager struct {

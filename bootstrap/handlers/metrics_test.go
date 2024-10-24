@@ -23,13 +23,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	mocks2 "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	mocks2 "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/v4/messaging/mocks"
 )
 
 func TestServiceMetrics_BootstrapHandler(t *testing.T) {
