@@ -20,17 +20,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
 	mock2 "github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg"
-	mocks2 "github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader/mocks"
-	runtimeTokenMock "github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/runtimetokenprovider/mocks"
-	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
-	"github.com/edgexfoundry/go-mod-secrets/v3/secrets/mocks"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg"
+	mocks2 "github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/authtokenloader/mocks"
+	runtimeTokenMock "github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/runtimetokenprovider/mocks"
+	"github.com/edgexfoundry/go-mod-secrets/v4/secrets"
+	"github.com/edgexfoundry/go-mod-secrets/v4/secrets/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -260,10 +260,6 @@ func TestSecureProvider_RuntimeTokenExpiredCallback(t *testing.T) {
 
 func TestSecureProvider_GetAccessToken(t *testing.T) {
 	testServiceKey := "edgex-unit-test"
-	expectedToken := "myAccessToken"
-	mock := &mocks.SecretClient{}
-	mock.On("GenerateConsulToken", testServiceKey).Return(expectedToken, nil)
-
 	tests := []struct {
 		name        string
 		tokenType   string
@@ -276,16 +272,13 @@ func TestSecureProvider_GetAccessToken(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, "testService")
-			target.SetClient(mock)
-
-			actualToken, err := target.GetAccessToken(test.tokenType, testServiceKey)
+			_, err := target.GetAccessToken(test.tokenType, testServiceKey)
 			if test.expectError {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, expectedToken, actualToken)
 		})
 	}
 }

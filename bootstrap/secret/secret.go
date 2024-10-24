@@ -22,21 +22,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v4/secrets"
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/authtokenloader"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/fileioperformer"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/token/runtimetokenprovider"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/authtokenloader"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/fileioperformer"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/runtimetokenprovider"
 )
 
 // secret service Metric Names
@@ -182,7 +182,7 @@ func getSecretConfig(secretStoreInfo *config.SecretStoreInfo,
 	lc logger.LoggingClient,
 	securityRuntimeSecretTokenDuration gometrics.Timer) (types.SecretConfig, error) {
 	secretConfig := types.SecretConfig{
-		Type:                 secretStoreInfo.Type, // Type of SecretStore implementation, i.e. Vault
+		Type:                 secretStoreInfo.Type, // Type of SecretStore implementation, i.e. OpenBao
 		Host:                 secretStoreInfo.Host,
 		Port:                 secretStoreInfo.Port,
 		BasePath:             addEdgeXSecretNamePrefix(secretStoreInfo.StoreName),

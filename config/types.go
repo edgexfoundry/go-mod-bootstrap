@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	"github.com/edgexfoundry/go-mod-secrets/v3/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/v3/secrets"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v4/secrets"
 )
 
 const (
@@ -178,7 +178,7 @@ type SecretStoreInfo struct {
 
 func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 	return SecretStoreInfo{
-		Type:                    secrets.Vault,
+		Type:                    secrets.DefaultSecretStore,
 		Protocol:                "http",
 		Host:                    "localhost",
 		Port:                    8200,
