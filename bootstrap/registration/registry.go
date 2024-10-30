@@ -42,33 +42,7 @@ func createRegistryClient(
 	lc logger.LoggingClient,
 	dic *di.Container) (registry.Client, error) {
 	bootstrapConfig := serviceConfig.GetBootstrap()
-
-	var err error
-	var accessToken string
-	var getAccessToken registryTypes.GetAccessTokenCallback
-
 	secretProvider := container.SecretProviderExtFrom(dic.Get)
-	// secretProvider will be nil if not configured to be used. In that case, no access token required.
-	if secretProvider != nil {
-		// Define the callback function to retrieve the Access Token
-		getAccessToken = func() (string, error) {
-			accessToken, err = secretProvider.GetAccessToken(bootstrapConfig.Registry.Type, serviceKey)
-			if err != nil {
-				return "", fmt.Errorf(
-					"failed to get Registry (%s) access token: %s",
-					bootstrapConfig.Registry.Type,
-					err.Error())
-			}
-
-			lc.Infof("Using Registry access token of length %d", len(accessToken))
-			return accessToken, nil
-		}
-
-		accessToken, err = getAccessToken()
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	if len(bootstrapConfig.Registry.Host) == 0 || bootstrapConfig.Registry.Port == 0 || len(bootstrapConfig.Registry.Type) == 0 {
 		return nil, errors.New("Registry configuration is empty or incomplete, missing common config? Use -cp or -cc flags for common config.")
@@ -78,14 +52,12 @@ func createRegistryClient(
 		Host:            bootstrapConfig.Registry.Host,
 		Port:            bootstrapConfig.Registry.Port,
 		Type:            bootstrapConfig.Registry.Type,
-		AccessToken:     accessToken,
 		ServiceKey:      serviceKey,
 		ServiceHost:     bootstrapConfig.Service.Host,
 		ServicePort:     bootstrapConfig.Service.Port,
 		ServiceProtocol: config.DefaultHttpProtocol,
 		CheckInterval:   bootstrapConfig.Service.HealthCheckInterval,
 		CheckRoute:      common.ApiPingRoute,
-		GetAccessToken:  getAccessToken,
 		AuthInjector:    secret.NewJWTSecretProvider(secretProvider),
 	}
 

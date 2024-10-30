@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	DefaultConfigProvider = "consul.http://localhost:8500"
+	DefaultConfigProvider = "keeper.http://localhost:59890"
 	DefaultConfigFile     = "configuration.yaml"
 )
 
@@ -175,7 +175,7 @@ func (d *Default) helpCallback() {
 		"Usage: %s [options]\n"+
 			"Server Options:\n"+
 			"    -cp, --configProvider        Indicates to use Configuration Provider service at specified URL.\n"+
-			"                                 URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500\n"+
+			"                                 URL Format: {type}.{protocol}://{host}:{port} ex: keeper.http://localhost:59890\n"+
 			"    -cc, --commonConfig          Takes the location where the common configuration is loaded from when\n"+
 			"                                 not using the Configuration Provider\n"+
 			"    -o, --overwrite              Overwrite configuration in provider with local configuration\n"+

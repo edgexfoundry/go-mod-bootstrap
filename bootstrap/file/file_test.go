@@ -25,7 +25,7 @@ func TestLoadFile(t *testing.T) {
 		ExpectedErr        string
 		expectedSecretData map[string]string
 	}{
-		{"Valid - load from YAML file", path.Join("..", "config", "testdata", "configuration.yaml"), 4533, "", nil},
+		{"Valid - load from YAML file", path.Join("..", "config", "testdata", "configuration.yaml"), 4446, "", nil},
 		{"Valid - load from JSON file", path.Join(".", "testdata", "configuration.json"), 142, "", nil},
 		{"Valid - load from HTTP", "http://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", 4533, "", nil},
 		{"Valid - load from HTTPS", "https://raw.githubusercontent.com/edgexfoundry/go-mod-bootstrap/main/bootstrap/config/testdata/configuration.yaml", 4533, "", nil},

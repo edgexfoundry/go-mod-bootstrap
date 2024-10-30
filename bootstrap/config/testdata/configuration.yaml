@@ -17,8 +17,6 @@ all-services:
         # Common Security Service Metrics
         SecuritySecretsRequested: false
         SecuritySecretsStored: false
-        SecurityConsulTokensRequested: false
-        SecurityConsulTokenDuration: false
 #     Tags: # Contains the service level tags to be attached to all the service's metrics
       #  Gateway: "my-iot-gateway" # Tag must be added here or via Consul Env Override can only change existing value, not added new ones.
       
@@ -40,8 +38,8 @@ all-services:
 
   Registry:
     Host: "localhost"
-    Port: 8500
-    Type: "consul"
+    Port: 59890
+    Type: "keeper"
   
   Database:
     Host: "localhost"

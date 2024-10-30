@@ -43,8 +43,6 @@ import (
 const (
 	secretsRequestedMetricName             = "SecuritySecretsRequested"
 	secretsStoredMetricName                = "SecuritySecretsStored"
-	securityConsulTokensRequestedName      = "SecurityConsulTokensRequested"
-	securityConsulTokenDurationName        = "SecurityConsulTokenDuration"
 	securityRuntimeSecretTokenDurationName = "SecurityRuntimeSecretTokenDuration"
 	securityGetSecretDurationName          = "SecurityGetSecretDuration"
 )

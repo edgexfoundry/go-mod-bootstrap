@@ -39,8 +39,8 @@ func TestCreateRegistryClient(t *testing.T) {
 		},
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 	}
 

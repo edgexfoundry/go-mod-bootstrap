@@ -26,12 +26,12 @@ import (
 
 const (
 	envKeyConfigUrl = "EDGEX_CONFIG_PROVIDER"
-	goodUrlValue    = "consul.http://localhost:8500"
+	goodUrlValue    = "keeper.http://localhost:59890"
 	badUrlValue     = "Not a url"
 
-	expectedTypeValue     = "consul"
+	expectedTypeValue     = "keeper"
 	expectedHostValue     = "localhost"
-	expectedPortValue     = 8500
+	expectedPortValue     = 59890
 	expectedProtocolValue = "http"
 )
 

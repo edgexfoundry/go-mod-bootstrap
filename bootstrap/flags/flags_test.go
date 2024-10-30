@@ -71,7 +71,7 @@ func TestNewDefaultForCP(t *testing.T) {
 }
 
 func TestNewOverrideForCP(t *testing.T) {
-	expectedConfigProviderUrl := "consul.http://docker-core-consul:8500"
+	expectedConfigProviderUrl := "keeper.http://docker-core-keeper:59890"
 
 	actual := newSUT([]string{"-cp=" + expectedConfigProviderUrl})
 
@@ -85,7 +85,7 @@ func TestNewDefaultForConfigProvider(t *testing.T) {
 }
 
 func TestNewOverrideConfigProvider(t *testing.T) {
-	expectedConfigProviderUrl := "consul.http://docker-core-consul:8500"
+	expectedConfigProviderUrl := "keeper.http://docker-core-keeper:59890"
 
 	actual := newSUT([]string{"-configProvider=" + expectedConfigProviderUrl})
 
@@ -107,10 +107,10 @@ func TestConfigDirEquals(t *testing.T) {
 }
 
 func TestConfigCommonScenario(t *testing.T) {
-	expectedConfigProviderUrl := "consul.http://edgex-core-consul:8500"
+	expectedConfigProviderUrl := "keeper.http://docker-core-keeper:59890"
 	expectedConfigDirectory := "/res"
 
-	actual := newSUT([]string{"-cp=consul.http://edgex-core-consul:8500", "--registry", "--configDir=/res"})
+	actual := newSUT([]string{"-cp=keeper.http://docker-core-keeper:59890", "--registry", "--configDir=/res"})
 
 	assert.Equal(t, expectedConfigProviderUrl, actual.ConfigProviderUrl())
 	assert.True(t, actual.UseRegistry())
