@@ -35,12 +35,12 @@ import (
 )
 
 const (
-	goodUrlValue = "consul.http://localhost:8500"
+	goodUrlValue = "keeper.http://localhost:59890"
 	badUrlValue  = "Not a url"
 
-	expectedTypeValue     = "consul"
+	expectedTypeValue     = "keeper"
 	expectedHostValue     = "localhost"
-	expectedPortValue     = 8500
+	expectedPortValue     = 59890
 	expectedProtocolValue = "http"
 
 	defaultHostValue     = "defaultHost"
@@ -364,8 +364,8 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 	}{
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),
@@ -374,8 +374,8 @@ func TestOverrideConfigurationExactCase(t *testing.T) {
 	// only all upper case environment variable names now, so none of these overrides should have worked.
 	expectedOverrideCount := 0
 
-	expectedHost := "edgex-core-consul"
-	expectedPort := 98500
+	expectedHost := "edgex-core-keeper"
+	expectedPort := 59890
 	expectedFloatVal := float32(24.234)
 	expectedAuthType := "secure"
 
@@ -397,7 +397,7 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 	_, lc := initializeTest()
 
 	expectedOverrideCount := 4
-	expectedRegistryHost := "edgex-core-consul"
+	expectedRegistryHost := "edgex-core-keeper"
 	expectedCoreDataHost := "edgex-core-data"
 	expectedList := []string{"joe", "mary", "bob"}
 	expectedFloatVal := float32(24.234)
@@ -412,8 +412,8 @@ func TestOverrideConfigurationUppercase(t *testing.T) {
 	}{
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),
@@ -458,8 +458,8 @@ func TestOverrideConfigurationWithBlankValue(t *testing.T) {
 	}{
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 		List:     []string{"val1"},
 		FloatVal: float32(11.11),

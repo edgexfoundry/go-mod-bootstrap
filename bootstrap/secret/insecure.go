@@ -145,12 +145,6 @@ func (p *InsecureProvider) SecretsLastUpdated() time.Time {
 	return p.lastUpdated
 }
 
-// GetAccessToken returns the AccessToken for the specified type, which in insecure mode is not need
-// so just returning an empty token.
-func (p *InsecureProvider) GetAccessToken(_ string, _ string) (string, error) {
-	return "", nil
-}
-
 // HasSecret returns true if the service's SecretStore contains a secret at the specified secretName.
 func (p *InsecureProvider) HasSecret(secretName string) (bool, error) {
 	insecureSecrets := p.configuration.GetInsecureSecrets()

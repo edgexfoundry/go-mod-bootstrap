@@ -116,9 +116,6 @@ func TestGetSecretNamesChanged(t *testing.T) {
 }
 
 func TestLoadCommonConfig(t *testing.T) {
-	getAccessToken := func() (string, error) {
-		return "", nil
-	}
 	// set up configs for use in tests
 	serviceConfig := ConfigurationMockStruct{
 		Writable: WritableInfo{
@@ -126,8 +123,8 @@ func TestLoadCommonConfig(t *testing.T) {
 		},
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 	}
 
@@ -208,7 +205,6 @@ func TestLoadCommonConfig(t *testing.T) {
 			providerClientCreator := func(logger.LoggingClient,
 				string,
 				string,
-				types.GetAccessTokenCallback,
 				types.ServiceConfig) (configuration.Client, error) {
 				return providerClientMock, tc.providerClientErr
 			}
@@ -241,7 +237,7 @@ func TestLoadCommonConfig(t *testing.T) {
 				providerClientMock.On("GetConfigurationKeys", mock.Anything).Return(configKeys, nil).Once()
 			}
 			// call load common config
-			err = proc.loadCommonConfig(common.ConfigStemAll, getAccessToken, &ProviderInfo{}, &serviceConfigMock, tc.serviceType, providerClientCreator)
+			err = proc.loadCommonConfig(common.ConfigStemAll, &ProviderInfo{}, &serviceConfigMock, tc.serviceType, providerClientCreator)
 			// make assertions
 			providerClientMock.AssertExpectations(t)
 			require.NotNil(t, cancel)

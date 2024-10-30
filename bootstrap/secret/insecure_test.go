@@ -237,14 +237,6 @@ func TestInsecureProvider_SecretsUpdated_SecretsLastUpdated(t *testing.T) {
 	assert.True(t, current.After(previous))
 }
 
-func TestInsecureProvider_GetAccessToken(t *testing.T) {
-	testMocks := newMockObjects()
-	target := NewInsecureProvider(nil, testMocks.lc, testMocks.dic)
-	actualToken, err := target.GetAccessToken(TokenTypeConsul, "my-service-key")
-	require.NoError(t, err)
-	assert.Len(t, actualToken, 0)
-}
-
 func TestInsecureProvider_GetSelfJWT(t *testing.T) {
 	testMocks := newMockObjects()
 	target := NewInsecureProvider(nil, testMocks.lc, testMocks.dic)

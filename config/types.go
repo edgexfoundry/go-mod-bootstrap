@@ -123,13 +123,13 @@ type ConfigProviderInfo struct {
 	Type string
 }
 
-// RegistryInfo defines the type and location (via host/port) of the desired service registry (e.g. Consul, Eureka)
+// RegistryInfo defines the type and location (via host/port) of the desired service registry (e.g. keeper, Eureka)
 type RegistryInfo struct {
 	// Host is the host name where the Registry client is running
 	Host string
 	// Port is the port number that the Registry client is listening
 	Port int
-	// Type is the type of Registry client to use, i.e. 'consul'
+	// Type is the type of Registry client to use, i.e. 'keeper'
 	Type string
 }
 

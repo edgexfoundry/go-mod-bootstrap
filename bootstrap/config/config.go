@@ -171,18 +171,13 @@ func (cp *Processor) Process(
 			configProviderInfo.SetHost(remoteHosts[1])
 		}
 
-		getAccessToken, err := cp.getAccessTokenCallback(serviceKey, secretProvider, err, configProviderInfo)
-		if err != nil {
-			return err
-		}
-
-		if err := cp.loadCommonConfig(configStem, getAccessToken, configProviderInfo, serviceConfig, serviceType, CreateProviderClient); err != nil {
+		if err := cp.loadCommonConfig(configStem, configProviderInfo, serviceConfig, serviceType, CreateProviderClient); err != nil {
 			return err
 		}
 
 		cp.lc.Info("Common configuration loaded from the Configuration Provider. No overrides applied")
 
-		privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
 		}
@@ -405,7 +400,6 @@ type createProviderCallback func(
 	logger.LoggingClient,
 	string,
 	string,
-	types.GetAccessTokenCallback,
 	types.ServiceConfig) (configuration.Client, error)
 
 // loadCommonConfig will pull up to two separate common configs from the config provider
@@ -414,7 +408,6 @@ type createProviderCallback func(
 // if there are separate configs, these will get merged into the serviceConfig
 func (cp *Processor) loadCommonConfig(
 	configStem string,
-	getAccessToken types.GetAccessTokenCallback,
 	configProviderInfo *ProviderInfo,
 	serviceConfig interfaces.Configuration,
 	serviceType string,
@@ -424,7 +417,7 @@ func (cp *Processor) loadCommonConfig(
 	// check that common config is loaded into the provider
 	// this need a separate config provider client here because the config ready variable is stored at the common config level
 	// load the all services section of the common config
-	cp.commonConfigClient, err = createProvider(cp.lc, utils.BuildBaseKey(common.CoreCommonConfigServiceKey, allServicesKey), configStem, getAccessToken, configProviderInfo.ServiceConfig())
+	cp.commonConfigClient, err = createProvider(cp.lc, utils.BuildBaseKey(common.CoreCommonConfigServiceKey, allServicesKey), configStem, configProviderInfo.ServiceConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create provider for %s: %s", allServicesKey, err.Error())
 	}
@@ -451,7 +444,7 @@ func (cp *Processor) loadCommonConfig(
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", appServicesKey, err.Error())
 		}
-		cp.appConfigClient, err = createProvider(cp.lc, serviceTypeSectionKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		cp.appConfigClient, err = createProvider(cp.lc, serviceTypeSectionKey, configStem, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create provider for %s: %s", appServicesKey, err.Error())
 		}
@@ -471,7 +464,7 @@ func (cp *Processor) loadCommonConfig(
 		if err != nil {
 			return fmt.Errorf("failed to copy the configuration structure for %s: %s", deviceServicesKey, err.Error())
 		}
-		cp.deviceConfigClient, err = createProvider(cp.lc, serviceTypeSectionKey, configStem, getAccessToken, configProviderInfo.ServiceConfig())
+		cp.deviceConfigClient, err = createProvider(cp.lc, serviceTypeSectionKey, configStem, configProviderInfo.ServiceConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create provider for %s: %s", deviceServicesKey, err.Error())
 		}
@@ -550,32 +543,6 @@ func (cp *Processor) loadCommonConfigFromFile(
 	}
 
 	return err
-}
-
-func (cp *Processor) getAccessTokenCallback(serviceKey string, secretProvider interfaces.SecretProviderExt, err error, configProviderInfo *ProviderInfo) (types.GetAccessTokenCallback, error) {
-	var accessToken string
-	var getAccessToken types.GetAccessTokenCallback
-
-	// secretProvider will be nil if not configured to be used. In that case, no access token required.
-	if secretProvider != nil {
-		// Define the callback function to retrieve the Access Token
-		getAccessToken = func() (string, error) {
-			accessToken, err = secretProvider.GetAccessToken(configProviderInfo.serviceConfig.Type, serviceKey)
-			if err != nil {
-				return "", fmt.Errorf(
-					"failed to get Configuration Provider (%s) access token: %s",
-					configProviderInfo.serviceConfig.Type,
-					err.Error())
-			}
-
-			cp.lc.Debugf("Using Configuration Provider access token of length %d", len(accessToken))
-			return accessToken, nil
-		}
-
-	} else {
-		cp.lc.Debug("Not configured to use Config Provider access token")
-	}
-	return getAccessToken, err
 }
 
 // LoadCustomConfigSection loads the specified custom configuration section from file or Configuration provider.
@@ -743,10 +710,7 @@ func CreateProviderClient(
 	lc logger.LoggingClient,
 	serviceKey string,
 	configStem string,
-	getAccessToken types.GetAccessTokenCallback,
 	providerConfig types.ServiceConfig) (configuration.Client, error) {
-
-	var err error
 
 	// The passed in configStem already contains the trailing '/' in most cases so must verify and add if missing.
 	if configStem[len(configStem)-1] != '/' {
@@ -755,13 +719,6 @@ func CreateProviderClient(
 
 	// Note: Can't use filepath.Join as it uses `\` on Windows which Consul doesn't recognize as a path separator.
 	providerConfig.BasePath = fmt.Sprintf("%s%s", configStem, serviceKey)
-	if getAccessToken != nil {
-		providerConfig.AccessToken, err = getAccessToken()
-		if err != nil {
-			return nil, err
-		}
-		providerConfig.GetAccessToken = getAccessToken
-	}
 
 	lc.Info(fmt.Sprintf(
 		"Using Configuration provider (%s) from: %s with base path of %s",

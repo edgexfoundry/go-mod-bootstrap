@@ -258,31 +258,6 @@ func TestSecureProvider_RuntimeTokenExpiredCallback(t *testing.T) {
 	}
 }
 
-func TestSecureProvider_GetAccessToken(t *testing.T) {
-	testServiceKey := "edgex-unit-test"
-	tests := []struct {
-		name        string
-		tokenType   string
-		expectError bool
-	}{
-		{"Valid", TokenTypeConsul, false},
-		{"Invalid token Type", "bad-type", true},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, "testService")
-			_, err := target.GetAccessToken(test.tokenType, testServiceKey)
-			if test.expectError {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestSecureProvider_seedSecrets(t *testing.T) {
 	allGood := `{"secrets": [{"secretName": "auth","imported": false,"secretData": [{"key": "user1","value": "password1"}]}]}`
 	allGoodExpected := `{"secrets":[{"secretName":"auth","imported":true,"secretData":[]}]}`

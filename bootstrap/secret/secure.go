@@ -42,7 +42,6 @@ import (
 )
 
 const (
-	TokenTypeConsul      = "consul"
 	TokenTypeKeeper      = "keeper"
 	AccessTokenAuthError = "HTTP response with status code 403"
 	//nolint: gosec
@@ -65,8 +64,6 @@ type SecureProvider struct {
 	registeredSecretCallbacks          map[string]func(secretName string)
 	securitySecretsRequested           gometrics.Counter
 	securitySecretsStored              gometrics.Counter
-	securityConsulTokensRequested      gometrics.Counter
-	securityConsulTokenDuration        gometrics.Timer
 	securityRuntimeSecretTokenDuration gometrics.Timer
 	securityGetSecretDuration          gometrics.Timer
 	httpRoundTripper                   http.RoundTripper
@@ -91,8 +88,6 @@ func NewSecureProvider(ctx context.Context, secretStoreInfo *config.SecretStoreI
 		registeredSecretCallbacks:          make(map[string]func(secretName string)),
 		securitySecretsRequested:           gometrics.NewCounter(),
 		securitySecretsStored:              gometrics.NewCounter(),
-		securityConsulTokensRequested:      gometrics.NewCounter(),
-		securityConsulTokenDuration:        gometrics.NewTimer(),
 		securityRuntimeSecretTokenDuration: gometrics.NewTimer(),
 		securityGetSecretDuration:          gometrics.NewTimer(),
 	}
@@ -249,17 +244,6 @@ func (p *SecureProvider) SecretsUpdated() {
 // SecretsLastUpdated returns the last time secure secrets were updated
 func (p *SecureProvider) SecretsLastUpdated() time.Time {
 	return p.lastUpdated
-}
-
-// GetAccessToken returns the access token for the requested token type.
-func (p *SecureProvider) GetAccessToken(tokenType string, serviceKey string) (string, error) {
-	switch tokenType {
-	case TokenTypeConsul, TokenTypeKeeper:
-		// return empty token for Keeper as we don't need a token to access to it in security mode
-		return "", nil
-	default:
-		return "", fmt.Errorf("invalid access token type '%s'", tokenType)
-	}
 }
 
 // DefaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
@@ -452,8 +436,6 @@ func (p *SecureProvider) GetMetricsToRegister() map[string]interface{} {
 	return map[string]interface{}{
 		secretsRequestedMetricName:             p.securitySecretsRequested,
 		secretsStoredMetricName:                p.securitySecretsStored,
-		securityConsulTokensRequestedName:      p.securityConsulTokensRequested,
-		securityConsulTokenDurationName:        p.securityConsulTokenDuration,
 		securityRuntimeSecretTokenDurationName: p.securityRuntimeSecretTokenDuration,
 		securityGetSecretDurationName:          p.securityGetSecretDuration,
 	}

@@ -57,10 +57,6 @@ type SecretProviderExt interface {
 	// SecretsUpdated sets the secrets last updated time to current time.
 	SecretsUpdated()
 
-	// GetAccessToken return an access token for the specified token type and service key.
-	// Service key is use as the access token role which must have be previously setup.
-	GetAccessToken(tokenType string, serviceKey string) (string, error)
-
 	// SecretUpdatedAtSecretName performs updates and callbacks for an updated secret or secretName.
 	SecretUpdatedAtSecretName(secretName string)
 

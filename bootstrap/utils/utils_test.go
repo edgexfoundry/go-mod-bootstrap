@@ -68,8 +68,8 @@ func TestMergeMaps(t *testing.T) {
 		},
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 		Trigger: TriggerInfo{},
 	}
@@ -120,8 +120,8 @@ func TestMergeValues(t *testing.T) {
 		},
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 	}
 	require.NotEmpty(t, serviceConfig.Writable.LogLevel)
@@ -241,8 +241,8 @@ func TestDeepCopy(t *testing.T) {
 		},
 		Registry: config.RegistryInfo{
 			Host: "localhost",
-			Port: 8500,
-			Type: "consul",
+			Port: 59890,
+			Type: "keeper",
 		},
 		Clients: map[string]config.ClientInfo{
 			"a": {
