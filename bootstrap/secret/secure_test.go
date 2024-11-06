@@ -17,6 +17,7 @@ package secret
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
@@ -480,17 +481,37 @@ func secretStoreConfig(t *testing.T) *config.SecretStoreInfo {
 }
 
 func TestSecureProvider_GetSelfJWT(t *testing.T) {
+	appServiceKey := "app-test"
+	serviceKey := "testService"
 	sampleJWT := "eyJhbGciOiJFUzM4NCIsImtpZCI6IjE3NzdiMGNmLWEzMmMtYTc2YS05ZTI4LTZiMjcyYzYwYmYyMCJ9.eyJhdWQiOiJGN0Z3VXBjNnV6dDc0Y1JSRkZ2bXRLSWg1RyIsImVkZ2V4LXNlcnZpY2UiOiJjb3JlLWRhdGEiLCJleHAiOjE2NzAwNDIwMTUsImlhdCI6MTY3MDA0MTExNSwiaXNzIjoiL3YxL2lkZW50aXR5L29pZGMiLCJuYW1lc3BhY2UiOiJyb290Iiwic3ViIjoiM2ZhYzcwNmEtMmM4ZS01Yjc4LTI5N2EtOGU4NmIwMmJmZjg1In0.wos1twPPMEDUvNhTJIFe8dX6BmTzh3CutNjaW5PUrWG7KtsNexETRSxL2oIN0kJYomBT6RaHX6NtkOkO4Wf6J_hcSknQ64lVw4gwSCEoX2d_mlcKJArLx9skngF-W2VC"
 
-	mock := &mocks.SecretClient{}
-	mock.On("GetSelfJWT", "testService").Return(sampleJWT, nil)
+	tests := []struct {
+		Name                   string
+		ServiceKey             string
+		OverwriteAppServiceKey bool
+	}{
+		{"Valid - app service with app service key overwrite", appServiceKey, true},
+		{"Valid - app service", appServiceKey, false},
+		{"Valid - other service", serviceKey, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			mock := &mocks.SecretClient{}
+			if tc.OverwriteAppServiceKey {
+				_ = os.Setenv(EnvEdgeXUseCommonAppServiceSecretKey, "true")
+				mock.On("GetSelfJWT", config.ServiceTypeApp).Return(sampleJWT, nil)
+			} else {
+				_ = os.Unsetenv(EnvEdgeXUseCommonAppServiceSecretKey)
+				mock.On("GetSelfJWT", tc.ServiceKey).Return(sampleJWT, nil)
+			}
+			target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, tc.ServiceKey)
+			target.SetClient(mock)
 
-	target := NewSecureProvider(context.Background(), secretStoreConfig(t), logger.MockLogger{}, nil, nil, "testService")
-	target.SetClient(mock)
-
-	actualToken, err := target.GetSelfJWT()
-	require.NoError(t, err)
-	require.Equal(t, sampleJWT, actualToken)
+			actualToken, err := target.GetSelfJWT()
+			require.NoError(t, err)
+			require.Equal(t, sampleJWT, actualToken)
+		})
+	}
 }
 
 func TestSecureProvider_IsJWTValidTrue(t *testing.T) {
