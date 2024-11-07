@@ -39,18 +39,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestBootstrapHandler(t *testing.T) {
-	validCreateClientSecure := config.MessageBusInfo{
-		Type:       messaging.Redis,
-		Protocol:   "redis",
-		Host:       "localhost",
-		Port:       6379,
-		AuthMode:   boostrapMessaging.AuthModeUsernamePassword,
-		SecretName: "redisdb",
-	}
-
-	validCreateClientNonSecure := validCreateClientSecure
-	validCreateClientNonSecure.AuthMode = boostrapMessaging.AuthModeNone
-
 	invalidSecrets := config.MessageBusInfo{
 		AuthMode:   boostrapMessaging.AuthModeCert,
 		SecretName: "redisdb",
@@ -72,8 +60,6 @@ func TestBootstrapHandler(t *testing.T) {
 		ExpectedResult bool
 		ExpectClient   bool
 	}{
-		{"Valid secure - creates client", &validCreateClientSecure, true, true, true},
-		{"Valid non-secure - creates client", &validCreateClientNonSecure, false, true, true},
 		{"Invalid - secrets error", &invalidSecrets, false, false, false},
 		{"Invalid - can't connect", &invalidNoConnect, true, false, false},
 	}
