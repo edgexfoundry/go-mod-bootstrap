@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 func TestBootstrapHandler(t *testing.T) {
 	invalidSecrets := config.MessageBusInfo{
 		AuthMode:   boostrapMessaging.AuthModeCert,
-		SecretName: "redisdb",
+		SecretName: "invalid",
 	}
 
 	invalidNoConnect := config.MessageBusInfo{
@@ -50,7 +50,7 @@ func TestBootstrapHandler(t *testing.T) {
 		Host:       "localhost",
 		Port:       8765,
 		AuthMode:   boostrapMessaging.AuthModeUsernamePassword,
-		SecretName: "redisdb",
+		SecretName: "mqtt-bus",
 	}
 
 	tests := []struct {

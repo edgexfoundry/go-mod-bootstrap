@@ -252,7 +252,7 @@ type BootstrapConfiguration struct {
 type MessageBusInfo struct {
 	// Disabled indicates if the use of the EdgeX MessageBus is disabled.
 	Disabled bool
-	// Indicates the message bus implementation to use, i.e. zero, mqtt, redisstreams...
+	// Indicates the message bus implementation to use, i.e. mqtt, nats...
 	Type string
 	// Protocol indicates the protocol to use when accessing the message bus.
 	Protocol string
@@ -261,8 +261,7 @@ type MessageBusInfo struct {
 	// Port defines the port on which to access the message bus.
 	Port int
 	// AuthMode specifies the type of secure connection to the message bus which are 'none', 'usernamepassword'
-	// 'clientcert' or 'cacert'. Not all option supported by each implementation.
-	// RedisStreams only supports 'none' & 'usernamepassword' while MQTT and NATS support all options.
+	// 'clientcert' or 'cacert'. MQTT and NATS support all options.
 	AuthMode string
 	// SecretName is the name of the secret in the SecretStore that contains the Auth Credentials. The credential are
 	// dynamically loaded using this name and store the Option property below where the implementation expected to
