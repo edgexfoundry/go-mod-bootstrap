@@ -131,30 +131,6 @@ func ProvisionWatcherClientFrom(get di.Get) interfaces.ProvisionWatcherClient {
 	return get(ProvisionWatcherClientName).(interfaces.ProvisionWatcherClient)
 }
 
-// IntervalClientName contains the name of the IntervalClient's implementation in the DIC.
-var IntervalClientName = di.TypeInstanceToName((*interfaces.IntervalClient)(nil))
-
-// IntervalClientFrom helper function queries the DIC and returns the IntervalClient's implementation.
-func IntervalClientFrom(get di.Get) interfaces.IntervalClient {
-	if get(IntervalClientName) == nil {
-		return nil
-	}
-
-	return get(IntervalClientName).(interfaces.IntervalClient)
-}
-
-// IntervalActionClientName contains the name of the IntervalActionClient's implementation in the DIC.
-var IntervalActionClientName = di.TypeInstanceToName((*interfaces.IntervalActionClient)(nil))
-
-// IntervalActionClientFrom helper function queries the DIC and returns the IntervalActionClient's implementation.
-func IntervalActionClientFrom(get di.Get) interfaces.IntervalActionClient {
-	if get(IntervalActionClientName) == nil {
-		return nil
-	}
-
-	return get(IntervalActionClientName).(interfaces.IntervalActionClient)
-}
-
 // DeviceServiceCallbackClientName contains the name of the DeviceServiceCallbackClient instance in the DIC.
 var DeviceServiceCallbackClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCallbackClient)(nil))
 

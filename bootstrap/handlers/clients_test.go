@@ -72,13 +72,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Protocol: "http",
 	}
 
-	subscriberClientInfo := config.ClientInfo{
-		Host:     "localhost",
-		Port:     59861,
-		Protocol: "http",
-	}
-
-	cronSchedulerClientInfo := config.ClientInfo{
+	schedulerClientInfo := config.ClientInfo{
 		Host:     "localhost",
 		Port:     59863,
 		Protocol: "http",
@@ -90,7 +84,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 	registryMock.On("GetServiceEndpoint", common.CoreCommandServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.SupportNotificationsServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.SupportSchedulerServiceKey).Return(types.ServiceEndpoint{}, nil)
-	registryMock.On("GetServiceEndpoint", common.SupportCronSchedulerServiceKey).Return(types.ServiceEndpoint{}, nil)
 
 	registryErrorMock := &registryMocks.Client{}
 	registryErrorMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, errors.New("some error"))
@@ -98,92 +91,84 @@ func TestClientsBootstrapHandler(t *testing.T) {
 	startupTimer := startup.NewTimer(1, 1)
 
 	tests := []struct {
-		Name                    string
-		CoreDataClientInfo      *config.ClientInfo
-		CommandClientInfo       *config.ClientInfo
-		MetadataClientInfo      *config.ClientInfo
-		NotificationClientInfo  *config.ClientInfo
-		SchedulerClientInfo     *config.ClientInfo
-		CronSchedulerClientInfo *config.ClientInfo
-		Registry                registry.Client
-		ExpectedResult          bool
+		Name                   string
+		CoreDataClientInfo     *config.ClientInfo
+		CommandClientInfo      *config.ClientInfo
+		MetadataClientInfo     *config.ClientInfo
+		NotificationClientInfo *config.ClientInfo
+		SchedulerClientInfo    *config.ClientInfo
+		Registry               registry.Client
+		ExpectedResult         bool
 	}{
 		{
-			Name:                    "All ClientsBootstrap",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       &commandHttpClientInfo,
-			MetadataClientInfo:      &metadataClientInfo,
-			NotificationClientInfo:  &notificationClientInfo,
-			SchedulerClientInfo:     &subscriberClientInfo,
-			CronSchedulerClientInfo: &cronSchedulerClientInfo,
-			Registry:                nil,
-			ExpectedResult:          true,
+			Name:                   "All ClientsBootstrap",
+			CoreDataClientInfo:     &coreDataClientInfo,
+			CommandClientInfo:      &commandHttpClientInfo,
+			MetadataClientInfo:     &metadataClientInfo,
+			NotificationClientInfo: &notificationClientInfo,
+			SchedulerClientInfo:    &schedulerClientInfo,
+			Registry:               nil,
+			ExpectedResult:         true,
 		},
 		{
-			Name:                    "All ClientsBootstrap using registry",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       &commandHttpClientInfo,
-			MetadataClientInfo:      &metadataClientInfo,
-			NotificationClientInfo:  &notificationClientInfo,
-			SchedulerClientInfo:     &subscriberClientInfo,
-			CronSchedulerClientInfo: &cronSchedulerClientInfo,
-			Registry:                registryMock,
-			ExpectedResult:          true,
+			Name:                   "All ClientsBootstrap using registry",
+			CoreDataClientInfo:     &coreDataClientInfo,
+			CommandClientInfo:      &commandHttpClientInfo,
+			MetadataClientInfo:     &metadataClientInfo,
+			NotificationClientInfo: &notificationClientInfo,
+			SchedulerClientInfo:    &schedulerClientInfo,
+			Registry:               registryMock,
+			ExpectedResult:         true,
 		},
 		{
-			Name:                    "Core Data Client using registry fails",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       nil,
-			MetadataClientInfo:      nil,
-			NotificationClientInfo:  nil,
-			SchedulerClientInfo:     nil,
-			CronSchedulerClientInfo: nil,
-			Registry:                registryErrorMock,
-			ExpectedResult:          false,
+			Name:                   "Core Data Client using registry fails",
+			CoreDataClientInfo:     &coreDataClientInfo,
+			CommandClientInfo:      nil,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
+			SchedulerClientInfo:    nil,
+			Registry:               registryErrorMock,
+			ExpectedResult:         false,
 		},
 		{
-			Name:                    "No ClientsBootstrap",
-			CoreDataClientInfo:      nil,
-			CommandClientInfo:       nil,
-			MetadataClientInfo:      nil,
-			NotificationClientInfo:  nil,
-			SchedulerClientInfo:     nil,
-			CronSchedulerClientInfo: nil,
-			Registry:                nil,
-			ExpectedResult:          true,
+			Name:                   "No ClientsBootstrap",
+			CoreDataClientInfo:     nil,
+			CommandClientInfo:      nil,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
+			SchedulerClientInfo:    nil,
+			Registry:               nil,
+			ExpectedResult:         true,
 		},
 		{
-			Name:                    "Only Core Data ClientsBootstrap",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       nil,
-			MetadataClientInfo:      nil,
-			NotificationClientInfo:  nil,
-			SchedulerClientInfo:     nil,
-			CronSchedulerClientInfo: nil,
-			Registry:                nil,
-			ExpectedResult:          true,
+			Name:                   "Only Core Data ClientsBootstrap",
+			CoreDataClientInfo:     &coreDataClientInfo,
+			CommandClientInfo:      nil,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
+			SchedulerClientInfo:    nil,
+			Registry:               nil,
+			ExpectedResult:         true,
 		},
 		{
-			Name:                    "Only Metadata ClientsBootstrap",
-			CoreDataClientInfo:      nil,
-			CommandClientInfo:       nil,
-			MetadataClientInfo:      &metadataClientInfo,
-			NotificationClientInfo:  nil,
-			SchedulerClientInfo:     nil,
-			CronSchedulerClientInfo: nil,
-			Registry:                nil,
-			ExpectedResult:          true,
+			Name:                   "Only Metadata ClientsBootstrap",
+			CoreDataClientInfo:     nil,
+			CommandClientInfo:      nil,
+			MetadataClientInfo:     &metadataClientInfo,
+			NotificationClientInfo: nil,
+			SchedulerClientInfo:    nil,
+			Registry:               nil,
+			ExpectedResult:         true,
 		},
 		{
-			Name:                    "Only Messaging based Command ClientsBootstrap",
-			CoreDataClientInfo:      nil,
-			CommandClientInfo:       &commandMessagingClientInfo,
-			MetadataClientInfo:      nil,
-			NotificationClientInfo:  nil,
-			SchedulerClientInfo:     nil,
-			CronSchedulerClientInfo: nil,
-			Registry:                nil,
-			ExpectedResult:          true,
+			Name:                   "Only Messaging based Command ClientsBootstrap",
+			CoreDataClientInfo:     nil,
+			CommandClientInfo:      &commandMessagingClientInfo,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
+			SchedulerClientInfo:    nil,
+			Registry:               nil,
+			ExpectedResult:         true,
 		},
 	}
 
@@ -209,10 +194,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 
 			if test.SchedulerClientInfo != nil {
 				clients[common.SupportSchedulerServiceKey] = test.SchedulerClientInfo
-			}
-
-			if test.CronSchedulerClientInfo != nil {
-				clients[common.SupportCronSchedulerServiceKey] = test.CronSchedulerClientInfo
 			}
 
 			bootstrapConfig := config.BootstrapConfiguration{
@@ -267,8 +248,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			provisionWatcherClient := container.ProvisionWatcherClientFrom(dic.Get)
 			notificationClient := container.NotificationClientFrom(dic.Get)
 			subscriptionClient := container.SubscriptionClientFrom(dic.Get)
-			intervalClient := container.IntervalClientFrom(dic.Get)
-			intervalActionClient := container.IntervalActionClientFrom(dic.Get)
 			scheduleJobClient := container.ScheduleJobClientFrom(dic.Get)
 			scheduleActionRecordClient := container.ScheduleActionRecordClientFrom(dic.Get)
 
@@ -307,14 +286,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			}
 
 			if test.SchedulerClientInfo != nil {
-				assert.NotNil(t, intervalClient)
-				assert.NotNil(t, intervalActionClient)
-			} else {
-				assert.Nil(t, intervalClient)
-				assert.Nil(t, intervalActionClient)
-			}
-
-			if test.CronSchedulerClientInfo != nil {
 				assert.NotNil(t, scheduleJobClient)
 				assert.NotNil(t, scheduleActionRecordClient)
 			} else {

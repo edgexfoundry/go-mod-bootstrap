@@ -168,16 +168,6 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 			case common.SupportSchedulerServiceKey:
 				dic.Update(di.ServiceConstructorMap{
-					container.IntervalClientName: func(get di.Get) interface{} {
-						return clients.NewIntervalClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
-					},
-					container.IntervalActionClientName: func(get di.Get) interface{} {
-						return clients.NewIntervalActionClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
-					},
-				})
-
-			case common.SupportCronSchedulerServiceKey:
-				dic.Update(di.ServiceConstructorMap{
 					container.ScheduleJobClientName: func(get di.Get) interface{} {
 						return clients.NewScheduleJobClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
