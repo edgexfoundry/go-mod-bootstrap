@@ -1,8 +1,7 @@
-//go:build !no_openziti
+//go:build no_openziti
 
 /*******************************************************************************
- * Copyright 2023 Intel Corporation
- * Copyright 2023-2024 IOTech Ltd
+ * Copyright 2024 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -22,12 +21,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/zerotrust"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/labstack/echo/v4"
-	"github.com/openziti/sdk-golang/ziti/edge"
 )
 
 // SecretStoreAuthenticationHandlerFunc prefixes an existing HandlerFunc
@@ -56,15 +53,9 @@ func SecretStoreAuthenticationHandlerFunc(secretProvider interfaces.SecretProvid
 			lc.Debugf("Authorizing incoming call to '%s' via JWT (Authorization len=%d), %v", r.URL.Path, len(authHeader), secretProvider.IsZeroTrustEnabled())
 
 			if secretProvider.IsZeroTrustEnabled() {
-				zitiCtx := r.Context().Value(zerotrust.OpenZitiIdentityKey{})
-				if zitiCtx != nil {
-					if zitiEdgeConn, ok := zitiCtx.(edge.Conn); ok {
-						lc.Debugf("Authorizing incoming connection via OpenZiti for %s", zitiEdgeConn.SourceIdentifier())
-						return inner(c)
-					}
-					lc.Warn("context value for OpenZitiIdentityKey is not an edge.Conn")
-				}
-				lc.Debug("zero trust was enabled, but no marker was found. this is unexpected. falling back to token-based auth")
+				// this implementation will be pick up in the build when build tag no_openziti is specified, where
+				// OpenZiti packages are not included and the Zero Trust feature is not available.
+				lc.Info("zero trust was enabled, but service is built with no_openziti flag. falling back to token-based auth")
 			}
 
 			authParts := strings.Split(authHeader, " ")
