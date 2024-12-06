@@ -4,9 +4,9 @@ go 1.23
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.4
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.5
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.5
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.7
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.14
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.8
 	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.2
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.4
 	github.com/google/uuid v1.6.0
@@ -17,7 +17,7 @@ require (
 	github.com/openziti/sdk-golang v0.23.44
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -48,7 +48,7 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.22.1 // indirect
+	github.com/go-playground/validator/v10 v10.23.0 // indirect
 	github.com/go-resty/resty/v2 v2.15.3 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
