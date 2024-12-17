@@ -5,9 +5,9 @@ go 1.23
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.7
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.14
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.15
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.8
-	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.2
+	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.3
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
