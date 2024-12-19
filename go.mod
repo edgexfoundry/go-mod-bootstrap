@@ -4,9 +4,9 @@ go 1.23
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.7
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.14
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.8
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.10
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.15
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.10
 	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.2
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.4
 	github.com/google/uuid v1.6.0
@@ -59,7 +59,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kataras/go-events v0.0.3 // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -72,8 +72,8 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/nats-io/nats.go v1.37.0 // indirect
-	github.com/nats-io/nkeys v0.4.7 // indirect
+	github.com/nats-io/nats.go v1.38.0 // indirect
+	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible // indirect
-	github.com/spf13/cast v1.7.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.4.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
