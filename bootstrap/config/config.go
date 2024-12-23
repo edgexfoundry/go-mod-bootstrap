@@ -157,7 +157,6 @@ func (cp *Processor) Process(
 	})
 
 	var privateConfigClient configuration.Client
-	var privateServiceConfig interfaces.Configuration
 
 	if useProvider {
 		if remoteHosts != nil {
@@ -169,56 +168,14 @@ func (cp *Processor) Process(
 			configProviderInfo.SetHost(remoteHosts[1])
 		}
 
-		if err := cp.loadCommonConfig(configStem, configProviderInfo, serviceConfig, serviceType, CreateProviderClient); err != nil {
+		if err := cp.loadConfigByProvider(
+			configProviderInfo,
+			configStem,
+			serviceConfig,
+			serviceType,
+			privateConfigClient,
+			serviceKey); err != nil {
 			return err
-		}
-
-		cp.lc.Info("Common configuration loaded from the Configuration Provider. No overrides applied")
-
-		privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, configProviderInfo.ServiceConfig())
-		if err != nil {
-			return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
-		}
-
-		// TODO: figure out what uses the dic - this will not have the common config info!!
-		// is this potentially custom config for app/device services?
-		cp.dic.Update(di.ServiceConstructorMap{
-			container.ConfigClientInterfaceName: func(get di.Get) any {
-				return privateConfigClient
-			},
-		})
-
-		cp.providerHasConfig, err = privateConfigClient.HasConfiguration()
-		if err != nil {
-			return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
-		}
-
-		if cp.providerHasConfig && !cp.getOverwriteConfig() {
-			privateServiceConfig, err = copyConfigurationStruct(serviceConfig)
-			if err != nil {
-				return err
-			}
-			if err := cp.loadConfigFromProvider(privateServiceConfig, privateConfigClient); err != nil {
-				return err
-			}
-			configKeys, err := privateConfigClient.GetConfigurationKeys("")
-			if err != nil {
-				return err
-			}
-
-			// Must remove any settings in the config that are not actually present in the Config Provider
-			privateConfigKeys := utils.StringSliceToMap(configKeys)
-			privateConfigMap, err := utils.RemoveUnusedSettings(privateServiceConfig, utils.BuildBaseKey(configStem, serviceKey), privateConfigKeys)
-			if err != nil {
-				return fmt.Errorf("could not remove unused settings from private configurations: %s", err.Error())
-			}
-
-			// Now merge only the actual present value with the existing configuration from common.
-			if err := utils.MergeValues(serviceConfig, privateConfigMap); err != nil {
-				return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
-			}
-
-			cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
 		}
 	} else {
 		// Now load common configuration from local file if not using config provider and -cc/--commonConfig flag is used.
@@ -236,34 +193,11 @@ func (cp *Processor) Process(
 			}
 			cp.lc.Infof("Common configuration loaded from file with %d overrides applied", overrideCount)
 		}
-	}
 
-	// Now load the private config from a local file if any of these conditions are true
-	if !useProvider || !cp.providerHasConfig || cp.getOverwriteConfig() {
-		filePath := GetConfigFileLocation(cp.lc, cp.flags)
-		configMap, err := cp.loadConfigYamlFromFile(filePath)
-		if err != nil {
+		if _, err := cp.loadPrivateConfigFromFile(serviceConfig); err != nil {
 			return err
 		}
 
-		// apply overrides - Now only done when loaded from file and values will get pushed into Configuration Provider (if used)
-		overrideCount, err := cp.envVars.OverrideConfigMapValues(configMap)
-		if err != nil {
-			return err
-		}
-		cp.lc.Infof("Private configuration loaded from file with %d overrides applied", overrideCount)
-
-		if err := utils.MergeValues(serviceConfig, configMap); err != nil {
-			return err
-		}
-
-		if useProvider {
-			if err := privateConfigClient.PutConfigurationMap(configMap, cp.getOverwriteConfig()); err != nil {
-				return fmt.Errorf("could not push private configuration into Configuration Provider: %s", err.Error())
-			}
-
-			cp.lc.Info("Private configuration has been pushed to into Configuration Provider with overrides applied")
-		}
 	}
 
 	// listen for changes on Writable
@@ -324,6 +258,114 @@ func (cp *Processor) Process(
 	}
 
 	return err
+}
+
+func (cp *Processor) loadConfigByProvider(
+	configProviderInfo *ProviderInfo,
+	configStem string,
+	serviceConfig interfaces.Configuration,
+	serviceType string,
+	privateConfigClient configuration.Client,
+	serviceKey string) (err error) {
+
+	if err := cp.loadCommonConfig(configStem, configProviderInfo, serviceConfig, serviceType, CreateProviderClient); err != nil {
+		return err
+	}
+
+	cp.lc.Info("Common configuration loaded from the Configuration Provider. No overrides applied")
+
+	privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, configProviderInfo.ServiceConfig())
+	if err != nil {
+		return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
+	}
+
+	// TODO: figure out what uses the dic - this will not have the common config info!!
+	// is this potentially custom config for app/device services?
+	// Must remove any settings in the config that are not actually present in the Config Provider
+	// Now merge only the actual present value with the existing configuration from common.
+	cp.dic.Update(di.ServiceConstructorMap{
+		container.ConfigClientInterfaceName: func(get di.Get) any {
+			return privateConfigClient
+		},
+	})
+
+	cp.providerHasConfig, err = privateConfigClient.HasConfiguration()
+	if err != nil {
+		return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
+	}
+
+	if cp.providerHasConfig && !cp.getOverwriteConfig() {
+		privateServiceConfig, err := copyConfigurationStruct(serviceConfig)
+		if err != nil {
+			return err
+		}
+		if err := cp.loadConfigFromProvider(privateServiceConfig, privateConfigClient); err != nil {
+			return err
+		}
+		configKeys, err := privateConfigClient.GetConfigurationKeys("")
+		if err != nil {
+			return err
+		}
+
+		privateConfigKeys := utils.StringSliceToMap(configKeys)
+		privateConfigMap, err := utils.RemoveUnusedSettings(privateServiceConfig, utils.BuildBaseKey(configStem, serviceKey), privateConfigKeys)
+		if err != nil {
+			return fmt.Errorf("could not remove unused settings from private configurations: %s", err.Error())
+		}
+
+		if err := utils.MergeValues(serviceConfig, privateConfigMap); err != nil {
+			return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
+		}
+
+		cp.lc.Info("Private configuration loaded from the Configuration Provider. No overrides applied")
+	} else {
+		configMap, err := cp.loadPrivateConfigFromFile(serviceConfig)
+		if err != nil {
+			return err
+		}
+
+		if err := privateConfigClient.PutConfigurationMap(configMap, cp.getOverwriteConfig()); err != nil {
+			return fmt.Errorf("could not push private configuration into Configuration Provider: %s", err.Error())
+		}
+
+		cp.lc.Info("Private configuration has been pushed to into Configuration Provider with overrides applied")
+	}
+
+	cp.listenForPrivateChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
+	cp.lc.Infof("listening for private config changes")
+	cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
+	cp.lc.Infof("listening for all services common config changes")
+	if cp.appConfigClient != nil {
+		cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
+		cp.lc.Infof("listening for application service common config changes")
+	}
+	if cp.deviceConfigClient != nil {
+		cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
+		cp.lc.Infof("listening for device service common config changes")
+	}
+	return nil
+}
+
+func (cp *Processor) loadPrivateConfigFromFile(serviceConfig interfaces.Configuration) (configMap map[string]any, err error) {
+	filePath := GetConfigFileLocation(cp.lc, cp.flags)
+	configMap, err = cp.loadConfigYamlFromFile(filePath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// apply overrides - Now only done when loaded from file and values will get pushed into Configuration Provider (if used)
+	overrideCount, err := cp.envVars.OverrideConfigMapValues(configMap)
+	if err != nil {
+		return nil, err
+	}
+	cp.lc.Infof("Private configuration loaded from file with %d overrides applied", overrideCount)
+
+	if err := utils.MergeValues(serviceConfig, configMap); err != nil {
+		return nil, err
+	}
+
+	return configMap, nil
 }
 
 func (cp *Processor) getOverwriteConfig() bool {
