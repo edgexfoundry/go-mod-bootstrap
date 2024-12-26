@@ -167,3 +167,15 @@ func ScheduleActionRecordClientFrom(get di.Get) interfaces.ScheduleActionRecordC
 
 	return get(ScheduleActionRecordClientName).(interfaces.ScheduleActionRecordClient)
 }
+
+// SecurityProxyAuthClientName contains the name of the AuthClient's implementation in the DIC.
+var SecurityProxyAuthClientName = di.TypeInstanceToName((*interfaces.AuthClient)(nil))
+
+// SecurityProxyAuthClientFrom helper function queries the DIC and returns the AuthClient's implementation.
+func SecurityProxyAuthClientFrom(get di.Get) interfaces.AuthClient {
+	if get(SecurityProxyAuthClientName) == nil {
+		return nil
+	}
+
+	return get(SecurityProxyAuthClientName).(interfaces.AuthClient)
+}

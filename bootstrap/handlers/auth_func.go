@@ -18,10 +18,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/secret"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 
 	"github.com/labstack/echo/v4"
 )
@@ -44,12 +42,12 @@ func NilAuthenticationHandlerFunc() echo.MiddlewareFunc {
 // to disable JWT validation.  This might be wanted for an EdgeX
 // adopter that wanted to only validate JWT's at the proxy layer,
 // or as an escape hatch for a caller that cannot authenticate.
-func AutoConfigAuthenticationFunc(secretProvider interfaces.SecretProviderExt, lc logger.LoggingClient) echo.MiddlewareFunc {
+func AutoConfigAuthenticationFunc(dic *di.Container) echo.MiddlewareFunc {
 	// Golang standard library treats an error as false
 	disableJWTValidation, _ := strconv.ParseBool(os.Getenv("EDGEX_DISABLE_JWT_VALIDATION"))
 	authenticationHook := NilAuthenticationHandlerFunc()
 	if secret.IsSecurityEnabled() && !disableJWTValidation {
-		authenticationHook = SecretStoreAuthenticationHandlerFunc(secretProvider, lc)
+		authenticationHook = AuthenticationHandlerFunc(dic)
 	}
 	return authenticationHook
 }
