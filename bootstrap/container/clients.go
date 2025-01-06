@@ -131,21 +131,8 @@ func ProvisionWatcherClientFrom(get di.Get) interfaces.ProvisionWatcherClient {
 	return get(ProvisionWatcherClientName).(interfaces.ProvisionWatcherClient)
 }
 
-// DeviceServiceCallbackClientName contains the name of the DeviceServiceCallbackClient instance in the DIC.
-var DeviceServiceCallbackClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCallbackClient)(nil))
-
 // DeviceServiceCommandClientName contains the name of the DeviceServiceCommandClient instance in the DIC.
 var DeviceServiceCommandClientName = di.TypeInstanceToName((*interfaces.DeviceServiceCommandClient)(nil))
-
-// DeviceServiceCallbackClientFrom helper function queries the DIC and returns the DeviceServiceCallbackClient instance.
-func DeviceServiceCallbackClientFrom(get di.Get) interfaces.DeviceServiceCallbackClient {
-	client, ok := get(DeviceServiceCallbackClientName).(interfaces.DeviceServiceCallbackClient)
-	if !ok {
-		return nil
-	}
-
-	return client
-}
 
 // DeviceServiceCommandClientFrom helper function queries the DIC and returns the DeviceServiceCommandClient instance.
 func DeviceServiceCommandClientFrom(get di.Get) interfaces.DeviceServiceCommandClient {
