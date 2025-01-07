@@ -5,10 +5,11 @@ go 1.23
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.10
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.16
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.17
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.10
 	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.3
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.5
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.13.3
@@ -50,7 +51,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.23.0 // indirect
 	github.com/go-resty/resty/v2 v2.15.3 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect

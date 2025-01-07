@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2022 Intel Corporation
-// Copyright (C) 2024 IOTech Ltd
+// Copyright (C) 2024-2025 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -166,4 +166,16 @@ func ScheduleActionRecordClientFrom(get di.Get) interfaces.ScheduleActionRecordC
 	}
 
 	return get(ScheduleActionRecordClientName).(interfaces.ScheduleActionRecordClient)
+}
+
+// SecurityProxyAuthClientName contains the name of the AuthClient's implementation in the DIC.
+var SecurityProxyAuthClientName = di.TypeInstanceToName((*interfaces.AuthClient)(nil))
+
+// SecurityProxyAuthClientFrom helper function queries the DIC and returns the AuthClient's implementation.
+func SecurityProxyAuthClientFrom(get di.Get) interfaces.AuthClient {
+	if get(SecurityProxyAuthClientName) == nil {
+		return nil
+	}
+
+	return get(SecurityProxyAuthClientName).(interfaces.AuthClient)
 }

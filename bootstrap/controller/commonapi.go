@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2023 IOTech Ltd
+// Copyright (C) 2023-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -46,8 +46,7 @@ type config struct {
 
 func NewCommonController(dic *di.Container, r *echo.Echo, serviceName string, serviceVersion string) *CommonController {
 	lc := container.LoggingClientFrom(dic.Get)
-	secretProvider := container.SecretProviderExtFrom(dic.Get)
-	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
+	authenticationHook := handlers.AutoConfigAuthenticationFunc(dic)
 	configuration := container.ConfigurationFrom(dic.Get)
 	c := CommonController{
 		dic:         dic,
