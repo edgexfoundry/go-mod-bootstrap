@@ -27,6 +27,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/zerotrust"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 	dtoCommon "github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/common"
+	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -50,7 +51,7 @@ import (
 // For typical usage, it is preferred to use AutoConfigAuthenticationFunc which
 // will automatically select between a real and a fake JWT validation handler.
 func AuthenticationHandlerFunc(dic *di.Container) echo.MiddlewareFunc {
-	return func(inner echo.HandlerFunc) echo.HandlerFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			lc := container.LoggingClientFrom(dic.Get)
 			secretProvider := container.SecretProviderExtFrom(dic.Get)
@@ -64,7 +65,7 @@ func AuthenticationHandlerFunc(dic *di.Container) echo.MiddlewareFunc {
 				if zitiCtx != nil {
 					if zitiEdgeConn, ok := zitiCtx.(edge.Conn); ok {
 						lc.Debugf("Authorizing incoming connection via OpenZiti for %s", zitiEdgeConn.SourceIdentifier())
-						return inner(c)
+						return next(c)
 					}
 					lc.Warn("context value for OpenZitiIdentityKey is not an edge.Conn")
 				}
@@ -87,15 +88,18 @@ func AuthenticationHandlerFunc(dic *di.Container) echo.MiddlewareFunc {
 					return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 				}
 
+				var err edgexErr.EdgeX
 				if issuer == openBaoIssuer {
-					return SecretStoreAuthenticationHandlerFunc(secretProvider, lc, token, c)
+					err = SecretStoreAuthenticationHandlerFunc(secretProvider, lc, token, c)
 				} else {
 					// Verify the JWT by invoking security-proxy-auth http client
-					err := headers.VerifyJWT(token, issuer, parsedToken.Method.Alg(), dic, r.Context())
-					if err != nil {
-						errResp := dtoCommon.NewBaseResponse("", err.Error(), err.Code())
-						return c.JSON(err.Code(), errResp)
-					}
+					err = headers.VerifyJWT(token, issuer, parsedToken.Method.Alg(), dic, r.Context())
+				}
+				if err != nil {
+					errResp := dtoCommon.NewBaseResponse("", err.Error(), err.Code())
+					return c.JSON(err.Code(), errResp)
+				} else {
+					return next(c)
 				}
 			}
 			err := fmt.Errorf("unable to parse JWT for call to '%s'; unauthorized", r.URL.Path)
