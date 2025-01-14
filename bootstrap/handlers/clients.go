@@ -176,6 +176,13 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 					},
 				})
 
+			case common.SecurityProxyAuthServiceKey:
+				dic.Update(di.ServiceConstructorMap{
+					container.SecurityProxyAuthClientName: func(get di.Get) interface{} {
+						return clients.NewAuthClient(url, jwtSecretProvider)
+					},
+				})
+
 			default:
 
 			}
