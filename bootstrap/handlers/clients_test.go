@@ -78,12 +78,19 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Protocol: "http",
 	}
 
+	proxyauthClientInfo := config.ClientInfo{
+		Host:     "localhost",
+		Port:     59842,
+		Protocol: "http",
+	}
+
 	registryMock := &registryMocks.Client{}
 	registryMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.CoreMetaDataServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.CoreCommandServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.SupportNotificationsServiceKey).Return(types.ServiceEndpoint{}, nil)
 	registryMock.On("GetServiceEndpoint", common.SupportSchedulerServiceKey).Return(types.ServiceEndpoint{}, nil)
+	registryMock.On("GetServiceEndpoint", common.SecurityProxyAuthServiceKey).Return(types.ServiceEndpoint{}, nil)
 
 	registryErrorMock := &registryMocks.Client{}
 	registryErrorMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, errors.New("some error"))
@@ -91,34 +98,37 @@ func TestClientsBootstrapHandler(t *testing.T) {
 	startupTimer := startup.NewTimer(1, 1)
 
 	tests := []struct {
-		Name                   string
-		CoreDataClientInfo     *config.ClientInfo
-		CommandClientInfo      *config.ClientInfo
-		MetadataClientInfo     *config.ClientInfo
-		NotificationClientInfo *config.ClientInfo
-		SchedulerClientInfo    *config.ClientInfo
-		Registry               registry.Client
-		ExpectedResult         bool
+		Name                        string
+		CoreDataClientInfo          *config.ClientInfo
+		CommandClientInfo           *config.ClientInfo
+		MetadataClientInfo          *config.ClientInfo
+		NotificationClientInfo      *config.ClientInfo
+		SchedulerClientInfo         *config.ClientInfo
+		SecurityProxyAuthClientInfo *config.ClientInfo
+		Registry                    registry.Client
+		ExpectedResult              bool
 	}{
 		{
-			Name:                   "All ClientsBootstrap",
-			CoreDataClientInfo:     &coreDataClientInfo,
-			CommandClientInfo:      &commandHttpClientInfo,
-			MetadataClientInfo:     &metadataClientInfo,
-			NotificationClientInfo: &notificationClientInfo,
-			SchedulerClientInfo:    &schedulerClientInfo,
-			Registry:               nil,
-			ExpectedResult:         true,
+			Name:                        "All ClientsBootstrap",
+			CoreDataClientInfo:          &coreDataClientInfo,
+			CommandClientInfo:           &commandHttpClientInfo,
+			MetadataClientInfo:          &metadataClientInfo,
+			NotificationClientInfo:      &notificationClientInfo,
+			SchedulerClientInfo:         &schedulerClientInfo,
+			SecurityProxyAuthClientInfo: &proxyauthClientInfo,
+			Registry:                    nil,
+			ExpectedResult:              true,
 		},
 		{
-			Name:                   "All ClientsBootstrap using registry",
-			CoreDataClientInfo:     &coreDataClientInfo,
-			CommandClientInfo:      &commandHttpClientInfo,
-			MetadataClientInfo:     &metadataClientInfo,
-			NotificationClientInfo: &notificationClientInfo,
-			SchedulerClientInfo:    &schedulerClientInfo,
-			Registry:               registryMock,
-			ExpectedResult:         true,
+			Name:                        "All ClientsBootstrap using registry",
+			CoreDataClientInfo:          &coreDataClientInfo,
+			CommandClientInfo:           &commandHttpClientInfo,
+			MetadataClientInfo:          &metadataClientInfo,
+			NotificationClientInfo:      &notificationClientInfo,
+			SchedulerClientInfo:         &schedulerClientInfo,
+			SecurityProxyAuthClientInfo: &proxyauthClientInfo,
+			Registry:                    registryMock,
+			ExpectedResult:              true,
 		},
 		{
 			Name:                   "Core Data Client using registry fails",
@@ -196,6 +206,10 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				clients[common.SupportSchedulerServiceKey] = test.SchedulerClientInfo
 			}
 
+			if test.SecurityProxyAuthClientInfo != nil {
+				clients[common.SecurityProxyAuthServiceKey] = test.SecurityProxyAuthClientInfo
+			}
+
 			bootstrapConfig := config.BootstrapConfiguration{
 				Service: &config.ServiceInfo{
 					RequestTimeout: "30s",
@@ -250,6 +264,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			subscriptionClient := container.SubscriptionClientFrom(dic.Get)
 			scheduleJobClient := container.ScheduleJobClientFrom(dic.Get)
 			scheduleActionRecordClient := container.ScheduleActionRecordClientFrom(dic.Get)
+			proxyAuthClient := container.SecurityProxyAuthClientFrom(dic.Get)
 
 			if test.CoreDataClientInfo != nil {
 				assert.NotNil(t, eventClient)
@@ -291,6 +306,12 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			} else {
 				assert.Nil(t, scheduleJobClient)
 				assert.Nil(t, scheduleActionRecordClient)
+			}
+
+			if test.SecurityProxyAuthClientInfo != nil {
+				assert.NotNil(t, proxyAuthClient)
+			} else {
+				assert.Nil(t, proxyAuthClient)
 			}
 
 			if test.Registry != nil {
