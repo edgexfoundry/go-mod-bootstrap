@@ -18,7 +18,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"testing"
 
@@ -26,7 +25,6 @@ import (
 	loggerMocks "github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	messagingMocks "github.com/edgexfoundry/go-mod-messaging/v4/messaging/mocks"
-	"github.com/edgexfoundry/go-mod-registry/v4/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v4/registry"
 	registryMocks "github.com/edgexfoundry/go-mod-registry/v4/registry/mocks"
 	"github.com/stretchr/testify/mock"
@@ -85,16 +83,6 @@ func TestClientsBootstrapHandler(t *testing.T) {
 	}
 
 	registryMock := &registryMocks.Client{}
-	registryMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, nil)
-	registryMock.On("GetServiceEndpoint", common.CoreMetaDataServiceKey).Return(types.ServiceEndpoint{}, nil)
-	registryMock.On("GetServiceEndpoint", common.CoreCommandServiceKey).Return(types.ServiceEndpoint{}, nil)
-	registryMock.On("GetServiceEndpoint", common.SupportNotificationsServiceKey).Return(types.ServiceEndpoint{}, nil)
-	registryMock.On("GetServiceEndpoint", common.SupportSchedulerServiceKey).Return(types.ServiceEndpoint{}, nil)
-	registryMock.On("GetServiceEndpoint", common.SecurityProxyAuthServiceKey).Return(types.ServiceEndpoint{}, nil)
-
-	registryErrorMock := &registryMocks.Client{}
-	registryErrorMock.On("GetServiceEndpoint", common.CoreDataServiceKey).Return(types.ServiceEndpoint{}, errors.New("some error"))
-
 	startupTimer := startup.NewTimer(1, 1)
 
 	tests := []struct {
@@ -131,14 +119,14 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			ExpectedResult:              true,
 		},
 		{
-			Name:                   "Core Data Client using registry fails",
+			Name:                   "Core Data Client using registry",
 			CoreDataClientInfo:     &coreDataClientInfo,
 			CommandClientInfo:      nil,
 			MetadataClientInfo:     nil,
 			NotificationClientInfo: nil,
 			SchedulerClientInfo:    nil,
-			Registry:               registryErrorMock,
-			ExpectedResult:         false,
+			Registry:               registryMock,
+			ExpectedResult:         true,
 		},
 		{
 			Name:                   "No ClientsBootstrap",

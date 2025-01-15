@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright 2022 Intel Inc.
  * Copyright (C) 2023 Intel Corporation
- * Copyright (C) 2024 IOTech Ltd
+ * Copyright (C) 2024-2025 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -23,7 +23,8 @@ import (
 	"sync"
 	"time"
 
-	clients "github.com/edgexfoundry/go-mod-core-contracts/v4/clients/http"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients"
+	httpClients "github.com/edgexfoundry/go-mod-core-contracts/v4/clients/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
@@ -65,8 +66,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 	if cfg.GetBootstrap().Clients != nil {
 		for serviceKey, serviceInfo := range *cfg.GetBootstrap().Clients {
-			var url string
-			var err error
+			var urlFunc clients.ClientBaseUrlFunc
 
 			sp := container.SecretProviderExtFrom(dic.Get)
 			jwtSecretProvider := secret.NewJWTSecretProvider(sp)
@@ -82,10 +82,13 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			}
 
 			if !serviceInfo.UseMessageBus {
-				url, err = cb.getClientUrl(serviceKey, serviceInfo.Url(), startupTimer, dic, lc)
-				if err != nil {
-					lc.Error(err.Error())
-					return false
+				mode := container.DevRemoteModeFrom(dic.Get)
+				if cb.registry == nil || mode.InDevMode || mode.InRemoteMode {
+					lc.Infof("Using REST for '%s' clients @ %s", serviceKey, serviceInfo.Url())
+					urlFunc = clients.GetDefaultClientBaseUrlFunc(serviceInfo.Url())
+				} else {
+					lc.Infof("Using ClientBaseUrlFunc for '%s' clients", serviceKey)
+					urlFunc = cb.clientUrlFunc(serviceKey, lc)
 				}
 			}
 
@@ -93,25 +96,25 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			case common.CoreDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.EventClientName: func(get di.Get) interface{} {
-						return clients.NewEventClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewEventClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.ReadingClientName: func(get di.Get) interface{} {
-						return clients.NewReadingClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewReadingClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 			case common.CoreMetaDataServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.DeviceClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewDeviceClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.DeviceServiceClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceServiceClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewDeviceServiceClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.DeviceProfileClientName: func(get di.Get) interface{} {
-						return clients.NewDeviceProfileClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewDeviceProfileClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.ProvisionWatcherClientName: func(get di.Get) interface{} {
-						return clients.NewProvisionWatcherClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewProvisionWatcherClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
@@ -147,7 +150,7 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 
 					lc.Infof("Using messaging for '%s' clients", serviceKey)
 				} else {
-					client = clients.NewCommandClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+					client = httpClients.NewCommandClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 				}
 
 				dic.Update(di.ServiceConstructorMap{
@@ -159,27 +162,27 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 			case common.SupportNotificationsServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.NotificationClientName: func(get di.Get) interface{} {
-						return clients.NewNotificationClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewNotificationClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.SubscriptionClientName: func(get di.Get) interface{} {
-						return clients.NewSubscriptionClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewSubscriptionClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
 			case common.SupportSchedulerServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.ScheduleJobClientName: func(get di.Get) interface{} {
-						return clients.NewScheduleJobClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewScheduleJobClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 					container.ScheduleActionRecordClientName: func(get di.Get) interface{} {
-						return clients.NewScheduleActionRecordClient(url, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
+						return httpClients.NewScheduleActionRecordClientWithUrlCallback(urlFunc, jwtSecretProvider, cfg.GetBootstrap().Service.EnableNameFieldEscape)
 					},
 				})
 
 			case common.SecurityProxyAuthServiceKey:
 				dic.Update(di.ServiceConstructorMap{
 					container.SecurityProxyAuthClientName: func(get di.Get) interface{} {
-						return clients.NewAuthClient(url, jwtSecretProvider)
+						return httpClients.NewAuthClientWithUrlCallback(urlFunc, jwtSecretProvider)
 					},
 				})
 
@@ -191,33 +194,20 @@ func (cb *ClientsBootstrap) BootstrapHandler(
 	return true
 }
 
-func (cb *ClientsBootstrap) getClientUrl(serviceKey string, defaultUrl string, startupTimer startup.Timer, dic *di.Container, lc logger.LoggingClient) (string, error) {
-	mode := container.DevRemoteModeFrom(dic.Get)
-	if cb.registry == nil || mode.InDevMode || mode.InRemoteMode {
-		lc.Infof("Using REST for '%s' clients @ %s", serviceKey, defaultUrl)
-		return defaultUrl, nil
-	}
+func (cb *ClientsBootstrap) clientUrlFunc(serviceKey string, lc logger.LoggingClient) clients.ClientBaseUrlFunc {
+	return func() (string, error) {
+		var err error
+		var endpoint types.ServiceEndpoint
 
-	var err error
-	var endpoint types.ServiceEndpoint
-
-	for startupTimer.HasNotElapsed() {
 		endpoint, err = cb.registry.GetServiceEndpoint(serviceKey)
-		if err == nil {
-			break
+		if err != nil {
+			return "", fmt.Errorf("unable to Get service endpoint for '%s': %s", serviceKey, err.Error())
 		}
 
-		lc.Warnf("unable to Get service endpoint for '%s': %s. retrying...", serviceKey, err.Error())
-		startupTimer.SleepForInterval()
+		url := fmt.Sprintf("http://%s:%v", endpoint.Host, endpoint.Port)
+
+		lc.Infof("Using registry for URL for '%s': %s", serviceKey, url)
+
+		return url, nil
 	}
-
-	if err != nil {
-		return "", fmt.Errorf("unable to Get service endpoint for '%s': %s. Giving up", serviceKey, err.Error())
-	}
-
-	url := fmt.Sprintf("http://%s:%v", endpoint.Host, endpoint.Port)
-
-	lc.Infof("Using registry for URL for '%s': %s", serviceKey, url)
-
-	return url, nil
 }
