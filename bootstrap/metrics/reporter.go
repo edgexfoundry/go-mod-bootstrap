@@ -15,7 +15,7 @@
 package metrics
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
 
@@ -171,17 +171,10 @@ func (r *messageBusReporter) Report(registry gometrics.Registry, metricTags map[
 			return
 		}
 
-		payload, err := json.Marshal(nextMetric)
-		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to marshal metric '%s' to JSON: %s", nextMetric.Name, err.Error()))
-			return
-		}
-
-		message := types.MessageEnvelope{
-			CorrelationID: uuid.NewString(),
-			Payload:       payload,
-			ContentType:   common.ContentTypeJSON,
-		}
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
+		ctx = context.WithValue(ctx, common.ContentType, common.ContentTypeJSON) //nolint: staticcheck
+		message := types.NewMessageEnvelope(nextMetric, ctx)
 
 		topic := common.BuildTopic(r.baseMetricsTopic, name)
 		if err := r.messageClient.Publish(message, topic); err != nil {
