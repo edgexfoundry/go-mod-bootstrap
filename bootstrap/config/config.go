@@ -177,6 +177,20 @@ func (cp *Processor) Process(
 			serviceKey); err != nil {
 			return err
 		}
+
+		// listen for changes on Writable
+		cp.listenForPrivateChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
+		cp.lc.Infof("listening for private config changes")
+		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
+		cp.lc.Infof("listening for all services common config changes")
+		if cp.appConfigClient != nil {
+			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
+			cp.lc.Infof("listening for application service common config changes")
+		}
+		if cp.deviceConfigClient != nil {
+			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
+			cp.lc.Infof("listening for device service common config changes")
+		}
 	} else {
 		// Now load common configuration from local file if not using config provider and -cc/--commonConfig flag is used.
 		// NOTE: Some security services don't use any common configuration and don't use the configuration provider.
@@ -198,22 +212,6 @@ func (cp *Processor) Process(
 			return err
 		}
 
-	}
-
-	// listen for changes on Writable
-	if useProvider {
-		cp.listenForPrivateChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
-		cp.lc.Infof("listening for private config changes")
-		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
-		cp.lc.Infof("listening for all services common config changes")
-		if cp.appConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
-			cp.lc.Infof("listening for application service common config changes")
-		}
-		if cp.deviceConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
-			cp.lc.Infof("listening for device service common config changes")
-		}
 	}
 
 	// Now that configuration has been loaded and overrides applied the log level can be set as configured.
@@ -281,8 +279,6 @@ func (cp *Processor) loadConfigByProvider(
 
 	// TODO: figure out what uses the dic - this will not have the common config info!!
 	// is this potentially custom config for app/device services?
-	// Must remove any settings in the config that are not actually present in the Config Provider
-	// Now merge only the actual present value with the existing configuration from common.
 	cp.dic.Update(di.ServiceConstructorMap{
 		container.ConfigClientInterfaceName: func(get di.Get) any {
 			return privateConfigClient
@@ -307,12 +303,14 @@ func (cp *Processor) loadConfigByProvider(
 			return err
 		}
 
+		// Must remove any settings in the config that are not actually present in the Config Provider
 		privateConfigKeys := utils.StringSliceToMap(configKeys)
 		privateConfigMap, err := utils.RemoveUnusedSettings(privateServiceConfig, utils.BuildBaseKey(configStem, serviceKey), privateConfigKeys)
 		if err != nil {
 			return fmt.Errorf("could not remove unused settings from private configurations: %s", err.Error())
 		}
 
+		// Now merge only the actual present value with the existing configuration from common.
 		if err := utils.MergeValues(serviceConfig, privateConfigMap); err != nil {
 			return fmt.Errorf("could not merge common and private configurations: %s", err.Error())
 		}
