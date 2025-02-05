@@ -73,19 +73,20 @@ var invalidRemoteHostsError = errors.New("-rsh/--remoteServiceHosts must contain
 type UpdatedStream chan struct{}
 
 type Processor struct {
-	lc                 logger.LoggingClient
-	flags              flags.Common
-	envVars            *environment.Variables
-	startupTimer       startup.Timer
-	ctx                context.Context
-	wg                 *sync.WaitGroup
-	configUpdated      UpdatedStream
-	dic                *di.Container
-	overwriteConfig    *bool
-	providerHasConfig  bool
-	commonConfigClient configuration.Client
-	appConfigClient    configuration.Client
-	deviceConfigClient configuration.Client
+	lc                  logger.LoggingClient
+	flags               flags.Common
+	envVars             *environment.Variables
+	startupTimer        startup.Timer
+	ctx                 context.Context
+	wg                  *sync.WaitGroup
+	configUpdated       UpdatedStream
+	dic                 *di.Container
+	overwriteConfig     *bool
+	providerHasConfig   bool
+	commonConfigClient  configuration.Client
+	appConfigClient     configuration.Client
+	deviceConfigClient  configuration.Client
+	privateConfigClient configuration.Client
 }
 
 // NewProcessor creates a new configuration Processor
@@ -156,8 +157,6 @@ func (cp *Processor) Process(
 		},
 	})
 
-	var privateConfigClient configuration.Client
-
 	if useProvider {
 		if remoteHosts != nil {
 			if len(remoteHosts) != 3 {
@@ -173,22 +172,21 @@ func (cp *Processor) Process(
 			configStem,
 			serviceConfig,
 			serviceType,
-			privateConfigClient,
 			serviceKey); err != nil {
 			return err
 		}
 
 		// listen for changes on Writable
-		cp.listenForPrivateChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
+		cp.listenForPrivateChanges(serviceConfig, cp.privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
 		cp.lc.Infof("listening for private config changes")
-		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
+		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
 		cp.lc.Infof("listening for all services common config changes")
 		if cp.appConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
+			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
 			cp.lc.Infof("listening for application service common config changes")
 		}
 		if cp.deviceConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
+			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
 			cp.lc.Infof("listening for device service common config changes")
 		}
 	} else {
@@ -263,7 +261,6 @@ func (cp *Processor) loadConfigByProvider(
 	configStem string,
 	serviceConfig interfaces.Configuration,
 	serviceType string,
-	privateConfigClient configuration.Client,
 	serviceKey string) (err error) {
 
 	if err := cp.loadCommonConfig(configStem, configProviderInfo, serviceConfig, serviceType, CreateProviderClient); err != nil {
@@ -272,7 +269,7 @@ func (cp *Processor) loadConfigByProvider(
 
 	cp.lc.Info("Common configuration loaded from the Configuration Provider. No overrides applied")
 
-	privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, configProviderInfo.ServiceConfig())
+	cp.privateConfigClient, err = CreateProviderClient(cp.lc, serviceKey, configStem, configProviderInfo.ServiceConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create Configuration Provider client: %s", err.Error())
 	}
@@ -281,11 +278,11 @@ func (cp *Processor) loadConfigByProvider(
 	// is this potentially custom config for app/device services?
 	cp.dic.Update(di.ServiceConstructorMap{
 		container.ConfigClientInterfaceName: func(get di.Get) any {
-			return privateConfigClient
+			return cp.privateConfigClient
 		},
 	})
 
-	cp.providerHasConfig, err = privateConfigClient.HasConfiguration()
+	cp.providerHasConfig, err = cp.privateConfigClient.HasConfiguration()
 	if err != nil {
 		return fmt.Errorf("failed check for Configuration Provider has private configiuration: %s", err.Error())
 	}
@@ -295,10 +292,10 @@ func (cp *Processor) loadConfigByProvider(
 		if err != nil {
 			return err
 		}
-		if err := cp.loadConfigFromProvider(privateServiceConfig, privateConfigClient); err != nil {
+		if err := cp.loadConfigFromProvider(privateServiceConfig, cp.privateConfigClient); err != nil {
 			return err
 		}
-		configKeys, err := privateConfigClient.GetConfigurationKeys("")
+		configKeys, err := cp.privateConfigClient.GetConfigurationKeys("")
 		if err != nil {
 			return err
 		}
@@ -322,23 +319,23 @@ func (cp *Processor) loadConfigByProvider(
 			return err
 		}
 
-		if err := privateConfigClient.PutConfigurationMap(configMap, cp.getOverwriteConfig()); err != nil {
+		if err := cp.privateConfigClient.PutConfigurationMap(configMap, cp.getOverwriteConfig()); err != nil {
 			return fmt.Errorf("could not push private configuration into Configuration Provider: %s", err.Error())
 		}
 
 		cp.lc.Info("Private configuration has been pushed to into Configuration Provider with overrides applied")
 	}
 
-	cp.listenForPrivateChanges(serviceConfig, privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
+	cp.listenForPrivateChanges(serviceConfig, cp.privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
 	cp.lc.Infof("listening for private config changes")
-	cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
+	cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
 	cp.lc.Infof("listening for all services common config changes")
 	if cp.appConfigClient != nil {
-		cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
+		cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
 		cp.lc.Infof("listening for application service common config changes")
 	}
 	if cp.deviceConfigClient != nil {
-		cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
+		cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
 		cp.lc.Infof("listening for device service common config changes")
 	}
 	return nil
@@ -591,8 +588,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 		cp.envVars = environment.NewVariables(cp.lc)
 	}
 
-	configClient := container.ConfigClientFrom(cp.dic.Get)
-	if configClient == nil {
+	if cp.privateConfigClient == nil {
 		cp.lc.Info("Skipping use of Configuration Provider for custom configuration: Provider not available")
 		filePath := GetConfigFileLocation(cp.lc, cp.flags)
 		configMap, err := cp.loadConfigYamlFromFile(filePath)
@@ -607,7 +603,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 	} else {
 		cp.lc.Infof("Checking if custom configuration ('%s') exists in Configuration Provider", sectionName)
 
-		exists, err := configClient.HasSubConfiguration(sectionName)
+		exists, err := cp.privateConfigClient.HasSubConfiguration(sectionName)
 		if err != nil {
 			return fmt.Errorf(
 				"unable to determine if custom configuration exists in Configuration Provider: %s",
@@ -615,7 +611,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 		}
 
 		if exists && !cp.getOverwriteConfig() {
-			rawConfig, err := configClient.GetConfiguration(updatableConfig)
+			rawConfig, err := cp.privateConfigClient.GetConfiguration(updatableConfig)
 			if err != nil {
 				return fmt.Errorf(
 					"unable to get custom configuration from Configuration Provider: %s", err.Error())
@@ -652,7 +648,7 @@ func (cp *Processor) LoadCustomConfigSection(updatableConfig interfaces.Updatabl
 				return err
 			}
 
-			err = configClient.PutConfigurationMap(mapToPush, true)
+			err = cp.privateConfigClient.PutConfigurationMap(mapToPush, true)
 			if err != nil {
 				return fmt.Errorf("error pushing custom config to Configuration Provider: %s", err.Error())
 			}
@@ -674,8 +670,7 @@ func (cp *Processor) ListenForCustomConfigChanges(
 	configToWatch any,
 	sectionName string,
 	changedCallback func(any)) {
-	configClient := container.ConfigClientFrom(cp.dic.Get)
-	if configClient == nil {
+	if cp.privateConfigClient == nil {
 		cp.lc.Warnf("unable to watch custom configuration for changes: Configuration Provider not enabled")
 		return
 	}
@@ -690,14 +685,14 @@ func (cp *Processor) ListenForCustomConfigChanges(
 		updateStream := make(chan any)
 		defer close(updateStream)
 
-		go configClient.WatchForChanges(updateStream, errorStream, configToWatch, sectionName, cp.getMessageClient)
+		go cp.privateConfigClient.WatchForChanges(updateStream, errorStream, configToWatch, sectionName, cp.getMessageClient)
 
 		isFirstUpdate := true
 
 		for {
 			select {
 			case <-cp.ctx.Done():
-				configClient.StopWatching()
+				cp.privateConfigClient.StopWatching()
 				cp.lc.Infof("Watching for '%s' configuration changes has stopped", sectionName)
 				return
 
@@ -789,7 +784,7 @@ func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
 // service's configuration writable sub-struct.  It's assumed the log level is universally part of the
 // writable struct and this function explicitly updates the loggingClient's log level when new configuration changes
 // are received.
-func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configuration, configClient configuration.Client, baseKey string) {
+func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configuration, privateConfigClient configuration.Client, baseKey string) {
 	lc := cp.lc
 	isFirstUpdate := true
 
@@ -803,12 +798,12 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 		updateStream := make(chan any)
 		defer close(updateStream)
 
-		go configClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey, cp.getMessageClient)
+		go privateConfigClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey, cp.getMessageClient)
 
 		for {
 			select {
 			case <-cp.ctx.Done():
-				configClient.StopWatching()
+				privateConfigClient.StopWatching()
 				lc.Infof("Watching for '%s' configuration changes has stopped", writableKey)
 				return
 
@@ -820,7 +815,7 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 					return
 				}
 
-				usedKeys, err := configClient.GetConfigurationKeys(writableKey)
+				usedKeys, err := privateConfigClient.GetConfigurationKeys(writableKey)
 				if err != nil {
 					lc.Errorf("failed to get list of private configuration keys for %s: %v", writableKey, err)
 				}
