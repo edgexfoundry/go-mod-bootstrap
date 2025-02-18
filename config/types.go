@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
  * Copyright 2023 Intel Corporation
- * Copyright 2021-2022 IOTech Ltd.
+ * Copyright 2021-2025 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -151,6 +151,16 @@ type ClientInfo struct {
 func (c ClientInfo) Url() string {
 	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
 	return url
+}
+
+func NewSecretStoreSetupClientInfo() *ClientsCollection {
+	secretStoreStepClient := ClientsCollection{
+		common.SecuritySecretStoreSetupServiceKey: &ClientInfo{
+			Host:     "localhost",
+			Port:     59843,
+			Protocol: "http",
+		}}
+	return &secretStoreStepClient
 }
 
 // SecretStoreInfo encapsulates configuration properties used to create a SecretClient.

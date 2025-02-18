@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2022 Intel Corp.
+ * Copyright 2025 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,6 +17,8 @@ package config
 
 import (
 	"testing"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -50,4 +53,21 @@ func TestTelemetryInfo_MetricEnabled(t *testing.T) {
 			assert.Equal(t, test.ExpectedMetricName, actualName)
 		})
 	}
+}
+
+func TestNewSecretStoreSetupClientInfo(t *testing.T) {
+	expectedHost := "localhost"
+	expectedPort := 59843
+	expectedPrt := "http"
+
+	target := NewSecretStoreSetupClientInfo()
+
+	assert.NotEqual(t, &ClientsCollection{}, target)
+	assert.NotNil(t, target)
+
+	clientConfig := *target
+	assert.NotNil(t, clientConfig)
+	assert.Equal(t, expectedHost, clientConfig[common.SecuritySecretStoreSetupServiceKey].Host)
+	assert.Equal(t, expectedPort, clientConfig[common.SecuritySecretStoreSetupServiceKey].Port)
+	assert.Equal(t, expectedPrt, clientConfig[common.SecuritySecretStoreSetupServiceKey].Protocol)
 }

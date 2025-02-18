@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2022 Intel Inc.
+ * Copyright 2025 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -24,15 +25,14 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v4/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v4/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
-
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/authtokenloader/mocks"
 
 	"github.com/stretchr/testify/assert"
@@ -195,4 +195,25 @@ func TestBuildSecretStoreConfig(t *testing.T) {
 	assert.Equal(t, expectedRuntimeTokenProviderHost, target.RuntimeTokenProvider.Host)
 	assert.Equal(t, expectedRuntimeTokenProviderHost, target.RuntimeTokenProvider.Host)
 	assert.Equal(t, expectedRuntimeTokenProviderRequiredSecrets, target.RuntimeTokenProvider.RequiredSecrets)
+}
+
+func TestBuildSecretStoreSetupClientConfig(t *testing.T) {
+	expectedHost := "edgex-security-secretstore-setup"
+	expectedPort := 59843
+	expectedPrt := "http"
+
+	os.Setenv("CLIENTS_SECURITY_SECRETSTORE_SETUP_HOST", expectedHost)
+
+	lc := logger.NewMockClient()
+	target, err := BuildSecretStoreSetupClientConfig(environment.NewVariables(lc), lc)
+	require.NoError(t, err)
+
+	require.NotEqual(t, &bootstrapConfig.ClientsCollection{}, target)
+	require.NotNil(t, target)
+
+	clientConfig := *target
+	require.NotNil(t, clientConfig)
+	require.Equal(t, expectedHost, clientConfig[common.SecuritySecretStoreSetupServiceKey].Host)
+	require.Equal(t, expectedPort, clientConfig[common.SecuritySecretStoreSetupServiceKey].Port)
+	require.Equal(t, expectedPrt, clientConfig[common.SecuritySecretStoreSetupServiceKey].Protocol)
 }

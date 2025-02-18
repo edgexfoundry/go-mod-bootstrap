@@ -1,6 +1,7 @@
 /********************************************************************************
  *  Copyright 2019 Dell Inc.
  *  Copyright 2022 Intel Corp.
+ *  Copyright 2025 IOTech Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -22,21 +23,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
-	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/types"
-	"github.com/edgexfoundry/go-mod-secrets/v4/secrets"
-	gometrics "github.com/rcrowley/go-metrics"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+
+	httpClients "github.com/edgexfoundry/go-mod-core-contracts/v4/clients/http"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 
 	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/authtokenloader"
 	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/fileioperformer"
 	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/token/runtimetokenprovider"
+	"github.com/edgexfoundry/go-mod-secrets/v4/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/v4/secrets"
+
+	gometrics "github.com/rcrowley/go-metrics"
 )
 
 // secret service Metric Names
@@ -124,6 +128,36 @@ func NewSecretProvider(
 						return nil, err
 					}
 					break
+				} else if strings.Contains(err.Error(), AccessTokenAuthError) && !secretConfig.RuntimeTokenProvider.Enabled {
+					lc.Warnf("token expired, invoking secret-store-setup regen token API ........")
+
+					clientCollection, err := BuildSecretStoreSetupClientConfig(envVars, lc)
+					if err != nil {
+						return nil, err
+					}
+
+					clientConfigs := *clientCollection
+					ssSetupClient, ok := clientConfigs[common.SecuritySecretStoreSetupServiceKey]
+					if !ok {
+						return nil, fmt.Errorf("failed to obtain %s client from config", common.SecuritySecretStoreSetupServiceKey)
+					}
+					baseUrl := ssSetupClient.Url()
+
+					entityId, err := tokenLoader.ReadEntityId(secretStoreConfig.TokenFile)
+					if err != nil {
+						return nil, err
+					}
+
+					// Use InsecureProvider here since the client token has been expired and cannot be used to obtain the JWT
+					secretProvider := NewInsecureProvider(configuration, lc, dic)
+					jwtProvider := NewJWTSecretProvider(secretProvider)
+					httpClient := httpClients.NewSecretStoreTokenClient(baseUrl, jwtProvider)
+					_, err = httpClient.RegenToken(ctx, entityId)
+					if err != nil {
+						return nil, err
+					}
+
+					lc.Infof("token file re-generated, trying to create the secret client again later")
 				}
 			}
 
@@ -233,4 +267,22 @@ func addEdgeXSecretNamePrefix(secretName string) string {
 	}
 
 	return "/" + path.Join("v1", "secret", "edgex", trimmedSecretName)
+}
+
+// BuildSecretStoreSetupClientConfig is public helper function that builds the ClientsCollection configuration
+// from default values and environment override.
+func BuildSecretStoreSetupClientConfig(envVars *environment.Variables, lc logger.LoggingClient) (*config.ClientsCollection, error) {
+	configWrapper := struct {
+		Clients *config.ClientsCollection
+	}{
+		Clients: config.NewSecretStoreSetupClientInfo(),
+	}
+
+	count, err := envVars.OverrideConfiguration(&configWrapper)
+	if err != nil {
+		return nil, fmt.Errorf("failed to override SecretStore information: %v", err)
+	}
+
+	lc.Infof("SecretStoreSetup client information created with %d overrides applied", count)
+	return configWrapper.Clients, nil
 }
