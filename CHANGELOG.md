@@ -11,6 +11,54 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) 
 
+## [v4.0.0] - 2025-03-12
+
+### Features ✨
+
+- Use go-mod-messaging updated `Msgenvelope` functions ([689d11e…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/689d11e68f960c6c14ce082c34596ae70a65391e))
+- Pass a callback function to `WatchForChanges` method ([b6bb7df…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/b6bb7df54b72900fcda88764a7a262809c7ef0bc))
+- Enhance the authentication hook function to support external JWT ([7262530…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/72625307fddf58a71365790e5e0be9b42f7a78ae))
+- Remove unused DeviceServiceCallbackClient ([7b366ed…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/7b366ed6b72269b97670537de5a767f6419a1c50))
+- Add new go build tag no_openziti to reduce build size ([#795](https://github.com/edgexfoundry/go-mod-bootstrap/issues/795)) ([84aca22…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/84aca22400148320c57e09313d7449f5f8115793))
+- Add EDGEX_USE_COMMON_APP_SERVICE_SECRET_KEY for service key overwrite ([f50d47c…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/f50d47cdb4fa0fe79d3d17d162436ddd25ceae0b))
+- Remove consul dependency ([f96ab66…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/f96ab668d791aab77e23aaafed7abcc7644c67b4))
+```text
+
+BREAKING CHANGE: Remove consul dependency
+
+```
+- Add new env to support -o flag ([e434cfd…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/e434cfdce0460ca50b9e4eb39b13d3f67b6c892e))
+- Add Core-Keeper support ([080e5c8…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/080e5c897ab1dda4b94d78b7c372d6709be40d7f))
+- Add service key to HTTP Server ([#679](https://github.com/edgexfoundry/go-mod-bootstrap/issues/679)) ([29e6be3…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/29e6be3fc9be9fbd702a2e04303cff05dbc064c4))
+- Allow clients to be zero trust ([#678](https://github.com/edgexfoundry/go-mod-bootstrap/issues/678)) ([8d0240b…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/8d0240bc54551be018be9a3c56ae3a4d4077960c))
+- Initial implemention of openziti to go-mod-bootstrap ([#659](https://github.com/edgexfoundry/go-mod-bootstrap/issues/659)) ([4121a9d…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/4121a9d94e80f18bcd1a00453943416b0e7bee92))
+
+
+### ♻ Code Refactoring 
+
+- Update go module to v4 ([6033f3b…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/6033f3b516f7a5c480af45f64e54ef7bf3ebd196))
+
+### 🐛 Bug Fixes
+
+- Obtain the updated configuration provider client to handle configuration changes ([a102aaa…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/a102aaa88e6157ae4f10e700649ce459678db03b))
+- Add the security-proxy-auth svc client ([8b40366…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/8b40366ef811c77a489073e1d2e5798a88ef11f7))
+- Call the next handler function in the auth_middleware ([f48dd5b…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/f48dd5bce7e6d8322f74a8837d508bc8a732ffc9))
+- Define SecretStoreAuth in the separate file ([46f501e…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/46f501e4dcabb1ffe69c872c4c876d19e628ad96))
+- Add the missing import in auth_middleware_no_ziti ([d68de5a…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/d68de5a9a2dcd206b405c97d306b965e2ac4107f))
+- Remove unit tests related to redis pub/sub ([#793](https://github.com/edgexfoundry/go-mod-bootstrap/issues/793)) ([1eae02d…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/1eae02d0b1549b634448567cd0d7a360a0398db7))
+```text
+
+BREAKING CHANGE: Remove redis pub/sub
+
+```
+- The env should override flags ([fe8b0f6…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/fe8b0f6cacb45d2182d28f4c6e9322bd5df5cb90))
+
+
+### 👷 Build
+
+- Upgrade to go-1.23, Linter1.61.0 ([3a67eaa…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/3a67eaaa63d9f35c3d54c0ad5787606cacd7d90e))
+
+
 ## [v3.1.0] - 2023-11-15
 
 ### ✨  Features
