@@ -15,7 +15,7 @@
 
 ### Features ✨
 
-- Use go-mod-messaging updated `Msgenvelope` functions ([689d11e…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/689d11e68f960c6c14ce082c34596ae70a65391e))
+- Use go-mod-messaging updated `NewMessageEnvelope` functions ([689d11e…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/689d11e68f960c6c14ce082c34596ae70a65391e))
 - Pass a callback function to `WatchForChanges` method ([b6bb7df…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/b6bb7df54b72900fcda88764a7a262809c7ef0bc))
 - Enhance the authentication hook function to support external JWT ([7262530…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/72625307fddf58a71365790e5e0be9b42f7a78ae))
 - Remove unused DeviceServiceCallbackClient ([7b366ed…](https://github.com/edgexfoundry/go-mod-bootstrap/commit/7b366ed6b72269b97670537de5a767f6419a1c50))
