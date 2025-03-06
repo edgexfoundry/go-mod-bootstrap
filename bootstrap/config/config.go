@@ -116,12 +116,16 @@ func NewProcessorForCustomConfig(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	dic *di.Container) *Processor {
+
+	privateConfigClient := container.ConfigClientFrom(dic.Get)
+
 	return &Processor{
-		lc:    container.LoggingClientFrom(dic.Get),
-		flags: flags,
-		ctx:   ctx,
-		wg:    wg,
-		dic:   dic,
+		lc:                  container.LoggingClientFrom(dic.Get),
+		flags:               flags,
+		ctx:                 ctx,
+		wg:                  wg,
+		dic:                 dic,
+		privateConfigClient: privateConfigClient,
 	}
 }
 
