@@ -4,11 +4,11 @@ go 1.23
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.14
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.30
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.18
-	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.4
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.12
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0
+	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -71,7 +71,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/nats-io/nats.go v1.39.0 // indirect
+	github.com/nats-io/nats.go v1.39.1 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
