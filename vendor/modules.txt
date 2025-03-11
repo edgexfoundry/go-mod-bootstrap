@@ -18,13 +18,13 @@ github.com/davecgh/go-spew/spew
 ## explicit; go 1.20
 github.com/eclipse/paho.mqtt.golang
 github.com/eclipse/paho.mqtt.golang/packets
-# github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0
+# github.com/edgexfoundry/go-mod-configuration/v4 v4.0.1
 ## explicit; go 1.23
 github.com/edgexfoundry/go-mod-configuration/v4/configuration
 github.com/edgexfoundry/go-mod-configuration/v4/configuration/mocks
 github.com/edgexfoundry/go-mod-configuration/v4/internal/pkg/keeper
 github.com/edgexfoundry/go-mod-configuration/v4/pkg/types
-# github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0
+# github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.1
 ## explicit; go 1.23
 github.com/edgexfoundry/go-mod-core-contracts/v4/clients
 github.com/edgexfoundry/go-mod-core-contracts/v4/clients/http
@@ -40,7 +40,7 @@ github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests
 github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/responses
 github.com/edgexfoundry/go-mod-core-contracts/v4/errors
 github.com/edgexfoundry/go-mod-core-contracts/v4/models
-# github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0
+# github.com/edgexfoundry/go-mod-messaging/v4 v4.0.1
 ## explicit; go 1.23
 github.com/edgexfoundry/go-mod-messaging/v4/clients
 github.com/edgexfoundry/go-mod-messaging/v4/internal/pkg
@@ -51,13 +51,13 @@ github.com/edgexfoundry/go-mod-messaging/v4/internal/pkg/nats/jetstream
 github.com/edgexfoundry/go-mod-messaging/v4/messaging
 github.com/edgexfoundry/go-mod-messaging/v4/messaging/mocks
 github.com/edgexfoundry/go-mod-messaging/v4/pkg/types
-# github.com/edgexfoundry/go-mod-registry/v4 v4.0.0
+# github.com/edgexfoundry/go-mod-registry/v4 v4.0.1
 ## explicit; go 1.23
 github.com/edgexfoundry/go-mod-registry/v4/internal/pkg/keeper
 github.com/edgexfoundry/go-mod-registry/v4/pkg/types
 github.com/edgexfoundry/go-mod-registry/v4/registry
 github.com/edgexfoundry/go-mod-registry/v4/registry/mocks
-# github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0
+# github.com/edgexfoundry/go-mod-secrets/v4 v4.0.1
 ## explicit; go 1.23
 github.com/edgexfoundry/go-mod-secrets/v4/internal/pkg/openbao
 github.com/edgexfoundry/go-mod-secrets/v4/pkg
