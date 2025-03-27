@@ -4,11 +4,11 @@ go 1.23.0
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.1
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.1
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.1
-	github.com/edgexfoundry/go-mod-registry/v4 v4.0.1
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.1
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.1
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.1
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.3
+	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.1
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -58,7 +58,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kataras/go-events v0.0.3 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/nats-io/nats.go v1.39.1 // indirect
+	github.com/nats-io/nats.go v1.40.1 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
