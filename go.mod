@@ -15,7 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/openziti/sdk-golang v0.25.1
+	github.com/openziti/sdk-golang v1.0.2
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
@@ -76,13 +76,13 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openziti/channel/v3 v3.0.39 // indirect
+	github.com/openziti/channel/v4 v4.0.4 // indirect
 	github.com/openziti/edge-api v0.26.42 // indirect
 	github.com/openziti/foundation/v2 v2.0.59 // indirect
 	github.com/openziti/identity v1.0.100 // indirect
-	github.com/openziti/metrics v1.3.0 // indirect
+	github.com/openziti/metrics v1.4.0 // indirect
 	github.com/openziti/secretstream v0.1.32 // indirect
-	github.com/openziti/transport/v2 v2.0.167 // indirect
+	github.com/openziti/transport/v2 v2.0.168 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
 	github.com/parallaxsecond/parsec-client-go v0.0.0-20221025095442-f0a77d263cf9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -108,11 +108,10 @@ require (
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/oauth2 v0.28.0 // indirect
+	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
