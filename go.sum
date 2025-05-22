@@ -74,6 +74,7 @@ github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.6 h1:sk+8Nn2OTybVgHH
 github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.6/go.mod h1:+FTlgTE3IynyUrf2cHw6LWJ5Ns+RZN4ywiJb9rSfL4Q=
 github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.8 h1:p3gaxVnPGUn9To+QxdJX2htdjKyl3paT8+9gydzF7is=
 github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.8/go.mod h1:qQ9b5be5Vcz8xsuu1Luzo/V70z5+ie53DZIa3V6KHIg=
+github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.9/go.mod h1:sEuzs69BePH6XdkZhoIe213uRFPLW/w7jsdQcvpcpJ0=
 github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.3 h1:Qg4NPW12zZ++NUpdHMbxVMAPSO7N9eKFrEAM1pqEx+E=
 github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.3/go.mod h1:WGRU3Yq7FV0RiDa/dA6IvHaWwD4VzibDa2sm0t3vXi4=
 github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.3 h1:nKioDN+UNwm2D09vpak5cOgY6XS+4mCzcr4uqzBKK3c=
@@ -334,6 +335,7 @@ github.com/muhlemmer/httpforwarded v0.1.0 h1:x4DLrzXdliq8mprgUMR0olDvHGkou5BJsK/
 github.com/muhlemmer/httpforwarded v0.1.0/go.mod h1:yo9czKedo2pdZhoXe+yDkGVbU0TJ0q9oQ90BVoDEtw0=
 github.com/nats-io/nats.go v1.41.2 h1:5UkfLAtu/036s99AhFRlyNDI1Ieylb36qbGjJzHixos=
 github.com/nats-io/nats.go v1.41.2/go.mod h1:iRWIPokVIFbVijxuMQq4y9ttaBTMe0SFdlZfMDd+33g=
+github.com/nats-io/nats.go v1.42.0/go.mod h1:iRWIPokVIFbVijxuMQq4y9ttaBTMe0SFdlZfMDd+33g=
 github.com/nats-io/nkeys v0.4.11 h1:q44qGV008kYd9W1b1nEBkNzvnWxtRSQ7A8BoqRrcfa0=
 github.com/nats-io/nkeys v0.4.11/go.mod h1:szDimtgmfOi9n25JpfIdGw12tZFYXqhGxjhVxsatHVE=
 github.com/nats-io/nuid v1.0.1 h1:5iA8DT8V7q8WK2EScv2padNa/rTESc1KdnPw4TC2paw=
