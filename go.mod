@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.4
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.6
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.6
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.8
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.9
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.3
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.3
 	github.com/golang-jwt/jwt/v5 v5.2.2
@@ -72,7 +72,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/nats-io/nats.go v1.41.2 // indirect
+	github.com/nats-io/nats.go v1.42.0 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible // indirect
-	github.com/spf13/cast v1.8.0 // indirect
+	github.com/spf13/cast v1.9.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
