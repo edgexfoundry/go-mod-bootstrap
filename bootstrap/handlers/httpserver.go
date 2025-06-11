@@ -44,7 +44,6 @@ type HttpServer struct {
 	router           *echo.Echo
 	isRunning        bool
 	doListenAndServe bool
-	applyTimeout     bool // whether to apply timeout middleware with the configured RequestTimeout
 	serverKey        string
 }
 
@@ -54,7 +53,6 @@ func NewHttpServer(router *echo.Echo, doListenAndServe bool, serviceKey string) 
 		router:           router,
 		isRunning:        false,
 		doListenAndServe: doListenAndServe,
-		applyTimeout:     true,
 		serverKey:        serviceKey,
 	}
 }
@@ -64,12 +62,6 @@ func NewHttpServer(router *echo.Echo, doListenAndServe bool, serviceKey string) 
 // processed (e.g. a database connection).
 func (b *HttpServer) IsRunning() bool {
 	return b.isRunning
-}
-
-// DisableTimeoutMiddleware disables the timeout middleware if the service needs custom handling of timeouts.
-// Should be called before BootstrapHandler is invoked.
-func (b *HttpServer) DisableTimeoutMiddleware() {
-	b.applyTimeout = false
 }
 
 // BootstrapHandler fulfills the BootstrapHandler contract.  It creates two go routines -- one that executes ListenAndServe()
@@ -125,19 +117,15 @@ func (b *HttpServer) BootstrapHandler(
 	b.router.Use(LoggingMiddleware(lc))
 	b.router.Use(UrlDecodeMiddleware(lc))
 
-	if b.applyTimeout {
-		timeout, err := time.ParseDuration(bootstrapConfig.Service.RequestTimeout)
-		if err != nil {
-			lc.Errorf("unable to parse RequestTimeout value of %s to a duration: %v", bootstrapConfig.Service.RequestTimeout, err)
-			return false
-		}
-
-		b.router.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-			Timeout: timeout,
-		}))
-	} else {
-		lc.Debug("Timeout middleware is disabled, RequestTimeout will not be applied automatically.")
+	timeout, err := time.ParseDuration(bootstrapConfig.Service.RequestTimeout)
+	if err != nil {
+		lc.Errorf("unable to parse RequestTimeout value of %s to a duration: %v", bootstrapConfig.Service.RequestTimeout, err)
+		return false
 	}
+
+	b.router.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+		Timeout: timeout,
+	}))
 
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
 
@@ -171,7 +159,7 @@ func (b *HttpServer) BootstrapHandler(
 		}()
 
 		b.isRunning = true
-		err := zerotrust.ListenOnMode(bootstrapConfig, b.serverKey, addr, t, server, dic)
+		err = zerotrust.ListenOnMode(bootstrapConfig, b.serverKey, addr, t, server, dic)
 
 		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
 		if err != nil && err != http.ErrServerClosed {
