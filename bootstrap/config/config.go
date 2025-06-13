@@ -179,20 +179,6 @@ func (cp *Processor) Process(
 			serviceKey); err != nil {
 			return err
 		}
-
-		// listen for changes on Writable
-		cp.listenForPrivateChanges(serviceConfig, cp.privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
-		cp.lc.Infof("listening for private config changes")
-		cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
-		cp.lc.Infof("listening for all services common config changes")
-		if cp.appConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.appConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, appServicesKey))
-			cp.lc.Infof("listening for application service common config changes")
-		}
-		if cp.deviceConfigClient != nil {
-			cp.listenForCommonChanges(serviceConfig, cp.deviceConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, deviceServicesKey))
-			cp.lc.Infof("listening for device service common config changes")
-		}
 	} else {
 		// Now load common configuration from local file if not using config provider and -cc/--commonConfig flag is used.
 		// NOTE: Some security services don't use any common configuration and don't use the configuration provider.
@@ -330,6 +316,7 @@ func (cp *Processor) loadConfigByProvider(
 		cp.lc.Info("Private configuration has been pushed to into Configuration Provider with overrides applied")
 	}
 
+	// listen for changes on Writable
 	cp.listenForPrivateChanges(serviceConfig, cp.privateConfigClient, utils.BuildBaseKey(configStem, serviceKey))
 	cp.lc.Infof("listening for private config changes")
 	cp.listenForCommonChanges(serviceConfig, cp.commonConfigClient, cp.privateConfigClient, utils.BuildBaseKey(configStem, common.CoreCommonConfigServiceKey, allServicesKey))
@@ -684,10 +671,7 @@ func (cp *Processor) ListenForCustomConfigChanges(
 		defer cp.wg.Done()
 
 		errorStream := make(chan error)
-		defer close(errorStream)
-
 		updateStream := make(chan any)
-		defer close(updateStream)
 
 		go cp.privateConfigClient.WatchForChanges(updateStream, errorStream, configToWatch, sectionName, cp.getMessageClient)
 
@@ -797,10 +781,7 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 		defer cp.wg.Done()
 
 		errorStream := make(chan error)
-		defer close(errorStream)
-
 		updateStream := make(chan any)
-		defer close(updateStream)
 
 		go privateConfigClient.WatchForChanges(updateStream, errorStream, serviceConfig.EmptyWritablePtr(), writableKey, cp.getMessageClient)
 
@@ -859,10 +840,7 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 		var previousCommonWritable any
 
 		errorStream := make(chan error)
-		defer close(errorStream)
-
 		updateStream := make(chan any)
-		defer close(updateStream)
 
 		go commonConfigClient.WatchForChanges(updateStream, errorStream, fullServiceConfig.EmptyWritablePtr(), writableKey, cp.getMessageClient)
 
