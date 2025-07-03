@@ -795,19 +795,9 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 			case ex := <-errorStream:
 				lc.Errorf("error occurred during listening to the configuration changes: %s", ex.Error())
 
-			case raw, ok := <-updateStream:
+			case _, ok := <-updateStream:
 				if !ok {
 					return
-				}
-
-				usedKeys, err := privateConfigClient.GetConfigurationKeys(writableKey)
-				if err != nil {
-					lc.Errorf("failed to get list of private configuration keys for %s: %v", writableKey, err)
-				}
-
-				rawMap, err := utils.RemoveUnusedSettings(raw, utils.BuildBaseKey(baseKey, writableKey), utils.StringSliceToMap(usedKeys))
-				if err != nil {
-					lc.Errorf("failed to remove unused private settings in %s: %v", writableKey, err)
 				}
 
 				// Config Provider sends an update as soon as the watcher is connected even though there are not
@@ -817,7 +807,7 @@ func (cp *Processor) listenForPrivateChanges(serviceConfig interfaces.Configurat
 					isFirstUpdate = false
 					continue
 				}
-				cp.applyWritableUpdates(serviceConfig, rawMap)
+				cp.applyWritableUpdates(serviceConfig)
 			}
 		}
 	}()
@@ -920,7 +910,7 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 		}
 	}
 
-	cp.applyWritableUpdates(fullServiceConfig, raw)
+	cp.applyWritableUpdates(fullServiceConfig)
 	return nil
 }
 
@@ -947,7 +937,7 @@ func (cp *Processor) findChangedKey(previous any, updated any) (string, bool) {
 	return changedKey, true
 }
 
-func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration, raw any) {
+func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration) {
 	lc := cp.lc
 	previousLogLevel := serviceConfig.GetLogLevel()
 	previousTelemetryInterval := serviceConfig.GetTelemetryInfo().Interval
@@ -957,9 +947,48 @@ func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration
 		lc.Errorf("failed to deep copy insecure secrets: %v", err)
 	}
 
-	if err := utils.MergeValues(serviceConfig.GetWritablePtr(), raw); err != nil {
-		lc.Errorf("failed to apply Writable change to service configuration: %v", err)
+	serviceConfigCopy, err := copyConfigurationStruct(serviceConfig)
+	if err != nil {
+		lc.Errorf("failed to copy configuration struct: %v", err)
+		return
 	}
+	v := reflect.ValueOf(serviceConfigCopy)
+	if v.Kind() == reflect.Ptr && !v.IsNil() {
+		v = v.Elem()
+		v.Set(reflect.Zero(v.Type()))
+	}
+
+	err = cp.loadConfigFromProvider(serviceConfigCopy, cp.commonConfigClient)
+	if err != nil {
+		lc.Errorf("failed to load common configuration: %v", err)
+		return
+	}
+
+	if cp.deviceConfigClient != nil {
+		err = cp.loadConfigFromProvider(serviceConfigCopy, cp.deviceConfigClient)
+		if err != nil {
+			lc.Errorf("failed to load device service common configuration: %v", err)
+			return
+		}
+	}
+
+	if cp.appConfigClient != nil {
+		err = cp.loadConfigFromProvider(serviceConfigCopy, cp.appConfigClient)
+		if err != nil {
+			lc.Errorf("failed to load application service common configuration: %v", err)
+			return
+		}
+	}
+
+	if cp.privateConfigClient != nil {
+		err = cp.loadConfigFromProvider(serviceConfigCopy, cp.privateConfigClient)
+		if err != nil {
+			lc.Errorf("failed to load private configuration: %v", err)
+			return
+		}
+	}
+
+	serviceConfig.UpdateFromRaw(serviceConfigCopy)
 
 	currentInsecureSecrets := serviceConfig.GetInsecureSecrets()
 	currentLogLevel := serviceConfig.GetLogLevel()
