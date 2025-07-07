@@ -866,6 +866,16 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 				// envVars override of one of the Writable fields, so on the first update we can just save a copy of the
 				// common writable for comparison for future writable updates.
 				if isFirstUpdate {
+					// When the configuration provider sends an initial update (raw == nil), it indicates the watcher has connected
+					// but no configuration changes have occurred. In this case, we use the writable configuration directly from
+					// the full service configuration to establish a baseline for future comparisons.
+					if raw == nil {
+						w := fullServiceConfig.GetWritablePtr()
+						rawMap, err = utils.RemoveUnusedSettings(w, baseKey, utils.StringSliceToMap(usedKeys))
+						if err != nil {
+							lc.Errorf("failed to remove unused common settings in %s: %v", writableKey, err)
+						}
+					}
 					isFirstUpdate = false
 					previousCommonWritable = rawMap
 					continue
@@ -876,7 +886,7 @@ func (cp *Processor) listenForCommonChanges(fullServiceConfig interfaces.Configu
 				}
 
 				// ensure that the local copy of the common writable gets updated no matter what
-				previousCommonWritable = raw
+				previousCommonWritable = rawMap
 			}
 		}
 	}(fullServiceConfig, configClient, privateConfigClient, baseKey)
@@ -895,7 +905,7 @@ func (cp *Processor) processCommonConfigChange(fullServiceConfig interfaces.Conf
 
 			// This case should not happen at this point, but need to guard against nil pointer
 			if otherConfigClient != nil {
-				if cp.isKeyInConfig(configClient, changedKey) {
+				if cp.isKeyInConfig(otherConfigClient, changedKey) {
 					cp.lc.Warnf("ignoring changed writable key %s overwritten in App or Device common writable", changedKey)
 					return nil
 				}
