@@ -4,9 +4,9 @@ go 1.23.7
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.9
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.6
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.10
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.10
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.9
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.11
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.3
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.3
 	github.com/golang-jwt/jwt/v5 v5.2.3
@@ -30,7 +30,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
-	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -50,7 +50,7 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.26.0 // indirect
+	github.com/go-playground/validator/v10 v10.27.0 // indirect
 	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
