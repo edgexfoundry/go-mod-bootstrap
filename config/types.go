@@ -216,11 +216,14 @@ func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 }
 
 type Database struct {
-	Type    string
-	Timeout string
-	Host    string
-	Port    int
-	Name    string
+	Type            string
+	Timeout         string
+	Host            string
+	Port            int
+	Name            string
+	MaxConns        int
+	MaxConnIdleTime string
+	MaxConnLifetime string
 }
 
 // Credentials encapsulates username-password attributes.
