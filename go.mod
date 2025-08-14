@@ -15,7 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/openziti/sdk-golang v1.2.2
+	github.com/openziti/sdk-golang v1.2.3
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
@@ -76,7 +76,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openziti/channel/v4 v4.2.19 // indirect
+	github.com/openziti/channel/v4 v4.2.21 // indirect
 	github.com/openziti/edge-api v0.26.47 // indirect
 	github.com/openziti/foundation/v2 v2.0.70 // indirect
 	github.com/openziti/identity v1.0.109 // indirect
