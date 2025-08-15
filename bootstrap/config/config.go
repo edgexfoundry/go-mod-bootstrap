@@ -278,6 +278,15 @@ func (cp *Processor) loadConfigByProvider(
 	}
 
 	if cp.providerHasConfig && !cp.getOverwriteConfig() {
+		// After upgrading EdgeX, new configurations may be introduced.
+		// Ensure new configurations from the YAML file are pushed to the core-keeper.
+		filePath := GetConfigFileLocation(cp.lc, cp.flags)
+		secretProvider := container.SecretProviderExtFrom(cp.dic.Get)
+		err = PutMissingConfigToConfigProvider(filePath, secretProvider, cp.privateConfigClient, cp.lc)
+		if err != nil {
+			return err
+		}
+
 		privateServiceConfig, err := copyConfigurationStruct(serviceConfig)
 		if err != nil {
 			return err
@@ -1270,4 +1279,77 @@ func GetInsecureSecretNameFullPath(secretName string) string {
 func GetInsecureSecretDataFullPath(secretName, key string) string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s",
 		writableKey, insecureSecretsKey, secretName, secretDataKey, key)
+}
+
+func PutMissingConfigToConfigProvider(yamlFilePath string, secretProvider interfaces.SecretProvider, configClient configuration.Client, lc logger.LoggingClient) error {
+	keyValues, err := KeyValuesFromYamlFile(yamlFilePath, secretProvider, lc)
+	if err != nil {
+		return fmt.Errorf("failed to put missing config by yaml file %s: %s", yamlFilePath, err.Error())
+	}
+
+	for key, value := range keyValues {
+		if value == nil {
+			continue
+		}
+		hasSubConfig, err := configClient.HasSubConfiguration(key)
+		if err != nil {
+			return fmt.Errorf("failed to check config %s: %s", key, err.Error())
+		}
+		if hasSubConfig {
+			continue
+		}
+		if err = configClient.PutConfigurationValue(key, []byte(fmt.Sprint(value))); err != nil {
+			return fmt.Errorf("failed to push common configuration key %s with value %v: %s", key, value, err.Error())
+		}
+	}
+	return nil
+}
+
+// KeyValuesFromYamlFile loads yaml file and convert to key value pairs
+//
+//	For example,
+//	{
+//		"app-services/Writable/StoreAndForward/MaxRetryCount": 10,  <= common config
+//		"Writable/MaxDevices": 0,  <= private config
+//	}
+func KeyValuesFromYamlFile(yamlFile string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) (map[string]any, error) {
+	contents, err := file.Load(yamlFile, secretProvider, lc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read configuration file %s: %s", yamlFile, err.Error())
+	}
+
+	data := make(map[string]any)
+	kv := make(map[string]any)
+
+	err = yaml.Unmarshal(contents, &data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshall yaml configuration: %s", err.Error())
+	}
+
+	kv = buildKeyValues(data, kv, "")
+	return kv, nil
+}
+
+// buildKeyValues is a helper function to parse the configuration yaml file contents
+func buildKeyValues(data map[string]interface{}, kv map[string]interface{}, origKey string) map[string]interface{} {
+	key := origKey
+	for k, v := range data {
+		if len(key) == 0 {
+			key = fmt.Sprint(k)
+		} else {
+			key = fmt.Sprintf("%s/%s", key, k)
+		}
+
+		vdata, ok := v.(map[string]interface{})
+		if !ok {
+			kv[key] = v
+			key = origKey
+			continue
+		}
+
+		kv = buildKeyValues(vdata, kv, key)
+		key = origKey
+	}
+
+	return kv
 }
