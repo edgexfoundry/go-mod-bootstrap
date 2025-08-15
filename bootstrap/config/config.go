@@ -278,6 +278,13 @@ func (cp *Processor) loadConfigByProvider(
 	}
 
 	if cp.providerHasConfig && !cp.getOverwriteConfig() {
+		// After upgrading EdgeX, new configurations may be introduced.
+		// Ensure new configurations from the YAML file are pushed to the core-keeper.
+		err = cp.putMissingPrivateConfigToConfigProvider()
+		if err != nil {
+			return err
+		}
+
 		privateServiceConfig, err := copyConfigurationStruct(serviceConfig)
 		if err != nil {
 			return err
@@ -1270,4 +1277,23 @@ func GetInsecureSecretNameFullPath(secretName string) string {
 func GetInsecureSecretDataFullPath(secretName, key string) string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s",
 		writableKey, insecureSecretsKey, secretName, secretDataKey, key)
+}
+
+func (cp *Processor) putMissingPrivateConfigToConfigProvider() error {
+	yamlFilePath := GetConfigFileLocation(cp.lc, cp.flags)
+	configMap, err := cp.loadConfigYamlFromFile(yamlFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to put missing config by yaml file %s: %s", yamlFilePath, err.Error())
+	}
+	overrideCount, err := cp.envVars.OverrideConfigMapValues(configMap)
+	if err != nil {
+		return fmt.Errorf("failed to put missing config by yaml file %s: %s", yamlFilePath, err.Error())
+	}
+	cp.lc.Debugf("Private configuration loaded from file '%s' with %d overrides applied for putting configs", yamlFilePath, overrideCount)
+
+	// Set overwrite is false, only put the non-exist config
+	if err = cp.privateConfigClient.PutConfigurationMap(configMap, false); err != nil {
+		return fmt.Errorf("failed to put missing config by yaml file %s: %s", yamlFilePath, err.Error())
+	}
+	return nil
 }
