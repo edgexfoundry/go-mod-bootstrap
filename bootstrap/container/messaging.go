@@ -21,11 +21,11 @@ import (
 )
 
 // MessagingClientName contains the name of the messaging client instance in the DIC.
-var MessagingClientName = di.TypeInstanceToName((*messaging.MessageClient)(nil))
+var MessagingClientName = di.TypeInstanceToName((*messaging.MessageClientExt)(nil))
 
 // MessagingClientFrom helper function queries the DIC and returns the messaging client.
-func MessagingClientFrom(get di.Get) messaging.MessageClient {
-	client, ok := get(MessagingClientName).(messaging.MessageClient)
+func MessagingClientFrom(get di.Get) messaging.MessageClientExt {
+	client, ok := get(MessagingClientName).(messaging.MessageClientExt)
 	if !ok {
 		return nil
 	}
