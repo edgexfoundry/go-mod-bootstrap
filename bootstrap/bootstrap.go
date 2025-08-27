@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  * Copyright 2023 Intel Corporation
- * Copyright 2024 IOTech Ltd
+ * Copyright 2024-2025 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -29,6 +29,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/registration"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
@@ -53,7 +54,7 @@ func fatalError(err error, lc logger.LoggingClient) {
 
 // translateInterruptToCancel spawns a go routine to translate the receipt of a SIGTERM signal to a call to cancel
 // the context used by the bootstrap implementation.
-func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel context.CancelFunc) {
+func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel context.CancelFunc, dic *di.Container) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -64,11 +65,15 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 			close(signalStream)
 		}()
 		signal.Notify(signalStream, os.Interrupt, syscall.SIGTERM)
+		lc := container.LoggingClientFrom(dic.Get)
+		mc := container.MessagingClientFrom(dic.Get)
 		select {
 		case <-signalStream:
+			messaging.WaitForMsgClientCriticalOperations(lc, mc)
 			cancel()
 			return
 		case <-ctx.Done():
+			messaging.WaitForMsgClientCriticalOperations(lc, mc)
 			return
 		}
 	}()
@@ -110,7 +115,7 @@ func RunAndReturnWaitGroup(
 	}
 
 	utils.AdaptLogrusBasedLogging(lc)
-	translateInterruptToCancel(ctx, &wg, cancel)
+	translateInterruptToCancel(ctx, &wg, cancel, dic)
 
 	envVars := environment.NewVariables(lc)
 

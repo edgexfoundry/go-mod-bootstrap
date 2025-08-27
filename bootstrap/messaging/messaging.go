@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2021 Intel Corp.
+ * Copyright 2025 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -22,12 +23,14 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/v4/messaging"
 )
 
 const (
@@ -156,4 +159,15 @@ func ValidateSecretData(authMode string, secretName string, secretData *SecretDa
 	}
 
 	return nil
+}
+
+func WaitForMsgClientCriticalOperations(lc logger.LoggingClient, mc messaging.MessageClient) {
+	mcExt, ok := mc.(messaging.MessageClientExt)
+	if ok {
+		if mcExt.WaitForCriticalOperations(10 * time.Second) {
+			lc.Debug("all critical operations completed")
+		} else {
+			lc.Warnf("timeout waiting for critical operations, continuing with shutdown")
+		}
+	}
 }
