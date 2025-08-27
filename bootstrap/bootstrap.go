@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  * Copyright 2023 Intel Corporation
- * Copyright 2024 IOTech Ltd
+ * Copyright 2024-2025 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
@@ -53,7 +54,7 @@ func fatalError(err error, lc logger.LoggingClient) {
 
 // translateInterruptToCancel spawns a go routine to translate the receipt of a SIGTERM signal to a call to cancel
 // the context used by the bootstrap implementation.
-func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel context.CancelFunc) {
+func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel context.CancelFunc, dic *di.Container) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -66,6 +67,15 @@ func translateInterruptToCancel(ctx context.Context, wg *sync.WaitGroup, cancel 
 		signal.Notify(signalStream, os.Interrupt, syscall.SIGTERM)
 		select {
 		case <-signalStream:
+			lc := container.LoggingClientFrom(dic.Get)
+			mc := container.MessagingClientFrom(dic.Get)
+			signaler := mc.CriticalOperationSignaler()
+			lc.Debug("waiting for MessagingClient critical operations to complete before canceling the context")
+			if signaler.WaitForCriticalOperations(10 * time.Second) {
+				lc.Debug("all critical operations completed")
+			} else {
+				lc.Warnf("timeout waiting for critical operations, continuing with shutdown")
+			}
 			cancel()
 			return
 		case <-ctx.Done():
@@ -110,7 +120,7 @@ func RunAndReturnWaitGroup(
 	}
 
 	utils.AdaptLogrusBasedLogging(lc)
-	translateInterruptToCancel(ctx, &wg, cancel)
+	translateInterruptToCancel(ctx, &wg, cancel, dic)
 
 	envVars := environment.NewVariables(lc)
 
