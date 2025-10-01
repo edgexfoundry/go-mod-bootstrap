@@ -1,6 +1,6 @@
 module github.com/edgexfoundry/go-mod-bootstrap/v4
 
-go 1.23.7
+go 1.24.0
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
@@ -15,7 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/openziti/sdk-golang v1.2.3
+	github.com/openziti/sdk-golang v1.2.6
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
@@ -76,13 +76,13 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openziti/channel/v4 v4.2.21 // indirect
+	github.com/openziti/channel/v4 v4.2.31 // indirect
 	github.com/openziti/edge-api v0.26.47 // indirect
-	github.com/openziti/foundation/v2 v2.0.70 // indirect
-	github.com/openziti/identity v1.0.109 // indirect
+	github.com/openziti/foundation/v2 v2.0.73 // indirect
+	github.com/openziti/identity v1.0.112 // indirect
 	github.com/openziti/metrics v1.4.2 // indirect
-	github.com/openziti/secretstream v0.1.38 // indirect
-	github.com/openziti/transport/v2 v2.0.183 // indirect
+	github.com/openziti/secretstream v0.1.39 // indirect
+	github.com/openziti/transport/v2 v2.0.189 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
 	github.com/parallaxsecond/parsec-client-go v0.0.0-20221025095442-f0a77d263cf9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -112,14 +112,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/oauth2 v0.31.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 	nhooyr.io/websocket v1.8.17 // indirect
 )
