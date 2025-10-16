@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2020-2023 Intel Corporation
+ * Copyright 2025 IOTech Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -22,6 +23,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -72,8 +74,11 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 		return nil, err
 	}
 
+	// URL encode the secretName to handle special characters like '/' which is used as key delimiter by core-keeper
+	encodedSecretName := url.QueryEscape(secretName)
+
 	for _, insecureSecret := range insecureSecrets {
-		if insecureSecret.SecretName == secretName {
+		if insecureSecret.SecretName == encodedSecretName {
 			if len(keys) == 0 {
 				// If no keys are provided then all the keys associated with the specified secretName will be returned
 				for k, v := range insecureSecret.SecretData {
@@ -119,15 +124,18 @@ func (p *InsecureProvider) StoreSecret(secretName string, secrets map[string]str
 		return errors.NewCommonEdgeX(errors.KindNotAllowed, "can't store secrets. ConfigurationProvider is not in use or has not been properly initialized", nil)
 	}
 
+	// URL encode the secretName to handle special characters like '/' which is used as key delimiter by core-keeper
+	encodedSecretName := url.QueryEscape(secretName)
+
 	// insert the top-level data about the secret name
-	err := configClient.PutConfigurationValue(config.GetInsecureSecretNameFullPath(secretName), []byte(secretName))
+	err := configClient.PutConfigurationValue(config.GetInsecureSecretNameFullPath(encodedSecretName), []byte(encodedSecretName))
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretName value in the config provider", err)
 	}
 
 	// insert each secret key/value pair
 	for key, value := range secrets {
-		err = configClient.PutConfigurationValue(config.GetInsecureSecretDataFullPath(secretName, key), []byte(value))
+		err = configClient.PutConfigurationValue(config.GetInsecureSecretDataFullPath(encodedSecretName, key), []byte(value))
 		if err != nil {
 			return errors.NewCommonEdgeX(errors.KindCommunicationError, "error setting secretData key/value pair in the config provider", err)
 		}
