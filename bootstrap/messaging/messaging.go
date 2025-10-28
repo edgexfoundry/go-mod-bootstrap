@@ -77,11 +77,11 @@ func SetOptionsAuthData(messageBusInfo *config.MessageBusInfo, lc logger.Logging
 
 	secretData, err := GetSecretData(messageBusInfo.AuthMode, messageBusInfo.SecretName, secretProvider)
 	if err != nil {
-		return fmt.Errorf("Unable to get Secret Data for secure message bus: %w", err)
+		return fmt.Errorf("unable to get Secret Data for secure message bus: %w", err)
 	}
 
 	if err := ValidateSecretData(messageBusInfo.AuthMode, messageBusInfo.SecretName, secretData); err != nil {
-		return fmt.Errorf("Secret Data for secure message bus invalid: %w", err)
+		return fmt.Errorf("secret Data for secure message bus invalid: %w", err)
 	}
 
 	if messageBusInfo.Optional == nil {
@@ -147,14 +147,14 @@ func ValidateSecretData(authMode string, secretName string, secretData *SecretDa
 	case AuthModeNone:
 		// Nothing to validate
 	default:
-		return fmt.Errorf("Invalid AuthMode of '%s' selected", authMode)
+		return fmt.Errorf("invalid AuthMode of '%s' selected", authMode)
 	}
 
 	if len(secretData.CaPemBlock) > 0 {
 		caCertPool := x509.NewCertPool()
 		ok := caCertPool.AppendCertsFromPEM(secretData.CaPemBlock)
 		if !ok {
-			return errors.New("Error parsing CA Certificate")
+			return errors.New("error parsing CA Certificate")
 		}
 	}
 

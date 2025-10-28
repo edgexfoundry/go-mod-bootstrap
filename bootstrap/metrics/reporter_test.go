@@ -243,7 +243,9 @@ func TestMessageBusReporter_Report(t *testing.T) {
 
 func TestMessageBusReporter_ReportWithEnv(t *testing.T) {
 	_ = os.Setenv("EDGEX_MSG_BASE64_PAYLOAD", common.ValueTrue)
-	defer os.Setenv("EDGEX_MSG_BASE64_PAYLOAD", common.ValueFalse)
+	defer func(key, value string) {
+		_ = os.Setenv(key, value)
+	}("EDGEX_MSG_BASE64_PAYLOAD", common.ValueFalse)
 
 	expectedServiceName := "test-service"
 	expectedMetricName := "test-metric"

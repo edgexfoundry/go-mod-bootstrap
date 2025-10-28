@@ -598,10 +598,10 @@ func TestOverrideConfigMapValues(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			defer os.Clearenv()
-			os.Setenv("TOP", "new top value")
-			os.Setenv("SOME_VALUE", "your string")
-			os.Setenv("SOME_THING_HERE", "321")
-			os.Setenv("MY_OTHER_VALUE", "89.12")
+			_ = os.Setenv("TOP", "new top value")
+			_ = os.Setenv("SOME_VALUE", "your string")
+			_ = os.Setenv("SOME_THING_HERE", "321")
+			_ = os.Setenv("MY_OTHER_VALUE", "89.12")
 
 			mockLogger := &loggerMocks.LoggingClient{}
 			mockLogger.On("Infof", mock.Anything, "top", "TOP", "new top value")

@@ -35,7 +35,7 @@ func ProcessCORS(corsInfo config.CORSConfigurationInfo) echo.MiddlewareFunc {
 			if corsInfo.EnableCORS && r.Header.Get(Origin) != "" {
 				// Set Access-Control-Expose-Headers only if it's not a preflight request
 				// If the http method is OPTIONS with Access-Control-Request-Methods headers, it means a preflight request
-				if !(r.Method == http.MethodOptions && r.Header.Get(AccessControlRequestMethod) != "") {
+				if r.Method != http.MethodOptions || r.Header.Get(AccessControlRequestMethod) == "" {
 					if len(corsInfo.CORSExposeHeaders) > 0 {
 						w.Header().Set(AccessControlExposeHeaders, corsInfo.CORSExposeHeaders)
 					}

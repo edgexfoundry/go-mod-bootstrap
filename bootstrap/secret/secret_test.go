@@ -175,12 +175,12 @@ func TestBuildSecretStoreConfig(t *testing.T) {
 	expectedRuntimeTokenProviderEnabled := true
 	expectedRuntimeTokenProviderHost := "edgex-security-spiffe-token-provider"
 	expectedRuntimeTokenProviderRequiredSecrets := "mqtt-bus"
-	os.Setenv("SECRETSTORE_HOST", expectedHost)
-	os.Setenv("SECRETSTORE_PORT", strconv.FormatInt(int64(expectedPort), 10))
-	os.Setenv("SECRETSTORE_TOKENFILE", expectedTokenFile)
-	os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_ENABLED", strconv.FormatBool(expectedRuntimeTokenProviderEnabled))
-	os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_HOST", expectedRuntimeTokenProviderHost)
-	os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_REQUIREDSECRETS", expectedRuntimeTokenProviderRequiredSecrets)
+	_ = os.Setenv("SECRETSTORE_HOST", expectedHost)
+	_ = os.Setenv("SECRETSTORE_PORT", strconv.FormatInt(int64(expectedPort), 10))
+	_ = os.Setenv("SECRETSTORE_TOKENFILE", expectedTokenFile)
+	_ = os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_ENABLED", strconv.FormatBool(expectedRuntimeTokenProviderEnabled))
+	_ = os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_HOST", expectedRuntimeTokenProviderHost)
+	_ = os.Setenv("SECRETSTORE_RUNTIMETOKENPROVIDER_REQUIREDSECRETS", expectedRuntimeTokenProviderRequiredSecrets)
 
 	lc := logger.NewMockClient()
 	target, err := BuildSecretStoreConfig(expectedServiceKey, environment.NewVariables(lc), lc)
@@ -202,7 +202,7 @@ func TestBuildSecretStoreSetupClientConfig(t *testing.T) {
 	expectedPort := 59843
 	expectedPrt := "http"
 
-	os.Setenv("CLIENTS_SECURITY_SECRETSTORE_SETUP_HOST", expectedHost)
+	_ = os.Setenv("CLIENTS_SECURITY_SECRETSTORE_SETUP_HOST", expectedHost)
 
 	lc := logger.NewMockClient()
 	target, err := BuildSecretStoreSetupClientConfig(environment.NewVariables(lc), lc)

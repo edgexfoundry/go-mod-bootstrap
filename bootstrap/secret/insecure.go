@@ -100,13 +100,13 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 	}
 
 	if len(missingKeys) > 0 {
-		err := fmt.Errorf("No value for the keys: [%s] exists", strings.Join(missingKeys, ","))
+		err := fmt.Errorf("no value for the keys: [%s] exists", strings.Join(missingKeys, ","))
 		return nil, err
 	}
 
 	if !secretNameExists {
 		// if secretName is not in secret store
-		err := fmt.Errorf("Error, secretName (%v) doesn't exist in secret store", secretName)
+		err := fmt.Errorf("error, secretName (%v) doesn't exist in secret store", secretName)
 		return nil, err
 	}
 
