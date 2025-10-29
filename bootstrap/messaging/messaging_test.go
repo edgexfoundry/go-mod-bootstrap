@@ -91,7 +91,7 @@ func TestValidateSecrets(t *testing.T) {
 		ErrorExpectation bool
 		ErrorMessage     string
 	}{
-		{"Invalid AuthMode", true, "BadAuthMode", &SecretData{}, true, "Invalid AuthMode of 'BadAuthMode' selected"},
+		{"Invalid AuthMode", true, "BadAuthMode", &SecretData{}, true, "invalid AuthMode of 'BadAuthMode' selected"},
 		{"No Auth No error", true, AuthModeNone, &SecretData{}, false, ""},
 		{"UsernamePassword No Error", true, AuthModeUsernamePassword, &SecretData{
 			Username: "user",
@@ -122,7 +122,7 @@ func TestValidateSecrets(t *testing.T) {
 		}, false, ""},
 		{"CACert invalid error", true, AuthModeCA, &SecretData{
 			CaPemBlock: []byte(`------`),
-		}, true, "Error parsing CA Certificate"},
+		}, true, "error parsing CA Certificate"},
 		{"CACert no ca error", true, AuthModeCA, &SecretData{}, true, "AuthModeCA selected however no PEM Block was found for secret=unit-test"},
 	}
 

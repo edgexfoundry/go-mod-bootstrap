@@ -45,7 +45,7 @@ func createRegistryClient(
 	secretProvider := container.SecretProviderExtFrom(dic.Get)
 
 	if len(bootstrapConfig.Registry.Host) == 0 || bootstrapConfig.Registry.Port == 0 || len(bootstrapConfig.Registry.Type) == 0 {
-		return nil, errors.New("Registry configuration is empty or incomplete, missing common config? Use -cp or -cc flags for common config.")
+		return nil, errors.New("registry configuration is empty or incomplete, missing common config? Use -cp or -cc flags for common config")
 	}
 
 	registryConfig := registryTypes.Config{

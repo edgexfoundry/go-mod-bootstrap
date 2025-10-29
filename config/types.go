@@ -221,7 +221,7 @@ type Database struct {
 	Host            string
 	Port            int
 	Name            string
-	MaxConns        int
+	MaxConns        int32
 	MaxConnIdleTime string
 	MaxConnLifetime string
 }

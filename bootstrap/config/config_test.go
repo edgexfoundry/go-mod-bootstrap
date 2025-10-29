@@ -425,9 +425,9 @@ func TestGetConfigFileLocation(t *testing.T) {
 			flags := flags.New()
 
 			defer os.Clearenv()
-			os.Setenv("EDGEX_CONFIG_DIR", test.dir)
-			os.Setenv("EDGEX_PROFILE", test.profile)
-			os.Setenv("EDGEX_CONFIG_FILE", test.path)
+			_ = os.Setenv("EDGEX_CONFIG_DIR", test.dir)
+			_ = os.Setenv("EDGEX_PROFILE", test.profile)
+			_ = os.Setenv("EDGEX_CONFIG_FILE", test.path)
 
 			actual := GetConfigFileLocation(lc, flags)
 			assert.Equal(t, test.expected, actual)

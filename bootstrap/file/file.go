@@ -18,7 +18,7 @@ func Load(path string, provider interfaces.SecretProvider, lc logger.LoggingClie
 
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse file path: %v", err)
+		return nil, fmt.Errorf("could not parse file path: %v", err)
 	}
 
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
@@ -27,7 +27,7 @@ func Load(path string, provider interfaces.SecretProvider, lc logger.LoggingClie
 		}
 		req, err := http.NewRequest("GET", path, nil)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to create new request for remote file: %s: %v", parsedUrl.Redacted(), err)
+			return nil, fmt.Errorf("unable to create new request for remote file: %s: %v", parsedUrl.Redacted(), err)
 		}
 
 		// Get httpheader secret
@@ -44,10 +44,10 @@ func Load(path string, provider interfaces.SecretProvider, lc logger.LoggingClie
 				if secrets["headername"] != "" && secrets["headercontents"] != "" {
 					req.Header.Add(secrets["headername"], secrets["headercontents"])
 				} else {
-					return nil, fmt.Errorf("Secret headername and headercontents can not be empty")
+					return nil, fmt.Errorf("secret headername and headercontents can not be empty")
 				}
 			} else {
-				return nil, fmt.Errorf("Secret type is not httpheader")
+				return nil, fmt.Errorf("secret type is not httpheader")
 			}
 		}
 
@@ -55,22 +55,27 @@ func Load(path string, provider interfaces.SecretProvider, lc logger.LoggingClie
 		resp, err := client.Do(req)
 
 		if err != nil {
-			return nil, fmt.Errorf("Could not get remote file: %s: %v", parsedUrl.Redacted(), err)
+			return nil, fmt.Errorf("could not get remote file: %s: %v", parsedUrl.Redacted(), err)
 		}
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				lc.Errorf("error closing response body: %v", err)
+			}
+		}(resp.Body)
 
 		if resp.StatusCode >= 300 {
-			return nil, fmt.Errorf("Invalid status code %d loading remote file: %s", resp.StatusCode, parsedUrl.Redacted())
+			return nil, fmt.Errorf("invalid status code %d loading remote file: %s", resp.StatusCode, parsedUrl.Redacted())
 		}
 
 		fileBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("Could not read remote file: %s: %v", parsedUrl.Redacted(), err)
+			return nil, fmt.Errorf("could not read remote file: %s: %v", parsedUrl.Redacted(), err)
 		}
 	} else {
-		fileBytes, err = os.ReadFile(path)
+		fileBytes, err = os.ReadFile(path) // #nosec G304 -- path is controlled and safe to be read
 		if err != nil {
-			return nil, fmt.Errorf("Could not read file %s: %v", path, err)
+			return nil, fmt.Errorf("could not read file %s: %v", path, err)
 		}
 	}
 

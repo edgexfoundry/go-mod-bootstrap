@@ -67,7 +67,7 @@ const (
 	SecurityModeKey = "Mode"
 )
 
-var invalidRemoteHostsError = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")
+var errInvalidRemoteHosts = errors.New("-rsh/--remoteServiceHosts must contain 3 and only 3 comma seperated host names")
 
 // UpdatedStream defines the stream type that is notified by ListenForChanges when a configuration update is received.
 type UpdatedStream chan struct{}
@@ -164,7 +164,7 @@ func (cp *Processor) Process(
 	if useProvider {
 		if remoteHosts != nil {
 			if len(remoteHosts) != 3 {
-				return invalidRemoteHostsError
+				return errInvalidRemoteHosts
 			}
 
 			cp.lc.Infof("Setting config Provider host to %s", remoteHosts[1])
@@ -387,7 +387,9 @@ func getLocalIP() string {
 		// Since this is for Dev Mode, just default to localhost when can't get the actual IP
 		return "localhost"
 	}
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		_ = conn.Close()
+	}(conn)
 
 	localAddress := conn.LocalAddr().(*net.UDPAddr)
 
@@ -396,7 +398,7 @@ func getLocalIP() string {
 
 func applyRemoteHosts(remoteHosts []string, serviceConfig interfaces.Configuration) error {
 	if len(remoteHosts) != 3 {
-		return invalidRemoteHostsError
+		return errInvalidRemoteHosts
 	}
 
 	config := serviceConfig.GetBootstrap()
