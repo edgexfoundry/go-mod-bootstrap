@@ -308,13 +308,13 @@ func (*Variables) convertToType(oldValue any, value string) (newValue any, err e
 		newValue = int(newValue.(int64))
 	case int8:
 		newValue, err = strconv.ParseInt(value, 10, 8)
-		newValue = int8(newValue.(int64))
+		newValue = int8(newValue.(int64)) // #nosec G115 -- specify bitSize above, so conversion here is safe
 	case int16:
 		newValue, err = strconv.ParseInt(value, 10, 16)
-		newValue = int16(newValue.(int64))
+		newValue = int16(newValue.(int64)) // #nosec G115 -- specify bitSize above, so conversion here is safe
 	case int32:
 		newValue, err = strconv.ParseInt(value, 10, 32)
-		newValue = int32(newValue.(int64))
+		newValue = int32(newValue.(int64)) // #nosec G115 -- specify bitSize above, so conversion here is safe
 	case int64:
 		newValue, err = strconv.ParseInt(value, 10, 64)
 	case uint:
@@ -322,13 +322,13 @@ func (*Variables) convertToType(oldValue any, value string) (newValue any, err e
 		newValue = uint(newValue.(uint64))
 	case uint8:
 		newValue, err = strconv.ParseUint(value, 10, 8)
-		newValue = uint8(newValue.(uint64))
+		newValue = uint8(newValue.(uint64)) // #nosec G115 -- specify bitSize above, so conversion here is safe
 	case uint16:
 		newValue, err = strconv.ParseUint(value, 10, 16)
-		newValue = uint16(newValue.(uint64))
+		newValue = uint16(newValue.(uint64)) // #nosec G115 -- specify bitSize above, so conversion here is safe
 	case uint32:
 		newValue, err = strconv.ParseUint(value, 10, 32)
-		newValue = uint32(newValue.(uint64))
+		newValue = uint32(newValue.(uint64)) // #nosec G115 -- specify bitSize above, so conversion here is safe
 	case uint64:
 		newValue, err = strconv.ParseUint(value, 10, 64)
 	case float32:
