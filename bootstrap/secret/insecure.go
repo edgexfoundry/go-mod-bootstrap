@@ -78,9 +78,14 @@ func (p *InsecureProvider) GetSecret(secretName string, keys ...string) (map[str
 	encodedSecretName := url.QueryEscape(secretName)
 
 	for _, insecureSecret := range insecureSecrets {
-		if insecureSecret.SecretName == encodedSecretName {
+		// for services running with the config provider, insecure secrets from core-keeper must be escaped to
+		// prevent conflicts with the '/' key delimiter, so compare with encodedSecretName to retrieve secrets
+		if insecureSecret.SecretName == encodedSecretName ||
+			// for services running without the config provider, insecure secrets stored in the config file are not
+			// necessarily escaped, so compare with secretName directly to retrieve secrets
+			insecureSecret.SecretName == secretName {
 			if len(keys) == 0 {
-				// If no keys are provided then all the keys associated with the specified secretName will be returned
+				// If no keys are provided, all the keys associated with the specified secretName will be returned
 				for k, v := range insecureSecret.SecretData {
 					results[k] = v
 				}
