@@ -17,11 +17,13 @@
 ### 🐛 Bug Fixes 
 - Prevent panic caused by sending on a closed channel ([#b8dda90](https://github.com/edgexfoundry/go-mod-bootstrap/commits/b8dda90))
 - Handle `nil` raw configuration during the first update of common writable config ([#881](https://github.com/edgexfoundry/go-mod-bootstrap/issues/881)) ([#ded4db3](https://github.com/edgexfoundry/go-mod-bootstrap/commits/ded4db3))
+
 ### Code Refactoring ♻
 - Replace `MergeValues` with a full reload in `applyWritableUpdates` ([#878](https://github.com/edgexfoundry/go-mod-bootstrap/issues/878)) ([#b91f3b8](https://github.com/edgexfoundry/go-mod-bootstrap/commits/b91f3b8))
 
 ### 👷 Build 
 - Set the Go version to 1.23 ([#7a006e5](https://github.com/edgexfoundry/go-mod-bootstrap/commits/7a006e5))
+
 
 ## [v4.0.3]
 
