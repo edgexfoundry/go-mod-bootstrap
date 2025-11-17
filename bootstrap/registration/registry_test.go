@@ -53,7 +53,7 @@ func TestCreateRegistryClient(t *testing.T) {
 		},
 	})
 
-	actual, err := createRegistryClient("unit-test", serviceConfig, lc, dic)
+	actual, err := createRegistryClient("unit-test", serviceConfig, lc, dic, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, actual)
 }

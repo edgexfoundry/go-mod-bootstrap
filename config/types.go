@@ -26,7 +26,9 @@ import (
 )
 
 const (
+	ServiceProtocol     = "serviceProtocol"
 	DefaultHttpProtocol = "http"
+	HttpsProtocol       = "https"
 )
 
 const (
@@ -189,7 +191,7 @@ type SecretStoreInfo struct {
 func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 	return SecretStoreInfo{
 		Type:                    secrets.DefaultSecretStore,
-		Protocol:                "http",
+		Protocol:                DefaultHttpProtocol,
 		Host:                    "localhost",
 		Port:                    8200,
 		StoreName:               serviceKey,
@@ -205,7 +207,7 @@ func NewSecretStoreInfo(serviceKey string) SecretStoreInfo {
 		},
 		RuntimeTokenProvider: types.RuntimeTokenProviderInfo{
 			Enabled:         false,
-			Protocol:        "https",
+			Protocol:        HttpsProtocol,
 			Host:            "localhost",
 			Port:            59841,
 			TrustDomain:     "edgexfoundry.org",

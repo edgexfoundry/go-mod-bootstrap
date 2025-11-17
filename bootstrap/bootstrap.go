@@ -98,10 +98,33 @@ func RunAndReturnWaitGroup(
 	useSecretProvider bool, // TODO: remove useSecretProvider and use serviceType in place with its constant
 	serviceType string,
 	handlers []interfaces.BootstrapHandler) (*sync.WaitGroup, Deferred, bool) {
+	return RunAndReturnWaitGroupWithOptions(ctx, cancel, commonFlags, serviceKey, configStem, serviceConfig, configUpdated,
+		startupTimer, dic, useSecretProvider, serviceType, handlers, nil)
+}
+
+// RunAndReturnWaitGroupWithOptions bootstraps an application with options.
+func RunAndReturnWaitGroupWithOptions(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	commonFlags flags.Common,
+	serviceKey string,
+	configStem string,
+	serviceConfig interfaces.Configuration,
+	configUpdated config.UpdatedStream,
+	startupTimer startup.Timer,
+	dic *di.Container,
+	useSecretProvider bool, // TODO: remove useSecretProvider and use serviceType in place with its constant
+	serviceType string,
+	handlers []interfaces.BootstrapHandler,
+	options map[string]any) (*sync.WaitGroup, Deferred, bool) {
 
 	var err error
 	var wg sync.WaitGroup
 	deferred := func() {}
+
+	if options == nil {
+		options = make(map[string]any)
+	}
 
 	// Check if service provided an initial Logging Client to use. If not create one and add it to the DIC.
 	lc := container.LoggingClientFrom(dic.Get)
@@ -139,13 +162,14 @@ func RunAndReturnWaitGroup(
 
 	envUseRegistry, wasOverridden := envVars.UseRegistry()
 	if envUseRegistry || (commonFlags.UseRegistry() && !wasOverridden) {
-		registryClient, err = registration.RegisterWithRegistry(
+		registryClient, err = registration.RegisterWithRegistryWithOptions(
 			ctx,
 			startupTimer,
 			serviceConfig,
 			lc,
 			serviceKey,
-			dic)
+			dic,
+			options)
 		if err != nil {
 			fatalError(err, lc)
 		}
@@ -219,8 +243,29 @@ func Run(
 	useSecretProvider bool,
 	serviceType string,
 	handlers []interfaces.BootstrapHandler) {
+	RunWithOptions(ctx, cancel, commonFlags, serviceKey, configStem, serviceConfig, startupTimer, dic, useSecretProvider, serviceType, handlers, nil)
+}
 
-	wg, deferred, success := RunAndReturnWaitGroup(
+// RunWithOptions bootstraps an application with options.
+func RunWithOptions(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	commonFlags flags.Common,
+	serviceKey string,
+	configStem string,
+	serviceConfig interfaces.Configuration,
+	startupTimer startup.Timer,
+	dic *di.Container,
+	useSecretProvider bool,
+	serviceType string,
+	handlers []interfaces.BootstrapHandler,
+	options map[string]any) {
+
+	if options == nil {
+		options = make(map[string]any)
+	}
+
+	wg, deferred, success := RunAndReturnWaitGroupWithOptions(
 		ctx,
 		cancel,
 		commonFlags,
@@ -233,6 +278,7 @@ func Run(
 		useSecretProvider,
 		serviceType,
 		handlers,
+		options,
 	)
 
 	if !success {
