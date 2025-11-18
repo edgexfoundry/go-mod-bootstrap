@@ -40,12 +40,23 @@ func createRegistryClient(
 	serviceKey string,
 	serviceConfig interfaces.Configuration,
 	lc logger.LoggingClient,
-	dic *di.Container) (registry.Client, error) {
+	dic *di.Container,
+	options map[string]any) (registry.Client, error) {
 	bootstrapConfig := serviceConfig.GetBootstrap()
 	secretProvider := container.SecretProviderExtFrom(dic.Get)
 
 	if len(bootstrapConfig.Registry.Host) == 0 || bootstrapConfig.Registry.Port == 0 || len(bootstrapConfig.Registry.Type) == 0 {
 		return nil, errors.New("registry configuration is empty or incomplete, missing common config? Use -cp or -cc flags for common config")
+	}
+
+	serviceProtocol := config.DefaultHttpProtocol
+	if options != nil {
+		if v, ok := options[config.ServiceProtocol]; ok && v != "" {
+			if strVal, ok := v.(string); ok {
+				lc.Debugf("Set registry configuration ServiceProtocol to '%s'", strVal)
+				serviceProtocol = strVal
+			}
+		}
 	}
 
 	registryConfig := registryTypes.Config{
@@ -55,13 +66,13 @@ func createRegistryClient(
 		ServiceKey:      serviceKey,
 		ServiceHost:     bootstrapConfig.Service.Host,
 		ServicePort:     bootstrapConfig.Service.Port,
-		ServiceProtocol: config.DefaultHttpProtocol,
+		ServiceProtocol: serviceProtocol,
 		CheckInterval:   bootstrapConfig.Service.HealthCheckInterval,
 		CheckRoute:      common.ApiPingRoute,
 		AuthInjector:    secret.NewJWTSecretProvider(secretProvider),
 	}
 
-	lc.Info(fmt.Sprintf("Using Registry (%s) from %s", registryConfig.Type, registryConfig.GetRegistryUrl()))
+	lc.Infof("Using Registry (%s) from %s", registryConfig.Type, registryConfig.GetRegistryUrl())
 
 	return registry.NewRegistryClient(registryConfig)
 }
@@ -74,6 +85,22 @@ func RegisterWithRegistry(
 	lc logger.LoggingClient,
 	serviceKey string,
 	dic *di.Container) (registry.Client, error) {
+	return RegisterWithRegistryWithOptions(ctx, startupTimer, config, lc, serviceKey, dic, nil)
+}
+
+// RegisterWithRegistryWithOptions connects to the registry and registers the service with the Registry with options
+func RegisterWithRegistryWithOptions(
+	ctx context.Context,
+	startupTimer startup.Timer,
+	config interfaces.Configuration,
+	lc logger.LoggingClient,
+	serviceKey string,
+	dic *di.Container,
+	options map[string]any) (registry.Client, error) {
+
+	if options == nil {
+		options = make(map[string]any)
+	}
 
 	var registryWithRegistry = func(registryClient registry.Client) error {
 		if !registryClient.IsAlive() {
@@ -87,7 +114,7 @@ func RegisterWithRegistry(
 		return nil
 	}
 
-	registryClient, err := createRegistryClient(serviceKey, config, lc, dic)
+	registryClient, err := createRegistryClient(serviceKey, config, lc, dic, options)
 	if err != nil {
 		return nil, fmt.Errorf("createRegistryClient failed: %v", err.Error())
 	}

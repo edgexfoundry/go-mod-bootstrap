@@ -768,7 +768,7 @@ func GetConfigFileLocation(lc logger.LoggingClient, flags flags.Common) string {
 		return ""
 	}
 
-	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
+	if parsedUrl.Scheme == config.DefaultHttpProtocol || parsedUrl.Scheme == config.HttpsProtocol {
 		return configFileName
 	}
 

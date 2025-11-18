@@ -9,6 +9,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/environment"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 )
 
@@ -21,7 +22,7 @@ func Load(path string, provider interfaces.SecretProvider, lc logger.LoggingClie
 		return nil, fmt.Errorf("could not parse file path: %v", err)
 	}
 
-	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
+	if parsedUrl.Scheme == config.DefaultHttpProtocol || parsedUrl.Scheme == config.HttpsProtocol {
 		client := &http.Client{
 			Timeout: environment.GetURIRequestTimeout(lc),
 		}
