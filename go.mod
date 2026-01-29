@@ -9,7 +9,7 @@ require (
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.18
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.8
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.8
-	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.14.0
