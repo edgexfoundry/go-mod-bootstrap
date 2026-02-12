@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
- * Copyright 2021-2024 IOTech Ltd
+ * Copyright 2021-2026 IOTech Ltd
  * Copyright 2023 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -125,9 +125,7 @@ func (b *HttpServer) BootstrapHandler(
 
 	if timeout > 0 {
 		// Apply timeout middleware only when timeout is set
-		b.router.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-			Timeout: timeout,
-		}))
+		b.router.Use(middleware.ContextTimeout(timeout))
 	}
 
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
