@@ -15,7 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.15.1
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/openziti/sdk-golang v1.4.1
+	github.com/openziti/sdk-golang v1.4.2
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
