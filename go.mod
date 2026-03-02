@@ -15,7 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.15.1
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/openziti/sdk-golang v1.4.1
+	github.com/openziti/sdk-golang v1.5.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
@@ -62,7 +62,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.30.1 // indirect
-	github.com/go-resty/resty/v2 v2.17.1 // indirect
+	github.com/go-resty/resty/v2 v2.17.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
@@ -85,13 +85,13 @@ require (
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
-	github.com/openziti/channel/v4 v4.3.2 // indirect
-	github.com/openziti/edge-api v0.26.52 // indirect
-	github.com/openziti/foundation/v2 v2.0.86 // indirect
-	github.com/openziti/identity v1.0.124 // indirect
+	github.com/openziti/channel/v4 v4.3.6 // indirect
+	github.com/openziti/edge-api v0.26.56 // indirect
+	github.com/openziti/foundation/v2 v2.0.87 // indirect
+	github.com/openziti/identity v1.0.125 // indirect
 	github.com/openziti/metrics v1.4.3 // indirect
 	github.com/openziti/secretstream v0.1.47 // indirect
-	github.com/openziti/transport/v2 v2.0.208 // indirect
+	github.com/openziti/transport/v2 v2.0.209 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
 	github.com/parallaxsecond/parsec-client-go v0.0.0-20221025095442-f0a77d263cf9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
