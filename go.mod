@@ -5,10 +5,10 @@ go 1.25.0
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.17
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.25
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.28
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.18
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.8
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.8
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.9
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
