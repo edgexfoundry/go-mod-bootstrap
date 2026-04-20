@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022-2023 IOTech Ltd
+// Copyright (C) 2022-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
@@ -20,6 +21,53 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRequestTimeoutMiddleware(t *testing.T) {
+	tests := []struct {
+		name           string
+		timeout        time.Duration
+		handlerDelay   time.Duration
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:           "handler completes before timeout",
+			timeout:        100 * time.Millisecond,
+			handlerDelay:   0,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "ok",
+		},
+		{
+			name:           "handler exceeds timeout",
+			timeout:        10 * time.Millisecond,
+			handlerDelay:   500 * time.Millisecond,
+			expectedStatus: http.StatusServiceUnavailable,
+			expectedBody:   "request timeout",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			e := echo.New()
+			e.Use(RequestTimeoutMiddleware(testCase.timeout))
+			e.GET("/", func(c echo.Context) error {
+				if testCase.handlerDelay > 0 {
+					time.Sleep(testCase.handlerDelay)
+				}
+				return c.String(http.StatusOK, "ok")
+			})
+
+			req, err := http.NewRequest(http.MethodGet, "/", nil)
+			require.NoError(t, err)
+
+			recorder := httptest.NewRecorder()
+			e.ServeHTTP(recorder, req)
+
+			assert.Equal(t, testCase.expectedStatus, recorder.Code)
+			assert.Equal(t, testCase.expectedBody, recorder.Body.String())
+		})
+	}
+}
 
 func TestRequestLimitMiddleware(t *testing.T) {
 	e := echo.New()

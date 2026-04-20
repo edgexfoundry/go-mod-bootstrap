@@ -36,7 +36,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 // HttpServer contains references to dependencies required by the http server implementation.
@@ -125,7 +124,7 @@ func (b *HttpServer) BootstrapHandler(
 
 	if timeout > 0 {
 		// Apply timeout middleware only when timeout is set
-		b.router.Use(middleware.ContextTimeout(timeout))
+		b.router.Use(RequestTimeoutMiddleware(timeout))
 	}
 
 	b.router.Use(RequestLimitMiddleware(bootstrapConfig.Service.MaxRequestSize, lc))
@@ -181,6 +180,37 @@ func (b *HttpServer) BootstrapHandler(
 	}()
 
 	return true
+}
+
+// RequestTimeoutMiddleware enforces a request timeout using http.TimeoutHandler.
+// The client receives a 503 immediately when the timeout is exceeded.
+//
+// Unlike echo's ContextTimeout which only sets a context deadline and requires the handler
+// to handle ctx.Done(), http.TimeoutHandler responds to the client immediately on timeout.
+func RequestTimeoutMiddleware(timeout time.Duration) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			h := http.TimeoutHandler(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// - Replace the request so that c.Request().Context() carries the timeout context from TimeoutHandler, allowing downstream handlers to detect cancellation via ctx.Done().
+					// - Replace the writer with TimeoutHandler's mutex-protected writer, which safely discards concurrent writes after timeout.
+					// Both replacements preserve all original context data (route params, auth info, middleware values).
+					c.SetRequest(r)
+					c.SetResponse(echo.NewResponse(w, c.Echo()))
+					if err := next(c); err != nil {
+						// r.Context().Err() is nil means the request has not timed out, so it is safe to write the handler error response.
+						if r.Context().Err() == nil {
+							c.Echo().HTTPErrorHandler(err, c)
+						}
+					}
+				}),
+				timeout,
+				"request timeout",
+			)
+			h.ServeHTTP(c.Response().Writer, c.Request())
+			return nil
+		}
+	}
 }
 
 // RequestLimitMiddleware is a middleware function that limits the request body size to Service.MaxRequestSize in kilobytes
