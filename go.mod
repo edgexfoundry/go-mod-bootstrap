@@ -5,9 +5,9 @@ go 1.25.0
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.18
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.32
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.33
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.23
-	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.9
+	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.10
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.13
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -125,7 +125,6 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
