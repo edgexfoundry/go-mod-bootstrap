@@ -5,10 +5,10 @@ go 1.25.0
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.18
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.33
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.34
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.23
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.10
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.13
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.14
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -30,7 +30,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
-	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
