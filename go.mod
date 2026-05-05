@@ -15,7 +15,7 @@ require (
 	github.com/labstack/echo/v4 v4.15.2
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/openziti/sdk-golang v1.5.4
+	github.com/openziti/sdk-golang v1.7.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
@@ -45,7 +45,7 @@ require (
 	github.com/go-openapi/loads v0.23.3 // indirect
 	github.com/go-openapi/runtime v0.29.3 // indirect
 	github.com/go-openapi/spec v0.22.4 // indirect
-	github.com/go-openapi/strfmt v0.26.0 // indirect
+	github.com/go-openapi/strfmt v0.26.1 // indirect
 	github.com/go-openapi/swag v0.25.5 // indirect
 	github.com/go-openapi/swag/cmdutils v0.25.5 // indirect
 	github.com/go-openapi/swag/conv v0.25.5 // indirect
@@ -110,13 +110,13 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zitadel/logging v0.7.0 // indirect
-	github.com/zitadel/oidc/v3 v3.45.5 // indirect
+	github.com/zitadel/oidc/v3 v3.45.6 // indirect
 	github.com/zitadel/schema v1.3.2 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/otel v1.41.0 // indirect
-	go.opentelemetry.io/otel/metric v1.41.0 // indirect
-	go.opentelemetry.io/otel/trace v1.41.0 // indirect
+	go.opentelemetry.io/otel v1.42.0 // indirect
+	go.opentelemetry.io/otel/metric v1.42.0 // indirect
+	go.opentelemetry.io/otel/trace v1.42.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
