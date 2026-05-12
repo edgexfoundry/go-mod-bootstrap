@@ -7,7 +7,7 @@ require (
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.19
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.36
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.26
-	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.10
+	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.11
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.15
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
