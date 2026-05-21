@@ -34,8 +34,6 @@
 
 ### 👷 Build 
 - Update goVersion to 1.25 and golangci-lint to 2.5.0 ([#c19c369](https://github.com/edgexfoundry/go-mod-bootstrap/commits/c19c369))
-- Update to use the latest Go modules ([#32844ca](https://github.com/edgexfoundry/go-mod-bootstrap/commits/32844ca))
-- Update go.mod in main branch to use dev go-mods ([#f81bc79](https://github.com/edgexfoundry/go-mod-bootstrap/commits/f81bc79))
 
 
 ## [v4.0.0] - 2025-03-12
