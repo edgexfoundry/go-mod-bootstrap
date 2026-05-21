@@ -11,6 +11,33 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) 
 
+## [v4.0.2] - 2026-05-31
+
+### ✨ Features 
+- Set `ServiceProtocol` base on registry options ([#6fe3f80](https://github.com/edgexfoundry/go-mod-bootstrap/commits/6fe3f80))
+- Wait for critical operations of `MessageClient` to complete before shutdown ([#d254d19](https://github.com/edgexfoundry/go-mod-bootstrap/commits/d254d19))
+- Ensure new configurations from the file are applied ([#894](https://github.com/edgexfoundry/go-mod-bootstrap/issues/894)) ([#5c87a8b](https://github.com/edgexfoundry/go-mod-bootstrap/commits/5c87a8b))
+- Add Database configuration ([#c54f35f](https://github.com/edgexfoundry/go-mod-bootstrap/commits/c54f35f))
+- Make the timeout middleware optional ([#fd69a86](https://github.com/edgexfoundry/go-mod-bootstrap/commits/fd69a86))
+- Set middleware to handle `RequestTimeout` ([#1652bfa](https://github.com/edgexfoundry/go-mod-bootstrap/commits/1652bfa))
+
+### 🐛 Bug Fixes 
+- Replace deprecated `TimeoutWithConfig` with `ContextTimeout` ([#9e989c0](https://github.com/edgexfoundry/go-mod-bootstrap/commits/9e989c0))
+- Ensure insecure retrieval for services running without a configration provider ([#85c2c1e](https://github.com/edgexfoundry/go-mod-bootstrap/commits/85c2c1e))
+- Handle nil raw configuration on the first common writable configuration update ([#881](https://github.com/edgexfoundry/go-mod-bootstrap/issues/881)) ([#9a296eb](https://github.com/edgexfoundry/go-mod-bootstrap/commits/9a296eb))
+- Avoid panic when sending on a closed channel ([#28e09b9](https://github.com/edgexfoundry/go-mod-bootstrap/commits/28e09b9))
+- Retrieve `privateConfigClient` from DIC ([#e51942b](https://github.com/edgexfoundry/go-mod-bootstrap/commits/e51942b))
+
+### ♻ Code Refactoring 
+- Update the type of DB configuration `MaxConns` from int to int32 ([#1845771](https://github.com/edgexfoundry/go-mod-bootstrap/commits/1845771))
+- Replace `MergeValues` with full reload in `applyWritableUpdates` ([#878](https://github.com/edgexfoundry/go-mod-bootstrap/issues/878)) ([#797bfb7](https://github.com/edgexfoundry/go-mod-bootstrap/commits/797bfb7))
+
+### 👷 Build 
+- Update goVersion to 1.25 and golangci-lint to 2.5.0 ([#c19c369](https://github.com/edgexfoundry/go-mod-bootstrap/commits/c19c369))
+- Update to use the latest Go modules ([#32844ca](https://github.com/edgexfoundry/go-mod-bootstrap/commits/32844ca))
+- Update go.mod in main branch to use dev go-mods ([#f81bc79](https://github.com/edgexfoundry/go-mod-bootstrap/commits/f81bc79))
+
+
 ## [v4.0.0] - 2025-03-12
 
 ### Features ✨
