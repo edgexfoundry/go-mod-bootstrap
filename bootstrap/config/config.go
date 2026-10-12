@@ -972,7 +972,7 @@ func (cp *Processor) applyWritableUpdates(serviceConfig interfaces.Configuration
 		return
 	}
 	v := reflect.ValueOf(serviceConfigCopy)
-	if v.Kind() == reflect.Ptr && !v.IsNil() {
+	if v.Kind() == reflect.Pointer && !v.IsNil() {
 		v = v.Elem()
 		v.Set(reflect.Zero(v.Type()))
 	}

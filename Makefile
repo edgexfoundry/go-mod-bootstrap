@@ -1,6 +1,7 @@
 .PHONY: test unittest lint 
 
 GO=CGO_ENABLED=1 GO111MODULE=on go
+GOLANGCI_LINT_VERSION=v2.14.0
 ARCH=$(shell uname -m)
 
 tidy:
@@ -14,7 +15,7 @@ lint:
 	@if [ "z${ARCH}" = "zx86_64" ] && which golangci-lint >/dev/null ; then golangci-lint run --config .golangci.yml ; else echo "WARNING: Linting skipped (not on x86_64 or linter not installed)"; fi
 
 install-lint:
-	sudo curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.5.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/$(GOLANGCI_LINT_VERSION)/install.sh | sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
 
 test: unittest lint
 	$(GO) vet ./...
