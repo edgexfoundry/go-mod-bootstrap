@@ -294,7 +294,7 @@ func (p *SecureProvider) LoadServiceSecrets(secretStoreConfig *config.SecretStor
 		return seedingErrs
 	}
 
-	if err := os.WriteFile(secretStoreConfig.SecretsFile, data, 0); err != nil {
+	if err := os.WriteFile(secretStoreConfig.SecretsFile, data, 0); err != nil { // nolint:gosec // path comes from the service's own config
 		return fmt.Errorf("seeding secrets failed: unable to overwrite file with secret data removed: %s", err.Error())
 	}
 
