@@ -57,7 +57,7 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 		}
 	}
 
-	msgClient, err := messaging.NewMessageClient(
+	msgClient, err := messaging.NewMessageClientWithLogger(
 		types.MessageBusConfig{
 			Broker: types.HostInfo{
 				Host:     messageBusInfo.Host,
@@ -66,7 +66,7 @@ func MessagingBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupT
 			},
 			Type:     messageBusInfo.Type,
 			Optional: messageBusInfo.Optional,
-		})
+		}, lc)
 
 	if err != nil {
 		lc.Errorf("Failed to create MessageClient: %v", err)
