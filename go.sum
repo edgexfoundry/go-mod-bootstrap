@@ -68,8 +68,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/ebitengine/purego v0.10.1 h1:dewVBCBT2GaMu1SrNTYxQhgQBethzfhiwvZiLGP/qyY=
 github.com/ebitengine/purego v0.10.1/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
-github.com/eclipse/paho.mqtt.golang v1.5.1 h1:/VSOv3oDLlpqR2Epjn1Q7b2bSTplJIeV2ISgCl2W7nE=
-github.com/eclipse/paho.mqtt.golang v1.5.1/go.mod h1:1/yJCneuyOoCOzKSsOTUc0AJfpsItBGWvYpBLimhArU=
+github.com/eclipse/paho.mqtt.golang v1.5.2 h1:4pcXsR3nR9gJuHCpBC8UF6rTehpIoHrYRm+hGOCq7ZM=
+github.com/eclipse/paho.mqtt.golang v1.5.2/go.mod h1:rDbBdvBJ0K2cDnnazZcu0/cu7y3bFiICNVUOUWHnOOg=
 github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.29 h1:ShfKNYuX2fCS46NPHas/2uI2DZ5OjFdGk1GyunL5IVU=
 github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.29/go.mod h1:2cpv2YyJJ31EydcgE3bblFsrJ4miwHgY94V1TQYVi24=
 github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.54 h1:glkVqqBTtBD7f8RPfqtfHvMbUve3cjYONELLUVX8G8o=
