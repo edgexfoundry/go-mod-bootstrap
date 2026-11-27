@@ -24,6 +24,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
@@ -41,7 +42,7 @@ import (
 // HttpServer contains references to dependencies required by the http server implementation.
 type HttpServer struct {
 	router           *echo.Echo
-	isRunning        bool
+	isRunning        atomic.Bool
 	doListenAndServe bool
 	serverKey        string
 }
@@ -50,7 +51,6 @@ type HttpServer struct {
 func NewHttpServer(router *echo.Echo, doListenAndServe bool, serviceKey string) *HttpServer {
 	return &HttpServer{
 		router:           router,
-		isRunning:        false,
 		doListenAndServe: doListenAndServe,
 		serverKey:        serviceKey,
 	}
@@ -60,7 +60,7 @@ func NewHttpServer(router *echo.Echo, doListenAndServe bool, serviceKey string) 
 // any resources required to successfully process http requests until after all outstanding requests have been
 // processed (e.g. a database connection).
 func (b *HttpServer) IsRunning() bool {
-	return b.isRunning
+	return b.isRunning.Load()
 }
 
 // BootstrapHandler fulfills the BootstrapHandler contract.  It creates two go routines -- one that executes ListenAndServe()
@@ -80,9 +80,9 @@ func (b *HttpServer) BootstrapHandler(
 		go func() {
 			defer wg.Done()
 
-			b.isRunning = true
+			b.isRunning.Store(true)
 			<-ctx.Done()
-			b.isRunning = false
+			b.isRunning.Store(false)
 		}()
 		return true
 
@@ -155,16 +155,19 @@ func (b *HttpServer) BootstrapHandler(
 	go func() {
 		defer func() {
 			wg.Done()
-			b.isRunning = false
+			b.isRunning.Store(false)
 		}()
 
-		b.isRunning = true
+		b.isRunning.Store(true)
 		err := zerotrust.ListenOnMode(bootstrapConfig, b.serverKey, addr, t, server, dic)
 
 		// "Server closed" error occurs when Shutdown above is called in the Done processing, so it can be ignored
 		if err != nil && err != http.ErrServerClosed {
 			// Other errors occur during bootstrapping, like port bind fails, are considered fatal
 			lc.Errorf("Web server failed: %v", err)
+
+			// Not serving: clear before wg.Wait so goroutines waiting on IsRunning() (e.g. DB close) can exit
+			b.isRunning.Store(false)
 
 			// Allow any long-running go functions that may have started to stop before exiting
 			cancel := container.CancelFuncFrom(dic.Get)
