@@ -3,7 +3,7 @@ module github.com/edgexfoundry/go-mod-bootstrap/v4
 go 1.27
 
 require (
-	github.com/eclipse/paho.mqtt.golang v1.5.1
+	github.com/eclipse/paho.mqtt.golang v1.5.2
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.29
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.54
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.41
